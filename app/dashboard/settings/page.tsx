@@ -123,120 +123,123 @@ export default function SettingsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 왼쪽: 수입/지출 항목 */}
-        <div className="space-y-4">
-          {/* 수입 항목 */}
-          <Card>
-            <CardHeader className="py-3">
-              <CardTitle className="text-lg text-blue-700">수입 항목</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {incomeItems.map((item, index) => (
-                <Input
-                  key={`income-${index}`}
-                  value={item}
-                  onChange={(e) => {
-                    const newItems = [...incomeItems];
-                    newItems[index] = e.target.value;
-                    setIncomeItems(newItems);
-                  }}
-                  placeholder={`항목 ${index + 1}`}
-                  className="h-8"
-                />
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* 지출 항목 */}
-          <Card>
-            <CardHeader className="py-3">
-              <CardTitle className="text-lg text-red-700">지출 항목</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {expenseItems.map((item, index) => (
-                <Input
-                  key={`expense-${index}`}
-                  value={item}
-                  onChange={(e) => {
-                    const newItems = [...expenseItems];
-                    newItems[index] = e.target.value;
-                    setExpenseItems(newItems);
-                  }}
-                  placeholder={`항목 ${index + 1}`}
-                  className="h-8"
-                />
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* 가운데: 예산 */}
-        <div className="space-y-4">
-          {/* 수입 예산 */}
-          <Card>
-            <CardHeader className="py-3">
-              <CardTitle className="text-lg text-blue-700">수입 예산</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {incomeBudgets.map((budget, index) => (
-                <div key={`income-budget-${index}`} className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-500 w-20 truncate">
-                    {incomeItems[index] || `항목 ${index + 1}`}
-                  </span>
-                  <Input
-                    type="number"
-                    value={budget}
-                    onChange={(e) => {
-                      const newBudgets = [...incomeBudgets];
-                      newBudgets[index] = e.target.value;
-                      setIncomeBudgets(newBudgets);
-                    }}
-                    className="h-8 flex-1"
-                  />
+        {/* 왼쪽 영역: 2x2 그리드 (예산 위, 항목 아래) */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* 상단: 수입예산 / 지출예산 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* 수입 예산 */}
+            <Card className="border-2 border-blue-200">
+              <CardHeader className="py-3 bg-blue-50">
+                <CardTitle className="text-lg text-blue-700">수입예산</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 pt-3">
+                {incomeBudgets.map((budget, index) => (
+                  <div key={`income-budget-${index}`} className="flex items-center space-x-2">
+                    <span className="text-xs text-gray-500 w-20 truncate">
+                      {incomeItems[index] || `항목 ${index + 1}`}
+                    </span>
+                    <Input
+                      type="number"
+                      value={budget}
+                      onChange={(e) => {
+                        const newBudgets = [...incomeBudgets];
+                        newBudgets[index] = e.target.value;
+                        setIncomeBudgets(newBudgets);
+                      }}
+                      className="h-8 flex-1"
+                    />
+                  </div>
+                ))}
+                <Separator />
+                <div className="flex justify-between font-medium">
+                  <span>총수입 예산:</span>
+                  <span className="text-blue-600">{formatAmount(incomeBudgetTotal)} {currency}</span>
                 </div>
-              ))}
-              <Separator />
-              <div className="flex justify-between font-medium">
-                <span>총수입 예산:</span>
-                <span className="text-blue-600">{formatAmount(incomeBudgetTotal)} {currency}</span>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* 지출 예산 */}
-          <Card>
-            <CardHeader className="py-3">
-              <CardTitle className="text-lg text-red-700">지출 예산</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {expenseBudgets.map((budget, index) => (
-                <div key={`expense-budget-${index}`} className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-500 w-20 truncate">
-                    {expenseItems[index] || `항목 ${index + 1}`}
-                  </span>
-                  <Input
-                    type="number"
-                    value={budget}
-                    onChange={(e) => {
-                      const newBudgets = [...expenseBudgets];
-                      newBudgets[index] = e.target.value;
-                      setExpenseBudgets(newBudgets);
-                    }}
-                    className="h-8 flex-1"
-                  />
+            {/* 지출 예산 */}
+            <Card className="border-2 border-red-200">
+              <CardHeader className="py-3 bg-red-50">
+                <CardTitle className="text-lg text-red-700">지출예산</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 pt-3">
+                {expenseBudgets.map((budget, index) => (
+                  <div key={`expense-budget-${index}`} className="flex items-center space-x-2">
+                    <span className="text-xs text-gray-500 w-20 truncate">
+                      {expenseItems[index] || `항목 ${index + 1}`}
+                    </span>
+                    <Input
+                      type="number"
+                      value={budget}
+                      onChange={(e) => {
+                        const newBudgets = [...expenseBudgets];
+                        newBudgets[index] = e.target.value;
+                        setExpenseBudgets(newBudgets);
+                      }}
+                      className="h-8 flex-1"
+                    />
+                  </div>
+                ))}
+                <Separator />
+                <div className="flex justify-between font-medium">
+                  <span>총지출 예산:</span>
+                  <span className="text-red-600">{formatAmount(expenseBudgetTotal)} {currency}</span>
                 </div>
-              ))}
-              <Separator />
-              <div className="flex justify-between font-medium">
-                <span>총지출 예산:</span>
-                <span className="text-red-600">{formatAmount(expenseBudgetTotal)} {currency}</span>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 하단: 수입항목 / 지출항목 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* 수입 항목 */}
+            <Card className="border-2 border-blue-200">
+              <CardHeader className="py-3 bg-blue-50">
+                <CardTitle className="text-lg text-blue-700">수입항목</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 pt-3">
+                {incomeItems.map((item, index) => (
+                  <Input
+                    key={`income-${index}`}
+                    value={item}
+                    onChange={(e) => {
+                      const newItems = [...incomeItems];
+                      newItems[index] = e.target.value;
+                      setIncomeItems(newItems);
+                    }}
+                    placeholder={`항목 ${index + 1}`}
+                    className="h-8"
+                  />
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* 지출 항목 */}
+            <Card className="border-2 border-red-200">
+              <CardHeader className="py-3 bg-red-50">
+                <CardTitle className="text-lg text-red-700">지출항목</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 pt-3">
+                {expenseItems.map((item, index) => (
+                  <Input
+                    key={`expense-${index}`}
+                    value={item}
+                    onChange={(e) => {
+                      const newItems = [...expenseItems];
+                      newItems[index] = e.target.value;
+                      setExpenseItems(newItems);
+                    }}
+                    placeholder={`항목 ${index + 1}`}
+                    className="h-8"
+                  />
+                ))}
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* 오른쪽: 작성자 정보 및 메모 */}
-        <div className="space-y-4">
+        <div className="space-y-4 flex flex-col">
           {/* 작성자 정보 */}
           <Card>
             <CardHeader className="py-3">
@@ -276,19 +279,19 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* 메모 */}
-          <Card>
+          {/* 메모 - 남은 공간 채우기 */}
+          <Card className="flex-1 flex flex-col">
             <CardHeader className="py-3">
               <CardTitle className="text-lg">설정 메모</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1 flex flex-col">
               <Label htmlFor="settings-memo" className="sr-only">설정 메모</Label>
               <textarea
                 id="settings-memo"
                 value={memo}
                 onChange={(e) => setMemo(e.target.value)}
                 placeholder="메모를 입력하세요..."
-                className="w-full h-40 p-2 border rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full flex-1 min-h-[300px] p-3 border rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </CardContent>
           </Card>
