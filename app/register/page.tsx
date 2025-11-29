@@ -61,11 +61,13 @@ export default function RegisterPage() {
       // 2. 사용자 상태 추가 (첫 번째 사용자는 자동 승인 + Super Admin)
       const { data: statusData, error: statusError } = await supabase
         .from("finance_user_status")
-        .insert({
+        .upsert({
           user_id: authData.user.id,
           email: email,
           status: isFirstUser ? "approved" : "pending",
           is_super_admin: isFirstUser,
+        }, {
+          onConflict: 'user_id'
         })
         .select();
 
@@ -80,10 +82,10 @@ export default function RegisterPage() {
       
       console.log("사용자 상태 생성 성공:", statusData);
 
-      // 3. 기본 설정 생성
+      // 3. 기본 설정 생성 (이미 존재하면 무시)
       const { error: settingsError } = await supabase
         .from("finance_settings")
-        .insert({
+        .upsert({
           user_id: authData.user.id,
           income_items: [],
           expense_items: [],
@@ -96,6 +98,9 @@ export default function RegisterPage() {
           cash_amount: 0,
           touch_amount: 0,
           other_amount: 0,
+        }, { 
+          onConflict: 'user_id',
+          ignoreDuplicates: true  // 이미 존재하면 무시
         });
 
       if (settingsError) {
