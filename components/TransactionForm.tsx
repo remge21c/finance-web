@@ -357,7 +357,7 @@ export default function TransactionForm({
         <div className="flex space-x-1 flex-wrap gap-1 items-end">
           <Button
             type="submit"
-            disabled={loading || !currentItem || !amount || !!selectedTransaction}
+            disabled={loading || !currentItem || !amount}
             className="h-9 px-3 bg-emerald-600 hover:bg-emerald-700"
           >
             추가

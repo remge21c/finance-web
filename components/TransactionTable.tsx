@@ -178,23 +178,7 @@ export default function TransactionTable({
       </div>
 
       {/* 하단 정보 */}
-      <div className="flex items-center justify-between p-4 border-t">
-        <div className="flex items-center space-x-4">
-          {selectedIds.length > 0 && (
-            <>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => onDelete(selectedIds)}
-              >
-                선택 삭제 ({selectedIds.length}개)
-              </Button>
-              <span className="text-sm text-gray-500">
-                선택 합계: {formatAmount(selectedSum)} {currency}
-              </span>
-            </>
-          )}
-        </div>
+      <div className="flex items-center justify-end p-4 border-t">
         <div className="text-lg font-bold">
           현재 잔액:{" "}
           <span className={balance >= 0 ? "text-emerald-600" : "text-red-600"}>
