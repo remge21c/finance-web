@@ -6,6 +6,12 @@ import { useSettings } from "@/lib/hooks/useSettings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   startOfWeek,
@@ -27,6 +33,7 @@ export default function WeeklyReportPage() {
   const [cashAmount, setCashAmount] = useState("");
   const [touchAmount, setTouchAmount] = useState("");
   const [otherAmount, setOtherAmount] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
   
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -164,7 +171,7 @@ export default function WeeklyReportPage() {
           <Button 
             size="sm" 
             className="bg-emerald-600 hover:bg-emerald-700"
-            onClick={() => handlePrint()}
+            onClick={() => setShowPreview(true)}
           >
             출력
           </Button>
@@ -176,7 +183,184 @@ export default function WeeklyReportPage() {
         {format(weekRange.start, "yyyy년 M월 d일", { locale: ko })} ~ {format(weekRange.end, "M월 d일", { locale: ko })}
       </div>
 
-      {/* 출력 영역 */}
+      {/* 미리보기 모달 */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>주간보고서 미리보기</span>
+              <Button 
+                size="sm" 
+                className="bg-emerald-600 hover:bg-emerald-700"
+                onClick={() => {
+                  handlePrint();
+                  setShowPreview(false);
+                }}
+              >
+                🖨️ 인쇄
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {/* 미리보기 내용 */}
+          <div className="border-2 border-gray-300 rounded-lg p-4 bg-white">
+            {/* 헤더 */}
+            <div className="border-[3px] border-green-600 rounded-lg p-4 mb-4">
+              <h1 className="text-2xl font-bold text-center text-gray-800">주간보고서</h1>
+              <p className="text-center text-gray-600 mt-1">
+                보고 기간: {format(weekRange.start, "yyyy년 M월 d일", { locale: ko })} ~ {format(weekRange.end, "yyyy년 M월 d일", { locale: ko })}
+              </p>
+              <p className="text-center text-gray-500 text-sm mt-1">
+                생성일: {format(new Date(), "yyyy년 M월 d일 HH:mm", { locale: ko })}
+              </p>
+            </div>
+
+            {/* 수입/지출 테이블 */}
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              {/* 수입 내역 */}
+              <div className="border border-gray-300 rounded overflow-hidden">
+                <div className="bg-green-600 text-white py-2 px-3 font-bold text-center text-sm">
+                  수입 내역
+                </div>
+                <table className="w-full text-xs table-fixed">
+                  <thead>
+                    <tr className="bg-gray-100 border-b border-gray-300">
+                      <th className="py-1 px-1 text-left font-semibold w-12">날짜</th>
+                      <th className="py-1 px-1 text-left font-semibold w-16">항목</th>
+                      <th className="py-1 px-1 text-left font-semibold">내용</th>
+                      <th className="py-1 px-1 text-right font-semibold w-14">금액</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {incomeTransactions.map((t) => (
+                      <tr key={t.id} className="border-b border-gray-200">
+                        <td className="py-1 px-1">{format(parseISO(t.date), "MM/dd")}</td>
+                        <td className="py-1 px-1 truncate">{t.item}</td>
+                        <td className="py-1 px-1 truncate">{t.description}</td>
+                        <td className="py-1 px-1 text-right text-blue-600">{formatAmount(Number(t.amount))}</td>
+                      </tr>
+                    ))}
+                    {Array.from({ length: Math.max(8 - incomeTransactions.length, 0) }).map((_, i) => (
+                      <tr key={`empty-${i}`} className="border-b border-gray-200">
+                        <td className="py-1 px-1">&nbsp;</td>
+                        <td className="py-1 px-1"></td>
+                        <td className="py-1 px-1"></td>
+                        <td className="py-1 px-1"></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* 지출 내역 */}
+              <div className="border border-gray-300 rounded overflow-hidden">
+                <div className="bg-green-600 text-white py-2 px-3 font-bold text-center text-sm">
+                  지출 내역
+                </div>
+                <table className="w-full text-xs table-fixed">
+                  <thead>
+                    <tr className="bg-gray-100 border-b border-gray-300">
+                      <th className="py-1 px-1 text-left font-semibold w-12">날짜</th>
+                      <th className="py-1 px-1 text-left font-semibold w-16">항목</th>
+                      <th className="py-1 px-1 text-left font-semibold">내용</th>
+                      <th className="py-1 px-1 text-right font-semibold w-14">금액</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {expenseTransactions.map((t) => (
+                      <tr key={t.id} className="border-b border-gray-200">
+                        <td className="py-1 px-1">{format(parseISO(t.date), "MM/dd")}</td>
+                        <td className="py-1 px-1 truncate">{t.item}</td>
+                        <td className="py-1 px-1 truncate">{t.description}</td>
+                        <td className="py-1 px-1 text-right text-red-600">{formatAmount(Number(t.amount))}</td>
+                      </tr>
+                    ))}
+                    {Array.from({ length: Math.max(8 - expenseTransactions.length, 0) }).map((_, i) => (
+                      <tr key={`empty-${i}`} className="border-b border-gray-200">
+                        <td className="py-1 px-1">&nbsp;</td>
+                        <td className="py-1 px-1"></td>
+                        <td className="py-1 px-1"></td>
+                        <td className="py-1 px-1"></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* 요약 정보 */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* 주간 요약 */}
+              <div className="border border-gray-300 rounded overflow-hidden">
+                <div className="bg-gray-100 py-1 px-3 font-bold border-b border-gray-300 text-sm">
+                  주간 요약
+                </div>
+                <div className="p-2 space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span>지난주 잔액:</span>
+                    <span className="font-medium">{formatAmount(lastWeekBalance)} {currency}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>총 수입:</span>
+                    <span className="font-medium text-blue-600">{formatAmount(incomeTotal)} {currency}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>총 지출:</span>
+                    <span className="font-medium text-red-600">{formatAmount(expenseTotal)} {currency}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-gray-300 pt-1">
+                    <span className="font-bold">주간 잔액:</span>
+                    <span className={`font-bold ${currentBalance >= 0 ? "text-green-600" : "text-red-600"}`}>
+                      {formatAmount(currentBalance)} {currency}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 계좌 현황 */}
+              <div className="border border-gray-300 rounded overflow-hidden">
+                <div className="bg-gray-100 py-1 px-3 font-bold border-b border-gray-300 text-sm">
+                  계좌 현황
+                </div>
+                <div className="p-2 space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span>현금:</span>
+                    <span className="font-medium">{formatAmount(parseFloat(cashAmount || "0"))} {currency}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>터치앤고:</span>
+                    <span className="font-medium">{formatAmount(parseFloat(touchAmount || "0"))} {currency}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>기타:</span>
+                    <span className="font-medium">{formatAmount(parseFloat(otherAmount || "0"))} {currency}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-gray-300 pt-1">
+                    <span className="font-bold">총 계좌:</span>
+                    <span className="font-bold text-green-600">
+                      {formatAmount(totalAccount)} {currency}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 서명란 */}
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <div className="border border-gray-300 rounded p-2 text-center">
+                <div className="text-xs text-gray-600 mb-1">작성자: {settings?.author || ""}</div>
+                <div className="h-8 border-b border-gray-400 mx-4"></div>
+              </div>
+              <div className="border border-gray-300 rounded p-2 text-center">
+                <div className="text-xs text-gray-600 mb-1">책임자: {settings?.manager || ""}</div>
+                <div className="h-8 border-b border-gray-400 mx-4"></div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 출력 영역 (실제 프린트용, 화면에는 숨김) */}
       <div ref={printRef} className="bg-white print:print-a4">
         {/* 출력용 헤더 - 녹색 테두리 */}
         <div className="hidden print:block border-[3px] border-green-600 rounded-lg p-4 mb-4">
