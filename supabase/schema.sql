@@ -129,3 +129,4 @@ CREATE TRIGGER update_finance_settings_updated_at
   FOR EACH ROW EXECUTE FUNCTION update_finance_updated_at();
 
 
+
