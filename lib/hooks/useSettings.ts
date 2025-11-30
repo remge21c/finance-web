@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Settings, SettingsInput } from "@/types/database";
 
 const defaultSettings: Omit<Settings, "id" | "user_id" | "updated_at"> = {
+  app_title: "재정관리",
   income_items: [],
   expense_items: [],
   income_budgets: [],
