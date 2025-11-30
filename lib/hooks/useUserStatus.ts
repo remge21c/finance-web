@@ -19,18 +19,23 @@ export function useUserStatus() {
       return;
     }
 
-    const { data, error } = await supabase
-      .from("finance_user_status")
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from("finance_user_status")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-    if (error) {
-      console.error("사용자 상태 조회 실패:", error);
-    } else if (data) {
-      setUserStatus(data);
+      if (error) {
+        // 테이블이 없거나 RLS 문제인 경우 - 무시하고 계속 진행
+        console.warn("사용자 상태 조회 실패 (테이블 미존재 또는 권한 문제):", error.message || error.code || "알 수 없는 에러");
+      } else if (data) {
+        setUserStatus(data);
+      }
+      // data가 null인 경우 (레코드 없음) - 에러가 아님, 새 사용자로 처리
+    } catch (err) {
+      console.warn("사용자 상태 조회 중 예외 발생:", err);
     }
-    // data가 null인 경우 (레코드 없음) - 에러가 아님
     setLoading(false);
   }, []);
 

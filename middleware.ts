@@ -60,14 +60,24 @@ export async function middleware(request: NextRequest) {
   }
 
   // 로그인된 사용자 - 상태 확인
-  const { data: userStatus } = await supabase
-    .from('finance_user_status')
-    .select('status, is_super_admin')
-    .eq('user_id', user.id)
-    .single()
+  let status = 'pending'
+  let isSuperAdmin = false
 
-  const status = userStatus?.status || 'pending'
-  const isSuperAdmin = userStatus?.is_super_admin || false
+  try {
+    const { data: userStatus, error } = await supabase
+      .from('finance_user_status')
+      .select('status, is_super_admin')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (!error && userStatus) {
+      status = userStatus.status || 'pending'
+      isSuperAdmin = userStatus.is_super_admin || false
+    }
+    // 에러가 있거나 userStatus가 없으면 기본값(pending) 사용
+  } catch {
+    // 테이블 미존재 또는 권한 문제 - pending으로 처리
+  }
 
   // 로그인된 사용자가 로그인/회원가입 페이지 접근 시
   if (pathname === '/login' || pathname === '/register') {
