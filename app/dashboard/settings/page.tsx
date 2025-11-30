@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSettings } from "@/lib/hooks/useSettings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,18 @@ export default function SettingsPage() {
   const [currency, setCurrency] = useState("원");
   const [memo, setMemo] = useState("");
 
+  // 원본값 저장 (변경사항 비교용)
+  const [originalValues, setOriginalValues] = useState({
+    incomeItems: Array(10).fill(""),
+    expenseItems: Array(10).fill(""),
+    incomeBudgets: Array(10).fill(""),
+    expenseBudgets: Array(10).fill(""),
+    author: "",
+    manager: "",
+    currency: "원",
+    memo: "",
+  });
+
   // 설정 로드
   useEffect(() => {
     if (settings) {
@@ -40,16 +52,73 @@ export default function SettingsPage() {
       while (loadedIncomeBudgets.length < 10) loadedIncomeBudgets.push(0);
       while (loadedExpenseBudgets.length < 10) loadedExpenseBudgets.push(0);
       
-      setIncomeItems(loadedIncomeItems);
-      setExpenseItems(loadedExpenseItems);
-      setIncomeBudgets(loadedIncomeBudgets.map(String));
-      setExpenseBudgets(loadedExpenseBudgets.map(String));
+      const incomeItemsStr = loadedIncomeItems as string[];
+      const expenseItemsStr = loadedExpenseItems as string[];
+      const incomeBudgetsStr = loadedIncomeBudgets.map(String);
+      const expenseBudgetsStr = loadedExpenseBudgets.map(String);
+      
+      setIncomeItems(incomeItemsStr);
+      setExpenseItems(expenseItemsStr);
+      setIncomeBudgets(incomeBudgetsStr);
+      setExpenseBudgets(expenseBudgetsStr);
       setAuthor(settings.author || "");
       setManager(settings.manager || "");
       setCurrency(settings.currency || "원");
       setMemo(settings.memo || "");
+      
+      // 원본값 저장
+      setOriginalValues({
+        incomeItems: [...incomeItemsStr],
+        expenseItems: [...expenseItemsStr],
+        incomeBudgets: [...incomeBudgetsStr],
+        expenseBudgets: [...expenseBudgetsStr],
+        author: settings.author || "",
+        manager: settings.manager || "",
+        currency: settings.currency || "원",
+        memo: settings.memo || "",
+      });
     }
   }, [settings]);
+
+  // 변경사항 확인
+  const hasIncomeBudgetsChanged = useMemo(() => 
+    JSON.stringify(incomeBudgets) !== JSON.stringify(originalValues.incomeBudgets), 
+    [incomeBudgets, originalValues.incomeBudgets]
+  );
+  
+  const hasExpenseBudgetsChanged = useMemo(() => 
+    JSON.stringify(expenseBudgets) !== JSON.stringify(originalValues.expenseBudgets), 
+    [expenseBudgets, originalValues.expenseBudgets]
+  );
+  
+  const hasIncomeItemsChanged = useMemo(() => 
+    JSON.stringify(incomeItems) !== JSON.stringify(originalValues.incomeItems), 
+    [incomeItems, originalValues.incomeItems]
+  );
+  
+  const hasExpenseItemsChanged = useMemo(() => 
+    JSON.stringify(expenseItems) !== JSON.stringify(originalValues.expenseItems), 
+    [expenseItems, originalValues.expenseItems]
+  );
+  
+  const hasAuthorInfoChanged = useMemo(() => 
+    author !== originalValues.author || 
+    manager !== originalValues.manager || 
+    currency !== originalValues.currency, 
+    [author, manager, currency, originalValues]
+  );
+  
+  const hasMemoChanged = useMemo(() => 
+    memo !== originalValues.memo, 
+    [memo, originalValues.memo]
+  );
+  
+  const hasAnyChanged = useMemo(() => 
+    hasIncomeBudgetsChanged || hasExpenseBudgetsChanged || 
+    hasIncomeItemsChanged || hasExpenseItemsChanged || 
+    hasAuthorInfoChanged || hasMemoChanged,
+    [hasIncomeBudgetsChanged, hasExpenseBudgetsChanged, hasIncomeItemsChanged, hasExpenseItemsChanged, hasAuthorInfoChanged, hasMemoChanged]
+  );
 
   // 전체 저장
   const handleSave = async () => {
@@ -68,6 +137,17 @@ export default function SettingsPage() {
       toast.error("저장 실패: " + result.error);
     } else {
       toast.success("설정이 저장되었습니다.");
+      // 원본값 업데이트
+      setOriginalValues({
+        incomeItems: [...incomeItems],
+        expenseItems: [...expenseItems],
+        incomeBudgets: [...incomeBudgets],
+        expenseBudgets: [...expenseBudgets],
+        author,
+        manager,
+        currency,
+        memo,
+      });
     }
   };
 
@@ -80,6 +160,7 @@ export default function SettingsPage() {
       toast.error("수입예산 저장 실패: " + result.error);
     } else {
       toast.success("수입예산이 저장되었습니다.");
+      setOriginalValues(prev => ({ ...prev, incomeBudgets: [...incomeBudgets] }));
     }
   };
 
@@ -92,6 +173,7 @@ export default function SettingsPage() {
       toast.error("지출예산 저장 실패: " + result.error);
     } else {
       toast.success("지출예산이 저장되었습니다.");
+      setOriginalValues(prev => ({ ...prev, expenseBudgets: [...expenseBudgets] }));
     }
   };
 
@@ -104,6 +186,7 @@ export default function SettingsPage() {
       toast.error("수입항목 저장 실패: " + result.error);
     } else {
       toast.success("수입항목이 저장되었습니다.");
+      setOriginalValues(prev => ({ ...prev, incomeItems: [...incomeItems] }));
     }
   };
 
@@ -116,6 +199,7 @@ export default function SettingsPage() {
       toast.error("지출항목 저장 실패: " + result.error);
     } else {
       toast.success("지출항목이 저장되었습니다.");
+      setOriginalValues(prev => ({ ...prev, expenseItems: [...expenseItems] }));
     }
   };
 
@@ -130,6 +214,7 @@ export default function SettingsPage() {
       toast.error("작성자 정보 저장 실패: " + result.error);
     } else {
       toast.success("작성자 정보가 저장되었습니다.");
+      setOriginalValues(prev => ({ ...prev, author, manager, currency }));
     }
   };
 
@@ -140,6 +225,7 @@ export default function SettingsPage() {
       toast.error("메모 저장 실패: " + result.error);
     } else {
       toast.success("메모가 저장되었습니다.");
+      setOriginalValues(prev => ({ ...prev, memo }));
     }
   };
 
@@ -189,7 +275,13 @@ export default function SettingsPage() {
           <Button variant="outline" onClick={handleReset}>
             초기화
           </Button>
-          <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700">
+          <Button 
+            onClick={handleSave} 
+            className={hasAnyChanged 
+              ? "bg-emerald-600 hover:bg-emerald-700" 
+              : "bg-gray-400 hover:bg-gray-500"
+            }
+          >
             저장
           </Button>
         </div>
@@ -204,7 +296,11 @@ export default function SettingsPage() {
             <Card className="border-2 border-blue-200">
               <CardHeader className="py-3 bg-blue-50 flex flex-row items-center justify-between">
                 <CardTitle className="text-lg text-blue-700">수입예산</CardTitle>
-                <Button size="sm" onClick={handleSaveIncomeBudgets} className="h-7 px-2 text-xs bg-blue-600 hover:bg-blue-700">
+                <Button 
+                  size="sm" 
+                  onClick={handleSaveIncomeBudgets} 
+                  className={`h-7 px-2 text-xs ${hasIncomeBudgetsChanged ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 hover:bg-gray-500"}`}
+                >
                   저장
                 </Button>
               </CardHeader>
@@ -238,7 +334,11 @@ export default function SettingsPage() {
             <Card className="border-2 border-red-200">
               <CardHeader className="py-3 bg-red-50 flex flex-row items-center justify-between">
                 <CardTitle className="text-lg text-red-700">지출예산</CardTitle>
-                <Button size="sm" onClick={handleSaveExpenseBudgets} className="h-7 px-2 text-xs bg-red-600 hover:bg-red-700">
+                <Button 
+                  size="sm" 
+                  onClick={handleSaveExpenseBudgets} 
+                  className={`h-7 px-2 text-xs ${hasExpenseBudgetsChanged ? "bg-red-600 hover:bg-red-700" : "bg-gray-400 hover:bg-gray-500"}`}
+                >
                   저장
                 </Button>
               </CardHeader>
@@ -275,7 +375,11 @@ export default function SettingsPage() {
             <Card className="border-2 border-blue-200">
               <CardHeader className="py-3 bg-blue-50 flex flex-row items-center justify-between">
                 <CardTitle className="text-lg text-blue-700">수입항목</CardTitle>
-                <Button size="sm" onClick={handleSaveIncomeItems} className="h-7 px-2 text-xs bg-blue-600 hover:bg-blue-700">
+                <Button 
+                  size="sm" 
+                  onClick={handleSaveIncomeItems} 
+                  className={`h-7 px-2 text-xs ${hasIncomeItemsChanged ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 hover:bg-gray-500"}`}
+                >
                   저장
                 </Button>
               </CardHeader>
@@ -300,7 +404,11 @@ export default function SettingsPage() {
             <Card className="border-2 border-red-200">
               <CardHeader className="py-3 bg-red-50 flex flex-row items-center justify-between">
                 <CardTitle className="text-lg text-red-700">지출항목</CardTitle>
-                <Button size="sm" onClick={handleSaveExpenseItems} className="h-7 px-2 text-xs bg-red-600 hover:bg-red-700">
+                <Button 
+                  size="sm" 
+                  onClick={handleSaveExpenseItems} 
+                  className={`h-7 px-2 text-xs ${hasExpenseItemsChanged ? "bg-red-600 hover:bg-red-700" : "bg-gray-400 hover:bg-gray-500"}`}
+                >
                   저장
                 </Button>
               </CardHeader>
@@ -329,7 +437,11 @@ export default function SettingsPage() {
           <Card>
             <CardHeader className="py-3 flex flex-row items-center justify-between">
               <CardTitle className="text-lg">작성자 정보</CardTitle>
-              <Button size="sm" onClick={handleSaveAuthorInfo} className="h-7 px-2 text-xs bg-gray-600 hover:bg-gray-700">
+              <Button 
+                size="sm" 
+                onClick={handleSaveAuthorInfo} 
+                className={`h-7 px-2 text-xs ${hasAuthorInfoChanged ? "bg-emerald-600 hover:bg-emerald-700" : "bg-gray-400 hover:bg-gray-500"}`}
+              >
                 저장
               </Button>
             </CardHeader>
@@ -371,7 +483,11 @@ export default function SettingsPage() {
           <Card className="flex-1 flex flex-col">
             <CardHeader className="py-3 flex flex-row items-center justify-between">
               <CardTitle className="text-lg">설정 메모</CardTitle>
-              <Button size="sm" onClick={handleSaveMemo} className="h-7 px-2 text-xs bg-gray-600 hover:bg-gray-700">
+              <Button 
+                size="sm" 
+                onClick={handleSaveMemo} 
+                className={`h-7 px-2 text-xs ${hasMemoChanged ? "bg-emerald-600 hover:bg-emerald-700" : "bg-gray-400 hover:bg-gray-500"}`}
+              >
                 저장
               </Button>
             </CardHeader>

@@ -33,14 +33,34 @@ export default function WeeklyReportPage() {
   const loading = txLoading || settingsLoading;
   const currency = settings?.currency || "원";
 
+  // 원본 금액 (변경사항 비교용)
+  const [originalAmounts, setOriginalAmounts] = useState({
+    cash: "0",
+    touch: "0",
+    other: "0",
+  });
+
   // 초기 금액 설정 - settings가 로드되면 금액 상태 업데이트
   useEffect(() => {
     if (settings) {
-      setCashAmount(settings.cash_amount?.toString() || "0");
-      setTouchAmount(settings.touch_amount?.toString() || "0");
-      setOtherAmount(settings.other_amount?.toString() || "0");
+      const cash = settings.cash_amount?.toString() || "0";
+      const touch = settings.touch_amount?.toString() || "0";
+      const other = settings.other_amount?.toString() || "0";
+      
+      setCashAmount(cash);
+      setTouchAmount(touch);
+      setOtherAmount(other);
+      setOriginalAmounts({ cash, touch, other });
     }
   }, [settings]);
+
+  // 변경사항 확인
+  const hasAmountsChanged = useMemo(() => 
+    cashAmount !== originalAmounts.cash || 
+    touchAmount !== originalAmounts.touch || 
+    otherAmount !== originalAmounts.other,
+    [cashAmount, touchAmount, otherAmount, originalAmounts]
+  );
 
   // 주간 범위 계산
   const weekRange = useMemo(() => {
@@ -104,6 +124,12 @@ export default function WeeklyReportPage() {
       toast.error("저장 실패: " + result.error);
     } else {
       toast.success("저장되었습니다.");
+      // 원본값 업데이트
+      setOriginalAmounts({
+        cash: cashAmount,
+        touch: touchAmount,
+        other: otherAmount,
+      });
     }
   };
 
@@ -345,7 +371,11 @@ export default function WeeklyReportPage() {
                   {formatAmount(totalAccount)} {currency}
                 </span>
               </div>
-              <Button size="sm" onClick={handleSaveAmounts} className="w-full mt-2 print:hidden">
+              <Button 
+                size="sm" 
+                onClick={handleSaveAmounts} 
+                className={`w-full mt-2 print:hidden ${hasAmountsChanged ? "bg-emerald-600 hover:bg-emerald-700" : "bg-gray-400 hover:bg-gray-500"}`}
+              >
                 저장
               </Button>
             </div>
