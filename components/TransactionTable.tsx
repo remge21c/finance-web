@@ -111,7 +111,7 @@ export default function TransactionTable({
               <TableHead className="w-28">날짜</TableHead>
               <TableHead className="w-16">구분</TableHead>
               <TableHead className="w-24">항목</TableHead>
-              <TableHead className="w-40">내용</TableHead>
+              <TableHead className="w-[150px]">내용</TableHead>
               <TableHead className="w-28 text-right">금액 ({currency})</TableHead>
               <TableHead className="min-w-[120px]">메모</TableHead>
               <TableHead className="w-16">작업</TableHead>
