@@ -51,6 +51,7 @@ export default function SettingsPage() {
     }
   }, [settings]);
 
+  // 전체 저장
   const handleSave = async () => {
     const result = await updateSettings({
       income_items: incomeItems.filter((i) => i.trim() !== ""),
@@ -67,6 +68,78 @@ export default function SettingsPage() {
       toast.error("저장 실패: " + result.error);
     } else {
       toast.success("설정이 저장되었습니다.");
+    }
+  };
+
+  // 수입예산 저장
+  const handleSaveIncomeBudgets = async () => {
+    const result = await updateSettings({
+      income_budgets: incomeBudgets.map((b) => parseFloat(b) || 0),
+    });
+    if (result.error) {
+      toast.error("수입예산 저장 실패: " + result.error);
+    } else {
+      toast.success("수입예산이 저장되었습니다.");
+    }
+  };
+
+  // 지출예산 저장
+  const handleSaveExpenseBudgets = async () => {
+    const result = await updateSettings({
+      expense_budgets: expenseBudgets.map((b) => parseFloat(b) || 0),
+    });
+    if (result.error) {
+      toast.error("지출예산 저장 실패: " + result.error);
+    } else {
+      toast.success("지출예산이 저장되었습니다.");
+    }
+  };
+
+  // 수입항목 저장
+  const handleSaveIncomeItems = async () => {
+    const result = await updateSettings({
+      income_items: incomeItems.filter((i) => i.trim() !== ""),
+    });
+    if (result.error) {
+      toast.error("수입항목 저장 실패: " + result.error);
+    } else {
+      toast.success("수입항목이 저장되었습니다.");
+    }
+  };
+
+  // 지출항목 저장
+  const handleSaveExpenseItems = async () => {
+    const result = await updateSettings({
+      expense_items: expenseItems.filter((i) => i.trim() !== ""),
+    });
+    if (result.error) {
+      toast.error("지출항목 저장 실패: " + result.error);
+    } else {
+      toast.success("지출항목이 저장되었습니다.");
+    }
+  };
+
+  // 작성자 정보 저장
+  const handleSaveAuthorInfo = async () => {
+    const result = await updateSettings({
+      author,
+      manager,
+      currency,
+    });
+    if (result.error) {
+      toast.error("작성자 정보 저장 실패: " + result.error);
+    } else {
+      toast.success("작성자 정보가 저장되었습니다.");
+    }
+  };
+
+  // 설정 메모 저장
+  const handleSaveMemo = async () => {
+    const result = await updateSettings({ memo });
+    if (result.error) {
+      toast.error("메모 저장 실패: " + result.error);
+    } else {
+      toast.success("메모가 저장되었습니다.");
     }
   };
 
@@ -129,8 +202,11 @@ export default function SettingsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* 수입 예산 */}
             <Card className="border-2 border-blue-200">
-              <CardHeader className="py-3 bg-blue-50">
+              <CardHeader className="py-3 bg-blue-50 flex flex-row items-center justify-between">
                 <CardTitle className="text-lg text-blue-700">수입예산</CardTitle>
+                <Button size="sm" onClick={handleSaveIncomeBudgets} className="h-7 px-2 text-xs bg-blue-600 hover:bg-blue-700">
+                  저장
+                </Button>
               </CardHeader>
               <CardContent className="space-y-2 pt-3">
                 {incomeBudgets.map((budget, index) => (
@@ -160,8 +236,11 @@ export default function SettingsPage() {
 
             {/* 지출 예산 */}
             <Card className="border-2 border-red-200">
-              <CardHeader className="py-3 bg-red-50">
+              <CardHeader className="py-3 bg-red-50 flex flex-row items-center justify-between">
                 <CardTitle className="text-lg text-red-700">지출예산</CardTitle>
+                <Button size="sm" onClick={handleSaveExpenseBudgets} className="h-7 px-2 text-xs bg-red-600 hover:bg-red-700">
+                  저장
+                </Button>
               </CardHeader>
               <CardContent className="space-y-2 pt-3">
                 {expenseBudgets.map((budget, index) => (
@@ -194,8 +273,11 @@ export default function SettingsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* 수입 항목 */}
             <Card className="border-2 border-blue-200">
-              <CardHeader className="py-3 bg-blue-50">
+              <CardHeader className="py-3 bg-blue-50 flex flex-row items-center justify-between">
                 <CardTitle className="text-lg text-blue-700">수입항목</CardTitle>
+                <Button size="sm" onClick={handleSaveIncomeItems} className="h-7 px-2 text-xs bg-blue-600 hover:bg-blue-700">
+                  저장
+                </Button>
               </CardHeader>
               <CardContent className="space-y-2 pt-3">
                 {incomeItems.map((item, index) => (
@@ -216,8 +298,11 @@ export default function SettingsPage() {
 
             {/* 지출 항목 */}
             <Card className="border-2 border-red-200">
-              <CardHeader className="py-3 bg-red-50">
+              <CardHeader className="py-3 bg-red-50 flex flex-row items-center justify-between">
                 <CardTitle className="text-lg text-red-700">지출항목</CardTitle>
+                <Button size="sm" onClick={handleSaveExpenseItems} className="h-7 px-2 text-xs bg-red-600 hover:bg-red-700">
+                  저장
+                </Button>
               </CardHeader>
               <CardContent className="space-y-2 pt-3">
                 {expenseItems.map((item, index) => (
@@ -242,8 +327,11 @@ export default function SettingsPage() {
         <div className="space-y-4 flex flex-col">
           {/* 작성자 정보 */}
           <Card>
-            <CardHeader className="py-3">
+            <CardHeader className="py-3 flex flex-row items-center justify-between">
               <CardTitle className="text-lg">작성자 정보</CardTitle>
+              <Button size="sm" onClick={handleSaveAuthorInfo} className="h-7 px-2 text-xs bg-gray-600 hover:bg-gray-700">
+                저장
+              </Button>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="space-y-1">
@@ -281,8 +369,11 @@ export default function SettingsPage() {
 
           {/* 메모 - 남은 공간 채우기 */}
           <Card className="flex-1 flex flex-col">
-            <CardHeader className="py-3">
+            <CardHeader className="py-3 flex flex-row items-center justify-between">
               <CardTitle className="text-lg">설정 메모</CardTitle>
+              <Button size="sm" onClick={handleSaveMemo} className="h-7 px-2 text-xs bg-gray-600 hover:bg-gray-700">
+                저장
+              </Button>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
               <Label htmlFor="settings-memo" className="sr-only">설정 메모</Label>

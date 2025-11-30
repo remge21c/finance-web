@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,32 +13,28 @@ import {
 } from "@/components/ui/select";
 import type { Transaction, TransactionInput, Settings } from "@/types/database";
 
-// 메모 옵션 (결제 방법)
-const MEMO_OPTIONS = [
-  "터치앤고결제",
-  "우건결제",
-  "카드결제",
-  "현금결제",
-  "계좌이체",
-  "기타",
-];
-
 interface TransactionFormProps {
   settings: Settings | null;
   selectedTransaction: Transaction | null;
+  transactions?: Transaction[]; // 메모 빈도 계산용
   onSubmit: (data: TransactionInput) => Promise<void>;
   onUpdate: (id: string, data: TransactionInput) => Promise<void>;
   onDelete?: (ids: string[]) => Promise<void>;
   onClear: () => void;
+  onCsvExport?: () => void; // CSV 저장
+  onCsvImport?: (data: TransactionInput[]) => Promise<void>; // CSV 불러오기
 }
 
 export default function TransactionForm({
   settings,
   selectedTransaction,
+  transactions = [],
   onSubmit,
   onUpdate,
   onDelete,
   onClear,
+  onCsvExport,
+  onCsvImport,
 }: TransactionFormProps) {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [type, setType] = useState<"수입" | "지출">("지출");
@@ -48,6 +44,98 @@ export default function TransactionForm({
   const [amount, setAmount] = useState("");
   const [memo, setMemo] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showMemoDropdown, setShowMemoDropdown] = useState(false);
+  const memoInputRef = useRef<HTMLInputElement>(null);
+  const memoDropdownRef = useRef<HTMLDivElement>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
+
+  // CSV 파일 불러오기 핸들러
+  const handleCsvFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !onCsvImport) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+      const lines = text.split("\n").filter((line) => line.trim());
+      
+      // 첫 번째 줄은 헤더로 가정
+      const dataLines = lines.slice(1);
+      const importedData: TransactionInput[] = [];
+
+      dataLines.forEach((line) => {
+        // CSV 파싱 (쉼표로 구분, 따옴표 처리)
+        const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+        const cleanValues = values.map((v) => v.replace(/^"|"$/g, "").trim());
+
+        if (cleanValues.length >= 5) {
+          const [csvDate, csvType, csvItem, csvDescription, csvAmount, csvMemo] = cleanValues;
+          
+          // 유효한 데이터인지 확인
+          if (csvDate && csvType && csvItem && csvAmount) {
+            importedData.push({
+              date: csvDate,
+              type: csvType as "수입" | "지출",
+              item: csvItem,
+              description: csvDescription || "",
+              amount: parseFloat(csvAmount) || 0,
+              memo: csvMemo || "",
+            });
+          }
+        }
+      });
+
+      if (importedData.length > 0) {
+        await onCsvImport(importedData);
+      }
+    };
+    reader.readAsText(file, "UTF-8");
+    
+    // 파일 입력 초기화 (같은 파일 다시 선택 가능하도록)
+    e.target.value = "";
+  };
+
+  // 기존 거래에서 메모 빈도 계산 (사용 횟수 순으로 정렬)
+  const memoSuggestions = useMemo(() => {
+    const memoCount: Record<string, number> = {};
+    
+    transactions.forEach((tx) => {
+      if (tx.memo && tx.memo.trim()) {
+        const memoText = tx.memo.trim();
+        memoCount[memoText] = (memoCount[memoText] || 0) + 1;
+      }
+    });
+
+    // 사용 횟수 순으로 정렬
+    return Object.entries(memoCount)
+      .sort((a, b) => b[1] - a[1])
+      .map(([text, count]) => ({ text, count }));
+  }, [transactions]);
+
+  // 현재 입력값과 일치하는 메모 필터링
+  const filteredMemos = useMemo(() => {
+    if (!memo.trim()) return memoSuggestions;
+    return memoSuggestions.filter((m) =>
+      m.text.toLowerCase().includes(memo.toLowerCase())
+    );
+  }, [memo, memoSuggestions]);
+
+  // 메모 입력 필드 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        memoInputRef.current &&
+        !memoInputRef.current.contains(event.target as Node) &&
+        memoDropdownRef.current &&
+        !memoDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowMemoDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // 선택된 거래가 있으면 폼에 채우기
   useEffect(() => {
@@ -228,25 +316,45 @@ export default function TransactionForm({
           />
         </div>
 
-        {/* 메모 (드롭다운) */}
-        <div className="space-y-1">
+        {/* 메모 (텍스트 입력 + 드롭다운) */}
+        <div className="space-y-1 relative">
           <Label htmlFor="memo" className="text-xs">메모</Label>
-          <Select value={memo} onValueChange={setMemo}>
-            <SelectTrigger className="h-9">
-              <SelectValue placeholder="선택" />
-            </SelectTrigger>
-            <SelectContent>
-              {MEMO_OPTIONS.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
-                </SelectItem>
+          <Input
+            ref={memoInputRef}
+            id="memo"
+            value={memo}
+            onChange={(e) => setMemo(e.target.value)}
+            onFocus={() => setShowMemoDropdown(true)}
+            placeholder="메모 입력"
+            className="h-9"
+            autoComplete="off"
+          />
+          {/* 메모 드롭다운 */}
+          {showMemoDropdown && filteredMemos.length > 0 && (
+            <div
+              ref={memoDropdownRef}
+              className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto"
+            >
+              {filteredMemos.map((item) => (
+                <button
+                  key={item.text}
+                  type="button"
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex justify-between items-center"
+                  onClick={() => {
+                    setMemo(item.text);
+                    setShowMemoDropdown(false);
+                  }}
+                >
+                  <span>{item.text}</span>
+                  <span className="text-xs text-gray-400">({item.count}회)</span>
+                </button>
               ))}
-            </SelectContent>
-          </Select>
+            </div>
+          )}
         </div>
 
-        {/* 버튼들 - 추가, 수정, 삭제, 새입력 */}
-        <div className="col-span-2 flex space-x-1">
+        {/* 버튼들 - 추가, 수정, 삭제, 새입력, CSV저장, CSV불러오기 */}
+        <div className="col-span-2 flex space-x-1 flex-wrap gap-1">
           <Button
             type="submit"
             disabled={loading || !currentItem || !amount || !!selectedTransaction}
@@ -279,6 +387,37 @@ export default function TransactionForm({
           >
             새입력
           </Button>
+          {/* CSV 저장 버튼 */}
+          {onCsvExport && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCsvExport}
+              className="h-9 px-3 border-green-500 text-green-600 hover:bg-green-50"
+            >
+              CSV저장
+            </Button>
+          )}
+          {/* CSV 불러오기 버튼 */}
+          {onCsvImport && (
+            <>
+              <input
+                ref={csvInputRef}
+                type="file"
+                accept=".csv"
+                onChange={handleCsvFileChange}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => csvInputRef.current?.click()}
+                className="h-9 px-3 border-orange-500 text-orange-600 hover:bg-orange-50"
+              >
+                CSV불러오기
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </form>

@@ -57,6 +57,72 @@ export default function DashboardPage() {
     setSelectedTransaction(null);
   };
 
+  // CSV 저장 함수
+  const handleCsvExport = () => {
+    if (transactions.length === 0) {
+      toast.error("저장할 데이터가 없습니다.");
+      return;
+    }
+
+    // CSV 헤더
+    const headers = ["날짜", "구분", "항목", "내용", "금액", "메모"];
+    
+    // CSV 데이터 생성
+    const csvRows = [
+      headers.join(","),
+      ...transactions.map((tx) => {
+        const row = [
+          tx.date,
+          tx.type,
+          `"${tx.item}"`,
+          `"${tx.description || ""}"`,
+          tx.amount.toString(),
+          `"${tx.memo || ""}"`,
+        ];
+        return row.join(",");
+      }),
+    ];
+
+    const csvContent = "\uFEFF" + csvRows.join("\n"); // BOM 추가 (한글 지원)
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    
+    // 파일 다운로드
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `재정출납부_${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+    
+    URL.revokeObjectURL(url);
+    toast.success("CSV 파일이 저장되었습니다.");
+  };
+
+  // CSV 불러오기 함수
+  const handleCsvImport = async (data: TransactionInput[]) => {
+    if (data.length === 0) {
+      toast.error("불러올 데이터가 없습니다.");
+      return;
+    }
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const item of data) {
+      const result = await addTransaction(item);
+      if (result.error) {
+        errorCount++;
+      } else {
+        successCount++;
+      }
+    }
+
+    if (errorCount > 0) {
+      toast.warning(`${successCount}개 성공, ${errorCount}개 실패`);
+    } else {
+      toast.success(`${successCount}개 항목을 불러왔습니다.`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -94,10 +160,13 @@ export default function DashboardPage() {
       <TransactionForm
         settings={settings}
         selectedTransaction={selectedTransaction}
+        transactions={transactions}
         onSubmit={handleSubmit}
         onUpdate={handleUpdate}
         onDelete={handleDelete}
         onClear={handleClear}
+        onCsvExport={handleCsvExport}
+        onCsvImport={handleCsvImport}
       />
 
       {/* 거래 테이블 */}
