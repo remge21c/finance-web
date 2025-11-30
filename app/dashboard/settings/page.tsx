@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useSettings } from "@/lib/hooks/useSettings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
+  const router = useRouter();
   const { settings, loading, updateSettings } = useSettings();
 
   // 수입/지출 항목
@@ -224,6 +226,8 @@ export default function SettingsPage() {
     } else {
       toast.success("재정출납부 정보가 저장되었습니다.");
       setOriginalValues(prev => ({ ...prev, appTitle, author, manager, currency }));
+      // 상단 Navbar에 앱 타이틀 반영을 위해 페이지 새로고침
+      router.refresh();
     }
   };
 

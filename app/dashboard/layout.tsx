@@ -2,6 +2,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Navbar from "@/components/Navbar";
 
+// 매 요청마다 새로 렌더링 (설정 변경 반영)
+export const dynamic = "force-dynamic";
+
 export default async function DashboardLayout({
   children,
 }: {
