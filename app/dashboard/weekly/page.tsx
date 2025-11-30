@@ -170,13 +170,13 @@ export default function WeeklyReportPage() {
             <div className="bg-green-600 text-white py-2 px-3 font-bold text-center">
               수입 내역
             </div>
-            <table className="w-full text-sm">
+            <table className="w-full text-sm table-fixed">
               <thead>
                 <tr className="bg-gray-100 border-b border-gray-300">
-                  <th className="py-2 px-2 text-left font-semibold w-16 print:w-14 print:text-xs">날짜</th>
-                  <th className="py-2 px-2 text-left font-semibold w-20 print:w-16 print:text-xs">항목</th>
+                  <th className="py-2 px-2 text-left font-semibold w-14 print:w-12 print:text-xs">날짜</th>
+                  <th className="py-2 px-2 text-left font-semibold w-24 print:w-20 print:text-xs">항목</th>
                   <th className="py-2 px-2 text-left font-semibold print:text-xs">내용</th>
-                  <th className="py-2 px-2 text-right font-semibold w-20 print:w-16 print:text-xs">금액</th>
+                  <th className="py-2 px-2 text-right font-semibold w-16 print:w-14 print:text-xs">금액</th>
                 </tr>
               </thead>
               <tbody>
@@ -190,8 +190,8 @@ export default function WeeklyReportPage() {
                   incomeTransactions.map((t, i) => (
                     <tr key={t.id} className={`border-b border-gray-200 ${i % 2 === 1 ? "bg-gray-50" : ""}`}>
                       <td className="py-1.5 px-2 print:text-xs">{format(parseISO(t.date), "MM/dd")}</td>
-                      <td className="py-1.5 px-2 print:text-xs">{t.item}</td>
-                      <td className="py-1.5 px-2 print:text-xs">{t.description}</td>
+                      <td className="py-1.5 px-2 print:text-xs truncate">{t.item}</td>
+                      <td className="py-1.5 px-2 print:text-xs truncate">{t.description}</td>
                       <td className="py-1.5 px-2 text-right text-blue-600 print:text-xs">{formatAmount(Number(t.amount))}</td>
                     </tr>
                   ))
@@ -214,13 +214,13 @@ export default function WeeklyReportPage() {
             <div className="bg-green-600 text-white py-2 px-3 font-bold text-center">
               지출 내역
             </div>
-            <table className="w-full text-sm">
+            <table className="w-full text-sm table-fixed">
               <thead>
                 <tr className="bg-gray-100 border-b border-gray-300">
-                  <th className="py-2 px-2 text-left font-semibold w-16 print:w-14 print:text-xs">날짜</th>
-                  <th className="py-2 px-2 text-left font-semibold w-20 print:w-16 print:text-xs">항목</th>
+                  <th className="py-2 px-2 text-left font-semibold w-14 print:w-12 print:text-xs">날짜</th>
+                  <th className="py-2 px-2 text-left font-semibold w-24 print:w-20 print:text-xs">항목</th>
                   <th className="py-2 px-2 text-left font-semibold print:text-xs">내용</th>
-                  <th className="py-2 px-2 text-right font-semibold w-20 print:w-16 print:text-xs">금액</th>
+                  <th className="py-2 px-2 text-right font-semibold w-16 print:w-14 print:text-xs">금액</th>
                 </tr>
               </thead>
               <tbody>
@@ -234,8 +234,8 @@ export default function WeeklyReportPage() {
                   expenseTransactions.map((t, i) => (
                     <tr key={t.id} className={`border-b border-gray-200 ${i % 2 === 1 ? "bg-gray-50" : ""}`}>
                       <td className="py-1.5 px-2 print:text-xs">{format(parseISO(t.date), "MM/dd")}</td>
-                      <td className="py-1.5 px-2 print:text-xs">{t.item}</td>
-                      <td className="py-1.5 px-2 print:text-xs">{t.description}</td>
+                      <td className="py-1.5 px-2 print:text-xs truncate">{t.item}</td>
+                      <td className="py-1.5 px-2 print:text-xs truncate">{t.description}</td>
                       <td className="py-1.5 px-2 text-right text-red-600 print:text-xs">{formatAmount(Number(t.amount))}</td>
                     </tr>
                   ))
@@ -298,7 +298,7 @@ export default function WeeklyReportPage() {
                     type="number"
                     value={cashAmount}
                     onChange={(e) => setCashAmount(e.target.value)}
-                    className="h-8"
+                    className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
                 <div>
@@ -308,7 +308,7 @@ export default function WeeklyReportPage() {
                     type="number"
                     value={touchAmount}
                     onChange={(e) => setTouchAmount(e.target.value)}
-                    className="h-8"
+                    className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
                 <div>
@@ -318,7 +318,7 @@ export default function WeeklyReportPage() {
                     type="number"
                     value={otherAmount}
                     onChange={(e) => setOtherAmount(e.target.value)}
-                    className="h-8"
+                    className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
               </div>
@@ -367,6 +367,7 @@ export default function WeeklyReportPage() {
     </div>
   );
 }
+
 
 
 
