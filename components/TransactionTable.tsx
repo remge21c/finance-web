@@ -96,7 +96,7 @@ export default function TransactionTable({
     <div className="bg-white rounded-lg shadow">
       {/* 테이블 */}
       <div className="overflow-x-auto">
-        <Table>
+        <Table className="table-fixed w-full">
           <TableHeader>
             <TableRow className="bg-gray-50">
               <TableHead className="w-10">
@@ -108,13 +108,13 @@ export default function TransactionTable({
                   onCheckedChange={handleSelectAll}
                 />
               </TableHead>
-              <TableHead className="w-28">날짜</TableHead>
-              <TableHead className="w-16">구분</TableHead>
-              <TableHead className="w-24">항목</TableHead>
-              <TableHead className="w-[150px]">내용</TableHead>
-              <TableHead className="w-28 text-right">금액 ({currency})</TableHead>
-              <TableHead className="min-w-[120px]">메모</TableHead>
-              <TableHead className="w-16">작업</TableHead>
+              <TableHead className="w-[100px]">날짜</TableHead>
+              <TableHead className="w-[60px]">구분</TableHead>
+              <TableHead className="w-[100px]">항목</TableHead>
+              <TableHead className="w-[180px]">내용</TableHead>
+              <TableHead className="w-[100px] text-right">금액 ({currency})</TableHead>
+              <TableHead className="w-[140px]">메모</TableHead>
+              <TableHead className="w-[60px]">작업</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -140,7 +140,7 @@ export default function TransactionTable({
                       onCheckedChange={() => handleSelectOne(transaction.id)}
                     />
                   </TableCell>
-                  <TableCell>{transaction.date}</TableCell>
+                  <TableCell className="truncate">{transaction.date}</TableCell>
                   <TableCell>
                     <span
                       className={`px-2 py-1 rounded text-xs font-medium ${
@@ -152,12 +152,12 @@ export default function TransactionTable({
                       {transaction.type}
                     </span>
                   </TableCell>
-                  <TableCell>{transaction.item}</TableCell>
-                  <TableCell>{transaction.description}</TableCell>
+                  <TableCell className="truncate">{transaction.item}</TableCell>
+                  <TableCell className="truncate">{transaction.description}</TableCell>
                   <TableCell className="text-right font-medium">
                     {formatAmount(Number(transaction.amount))}
                   </TableCell>
-                  <TableCell className="text-gray-500 text-sm">
+                  <TableCell className="text-gray-500 text-sm truncate">
                     {transaction.memo}
                   </TableCell>
                   <TableCell>
