@@ -200,32 +200,33 @@ export default function WeeklyReportPage() {
               <thead>
                 <tr className="bg-gray-100 border-b border-gray-300">
                   <th className="py-2 px-2 text-left font-semibold w-14 print:w-12 print:text-xs">날짜</th>
-                  <th className="py-2 px-2 text-left font-semibold w-24 print:w-20 print:text-xs">항목</th>
+                  <th className="py-2 px-2 text-left font-semibold w-28 print:w-24 print:text-xs">항목</th>
                   <th className="py-2 px-2 text-left font-semibold print:text-xs">내용</th>
                   <th className="py-2 px-2 text-right font-semibold w-16 print:w-14 print:text-xs">금액</th>
                 </tr>
               </thead>
               <tbody>
-                {incomeTransactions.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="py-8 text-center text-gray-400">
-                      수입 내역 없음
-                    </td>
+                {incomeTransactions.map((t, i) => (
+                  <tr key={t.id} className={`border-b border-gray-200 ${i % 2 === 1 ? "bg-gray-50" : ""}`}>
+                    <td className="py-1.5 px-2 print:text-xs">{format(parseISO(t.date), "MM/dd")}</td>
+                    <td className="py-1.5 px-2 print:text-xs truncate">{t.item}</td>
+                    <td className="py-1.5 px-2 print:text-xs truncate">{t.description}</td>
+                    <td className="py-1.5 px-2 text-right text-blue-600 print:text-xs">{formatAmount(Number(t.amount))}</td>
                   </tr>
-                ) : (
-                  incomeTransactions.map((t, i) => (
-                    <tr key={t.id} className={`border-b border-gray-200 ${i % 2 === 1 ? "bg-gray-50" : ""}`}>
-                      <td className="py-1.5 px-2 print:text-xs">{format(parseISO(t.date), "MM/dd")}</td>
-                      <td className="py-1.5 px-2 print:text-xs truncate">{t.item}</td>
-                      <td className="py-1.5 px-2 print:text-xs truncate">{t.description}</td>
-                      <td className="py-1.5 px-2 text-right text-blue-600 print:text-xs">{formatAmount(Number(t.amount))}</td>
-                    </tr>
-                  ))
-                )}
-                {/* 빈 행 채우기 (최소 10행) */}
-                {incomeTransactions.length < 10 && Array.from({ length: 10 - incomeTransactions.length }).map((_, i) => (
-                  <tr key={`empty-income-${i}`} className="border-b border-gray-200">
+                ))}
+                {/* 빈 행 채우기 - 화면: 최소 10행, 출력: 최소 18행 */}
+                {Array.from({ length: Math.max(10 - incomeTransactions.length, 0) }).map((_, i) => (
+                  <tr key={`empty-income-${i}`} className="border-b border-gray-200 print:hidden">
                     <td className="py-1.5 px-2">&nbsp;</td>
+                    <td className="py-1.5 px-2"></td>
+                    <td className="py-1.5 px-2"></td>
+                    <td className="py-1.5 px-2"></td>
+                  </tr>
+                ))}
+                {/* 출력용 빈 행 - A4 용지에 맞게 18행 */}
+                {Array.from({ length: Math.max(18 - incomeTransactions.length, 0) }).map((_, i) => (
+                  <tr key={`print-empty-income-${i}`} className="border-b border-gray-200 hidden print:table-row">
+                    <td className="py-1.5 px-2 print:text-xs">&nbsp;</td>
                     <td className="py-1.5 px-2"></td>
                     <td className="py-1.5 px-2"></td>
                     <td className="py-1.5 px-2"></td>
@@ -244,32 +245,33 @@ export default function WeeklyReportPage() {
               <thead>
                 <tr className="bg-gray-100 border-b border-gray-300">
                   <th className="py-2 px-2 text-left font-semibold w-14 print:w-12 print:text-xs">날짜</th>
-                  <th className="py-2 px-2 text-left font-semibold w-24 print:w-20 print:text-xs">항목</th>
+                  <th className="py-2 px-2 text-left font-semibold w-28 print:w-24 print:text-xs">항목</th>
                   <th className="py-2 px-2 text-left font-semibold print:text-xs">내용</th>
                   <th className="py-2 px-2 text-right font-semibold w-16 print:w-14 print:text-xs">금액</th>
                 </tr>
               </thead>
               <tbody>
-                {expenseTransactions.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="py-8 text-center text-gray-400">
-                      지출 내역 없음
-                    </td>
+                {expenseTransactions.map((t, i) => (
+                  <tr key={t.id} className={`border-b border-gray-200 ${i % 2 === 1 ? "bg-gray-50" : ""}`}>
+                    <td className="py-1.5 px-2 print:text-xs">{format(parseISO(t.date), "MM/dd")}</td>
+                    <td className="py-1.5 px-2 print:text-xs truncate">{t.item}</td>
+                    <td className="py-1.5 px-2 print:text-xs truncate">{t.description}</td>
+                    <td className="py-1.5 px-2 text-right text-red-600 print:text-xs">{formatAmount(Number(t.amount))}</td>
                   </tr>
-                ) : (
-                  expenseTransactions.map((t, i) => (
-                    <tr key={t.id} className={`border-b border-gray-200 ${i % 2 === 1 ? "bg-gray-50" : ""}`}>
-                      <td className="py-1.5 px-2 print:text-xs">{format(parseISO(t.date), "MM/dd")}</td>
-                      <td className="py-1.5 px-2 print:text-xs truncate">{t.item}</td>
-                      <td className="py-1.5 px-2 print:text-xs truncate">{t.description}</td>
-                      <td className="py-1.5 px-2 text-right text-red-600 print:text-xs">{formatAmount(Number(t.amount))}</td>
-                    </tr>
-                  ))
-                )}
-                {/* 빈 행 채우기 (최소 10행) */}
-                {expenseTransactions.length < 10 && Array.from({ length: 10 - expenseTransactions.length }).map((_, i) => (
-                  <tr key={`empty-expense-${i}`} className="border-b border-gray-200">
+                ))}
+                {/* 빈 행 채우기 - 화면: 최소 10행, 출력: 최소 18행 */}
+                {Array.from({ length: Math.max(10 - expenseTransactions.length, 0) }).map((_, i) => (
+                  <tr key={`empty-expense-${i}`} className="border-b border-gray-200 print:hidden">
                     <td className="py-1.5 px-2">&nbsp;</td>
+                    <td className="py-1.5 px-2"></td>
+                    <td className="py-1.5 px-2"></td>
+                    <td className="py-1.5 px-2"></td>
+                  </tr>
+                ))}
+                {/* 출력용 빈 행 - A4 용지에 맞게 18행 */}
+                {Array.from({ length: Math.max(18 - expenseTransactions.length, 0) }).map((_, i) => (
+                  <tr key={`print-empty-expense-${i}`} className="border-b border-gray-200 hidden print:table-row">
+                    <td className="py-1.5 px-2 print:text-xs">&nbsp;</td>
                     <td className="py-1.5 px-2"></td>
                     <td className="py-1.5 px-2"></td>
                     <td className="py-1.5 px-2"></td>
