@@ -96,6 +96,7 @@ export default function DashboardPage() {
         selectedTransaction={selectedTransaction}
         onSubmit={handleSubmit}
         onUpdate={handleUpdate}
+        onDelete={handleDelete}
         onClear={handleClear}
       />
 
@@ -112,3 +113,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+

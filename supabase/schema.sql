@@ -127,3 +127,5 @@ DROP TRIGGER IF EXISTS update_finance_settings_updated_at ON finance_settings;
 CREATE TRIGGER update_finance_settings_updated_at
   BEFORE UPDATE ON finance_settings
   FOR EACH ROW EXECUTE FUNCTION update_finance_updated_at();
+
+
