@@ -23,13 +23,14 @@ export function useUserStatus() {
       .from("finance_user_status")
       .select("*")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("사용자 상태 조회 실패:", error);
-    } else {
+    } else if (data) {
       setUserStatus(data);
     }
+    // data가 null인 경우 (레코드 없음) - 에러가 아님
     setLoading(false);
   }, []);
 
