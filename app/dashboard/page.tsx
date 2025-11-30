@@ -46,15 +46,35 @@ export default function DashboardPage() {
     } else {
       toast.success(`${ids.length}개 항목이 삭제되었습니다.`);
       setSelectedIds([]);
+      setSelectedTransaction(null); // 폼도 초기화
     }
   };
 
   const handleEdit = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
+    setSelectedIds([transaction.id]); // 수정 시 해당 항목도 체크
   };
 
   const handleClear = () => {
     setSelectedTransaction(null);
+    setSelectedIds([]); // 새입력 시 선택 해제
+  };
+
+  // 체크박스 선택 핸들러 - 선택 시 폼에도 데이터 로드
+  const handleSelect = (ids: string[]) => {
+    setSelectedIds(ids);
+    
+    // 단일 선택 시 해당 거래를 폼에 로드
+    if (ids.length === 1) {
+      const transaction = transactions.find((t) => t.id === ids[0]);
+      if (transaction) {
+        setSelectedTransaction(transaction);
+      }
+    } else if (ids.length === 0) {
+      // 선택 해제 시 폼도 초기화
+      setSelectedTransaction(null);
+    }
+    // 다중 선택 시에는 폼 유지 (마지막 선택된 항목)
   };
 
   // CSV 저장 함수
@@ -174,7 +194,7 @@ export default function DashboardPage() {
         transactions={transactions}
         settings={settings}
         selectedIds={selectedIds}
-        onSelect={setSelectedIds}
+        onSelect={handleSelect}
         onEdit={handleEdit}
         onDelete={handleDelete}
         viewMode={viewMode}
