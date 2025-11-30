@@ -198,15 +198,15 @@ export default function AllListPage() {
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow className="bg-gray-50">
-                  <TableHead className="w-28">날짜</TableHead>
-                  <TableHead className="w-16">구분</TableHead>
-                  <TableHead className="w-24">항목</TableHead>
-                  <TableHead>내용</TableHead>
-                  <TableHead className="w-28 text-right">금액 ({currency})</TableHead>
-                  <TableHead>메모</TableHead>
+                  <TableHead className="w-[100px]">날짜</TableHead>
+                  <TableHead className="w-[60px]">구분</TableHead>
+                  <TableHead className="w-[100px]">항목</TableHead>
+                  <TableHead className="w-[180px]">내용</TableHead>
+                  <TableHead className="w-[100px] text-right">금액 ({currency})</TableHead>
+                  <TableHead className="w-[140px]">메모</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -222,7 +222,7 @@ export default function AllListPage() {
                       key={t.id}
                       className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
                     >
-                      <TableCell>{t.date}</TableCell>
+                      <TableCell className="truncate">{t.date}</TableCell>
                       <TableCell>
                         <span
                           className={`px-2 py-1 rounded text-xs font-medium ${
@@ -234,12 +234,12 @@ export default function AllListPage() {
                           {t.type}
                         </span>
                       </TableCell>
-                      <TableCell>{t.item}</TableCell>
-                      <TableCell>{t.description}</TableCell>
+                      <TableCell className="truncate">{t.item}</TableCell>
+                      <TableCell className="truncate">{t.description}</TableCell>
                       <TableCell className="text-right font-medium">
                         {formatAmount(Number(t.amount))}
                       </TableCell>
-                      <TableCell className="text-gray-500 text-sm">
+                      <TableCell className="text-gray-500 text-sm truncate">
                         {t.memo}
                       </TableCell>
                     </TableRow>
