@@ -317,8 +317,8 @@ export default function WeeklyReportPage() {
           </Card>
         </div>
 
-        {/* 서명란 */}
-        <div className="grid grid-cols-2 gap-8 mt-6 print:mt-8">
+        {/* 서명란 - 출력 모드에서만 표시 */}
+        <div className="hidden print:grid grid-cols-2 gap-8 mt-8">
           <Card>
             <CardContent className="py-4 text-center">
               <div className="text-sm text-gray-600 mb-2">작성자: {settings?.author || ""}</div>
