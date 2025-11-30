@@ -243,9 +243,9 @@ export default function TransactionForm({
 
   return (
     <form onSubmit={handleSubmit} className="bg-white p-4 rounded-lg shadow mb-4">
-      <div className="grid grid-cols-2 md:grid-cols-8 gap-2 items-end">
+      <div className="flex flex-wrap items-end gap-2">
         {/* 날짜 */}
-        <div className="space-y-1">
+        <div className="space-y-1 w-[130px]">
           <Label htmlFor="date" className="text-xs">날짜</Label>
           <Input
             id="date"
@@ -257,7 +257,7 @@ export default function TransactionForm({
         </div>
 
         {/* 수입항목 */}
-        <div className="space-y-1">
+        <div className="space-y-1 w-[100px]">
           <Label htmlFor="income-item" className="text-xs">수입항목</Label>
           <Select value={incomeItem} onValueChange={handleIncomeItemChange}>
             <SelectTrigger className="h-9">
@@ -274,7 +274,7 @@ export default function TransactionForm({
         </div>
 
         {/* 지출항목 */}
-        <div className="space-y-1">
+        <div className="space-y-1 w-[100px]">
           <Label htmlFor="expense-item" className="text-xs">지출항목</Label>
           <Select value={expenseItem} onValueChange={handleExpenseItemChange}>
             <SelectTrigger className="h-9">
@@ -291,7 +291,7 @@ export default function TransactionForm({
         </div>
 
         {/* 내용 */}
-        <div className="space-y-1">
+        <div className="space-y-1 flex-1 min-w-[150px]">
           <Label htmlFor="description" className="text-xs">내용</Label>
           <Input
             id="description"
@@ -303,7 +303,7 @@ export default function TransactionForm({
         </div>
 
         {/* 금액 */}
-        <div className="space-y-1">
+        <div className="space-y-1 w-[90px]">
           <Label htmlFor="amount" className="text-xs">금액({settings?.currency || "RM"})</Label>
           <Input
             id="amount"
@@ -317,7 +317,7 @@ export default function TransactionForm({
         </div>
 
         {/* 메모 (텍스트 입력 + 드롭다운) */}
-        <div className="space-y-1 relative">
+        <div className="space-y-1 relative w-[120px]">
           <Label htmlFor="memo" className="text-xs">메모</Label>
           <Input
             ref={memoInputRef}
@@ -354,7 +354,7 @@ export default function TransactionForm({
         </div>
 
         {/* 버튼들 - 추가, 수정, 삭제, 새입력, CSV저장, CSV불러오기 */}
-        <div className="col-span-2 flex space-x-1 flex-wrap gap-1">
+        <div className="flex space-x-1 flex-wrap gap-1 items-end">
           <Button
             type="submit"
             disabled={loading || !currentItem || !amount || !!selectedTransaction}
