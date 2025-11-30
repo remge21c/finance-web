@@ -69,6 +69,7 @@ CREATE INDEX IF NOT EXISTS idx_finance_transactions_date ON finance_transactions
 CREATE TABLE IF NOT EXISTS finance_settings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+  app_title VARCHAR(100) DEFAULT '재정관리',
   income_items JSONB DEFAULT '[]',
   expense_items JSONB DEFAULT '[]',
   income_budgets JSONB DEFAULT '[]',

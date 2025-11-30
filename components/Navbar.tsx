@@ -17,9 +17,10 @@ import type { User } from "@supabase/supabase-js";
 interface NavbarProps {
   user: User;
   isSuperAdmin?: boolean;
+  appTitle?: string;
 }
 
-export default function Navbar({ user, isSuperAdmin = false }: NavbarProps) {
+export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정관리" }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -45,7 +46,7 @@ export default function Navbar({ user, isSuperAdmin = false }: NavbarProps) {
           {/* 로고 */}
           <div className="flex items-center space-x-4">
             <Link href="/dashboard" className="font-bold text-lg">
-              💰 재정관리
+              💰 {appTitle}
             </Link>
           </div>
 

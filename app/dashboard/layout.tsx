@@ -26,11 +26,19 @@ export default async function DashboardLayout({
     redirect("/pending");
   }
 
+  // 설정 가져오기 (앱 타이틀)
+  const { data: settings } = await supabase
+    .from("finance_settings")
+    .select("app_title")
+    .eq("user_id", user.id)
+    .single();
+
   const isSuperAdmin = userStatus?.is_super_admin || false;
+  const appTitle = settings?.app_title || "재정관리";
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar user={user} isSuperAdmin={isSuperAdmin} />
+      <Navbar user={user} isSuperAdmin={isSuperAdmin} appTitle={appTitle} />
       <main className="container mx-auto px-4 py-6">
         {children}
       </main>

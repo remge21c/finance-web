@@ -16,6 +16,7 @@ export interface Transaction {
 export interface Settings {
   id: string;
   user_id: string;
+  app_title: string;
   income_items: string[];
   expense_items: string[];
   income_budgets: number[];
@@ -41,6 +42,7 @@ export interface TransactionInput {
 }
 
 export interface SettingsInput {
+  app_title: string;
   income_items: string[];
   expense_items: string[];
   income_budgets: number[];

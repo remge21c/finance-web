@@ -20,7 +20,8 @@ export default function SettingsPage() {
   const [incomeBudgets, setIncomeBudgets] = useState<string[]>(Array(10).fill(""));
   const [expenseBudgets, setExpenseBudgets] = useState<string[]>(Array(10).fill(""));
   
-  // 작성자 정보
+  // 재정출납부 정보
+  const [appTitle, setAppTitle] = useState("재정관리");
   const [author, setAuthor] = useState("");
   const [manager, setManager] = useState("");
   const [currency, setCurrency] = useState("원");
@@ -32,6 +33,7 @@ export default function SettingsPage() {
     expenseItems: Array(10).fill(""),
     incomeBudgets: Array(10).fill(""),
     expenseBudgets: Array(10).fill(""),
+    appTitle: "재정관리",
     author: "",
     manager: "",
     currency: "원",
@@ -61,6 +63,7 @@ export default function SettingsPage() {
       setExpenseItems(expenseItemsStr);
       setIncomeBudgets(incomeBudgetsStr);
       setExpenseBudgets(expenseBudgetsStr);
+      setAppTitle(settings.app_title || "재정관리");
       setAuthor(settings.author || "");
       setManager(settings.manager || "");
       setCurrency(settings.currency || "원");
@@ -72,6 +75,7 @@ export default function SettingsPage() {
         expenseItems: [...expenseItemsStr],
         incomeBudgets: [...incomeBudgetsStr],
         expenseBudgets: [...expenseBudgetsStr],
+        appTitle: settings.app_title || "재정관리",
         author: settings.author || "",
         manager: settings.manager || "",
         currency: settings.currency || "원",
@@ -102,10 +106,11 @@ export default function SettingsPage() {
   );
   
   const hasAuthorInfoChanged = useMemo(() => 
+    appTitle !== originalValues.appTitle ||
     author !== originalValues.author || 
     manager !== originalValues.manager || 
     currency !== originalValues.currency, 
-    [author, manager, currency, originalValues]
+    [appTitle, author, manager, currency, originalValues]
   );
   
   const hasMemoChanged = useMemo(() => 
@@ -123,6 +128,7 @@ export default function SettingsPage() {
   // 전체 저장
   const handleSave = async () => {
     const result = await updateSettings({
+      app_title: appTitle,
       income_items: incomeItems.filter((i) => i.trim() !== ""),
       expense_items: expenseItems.filter((i) => i.trim() !== ""),
       income_budgets: incomeBudgets.map((b) => parseFloat(b) || 0),
@@ -143,6 +149,7 @@ export default function SettingsPage() {
         expenseItems: [...expenseItems],
         incomeBudgets: [...incomeBudgets],
         expenseBudgets: [...expenseBudgets],
+        appTitle,
         author,
         manager,
         currency,
@@ -204,17 +211,19 @@ export default function SettingsPage() {
   };
 
   // 작성자 정보 저장
+  // 재정출납부 정보 저장
   const handleSaveAuthorInfo = async () => {
     const result = await updateSettings({
+      app_title: appTitle,
       author,
       manager,
       currency,
     });
     if (result.error) {
-      toast.error("작성자 정보 저장 실패: " + result.error);
+      toast.error("재정출납부 정보 저장 실패: " + result.error);
     } else {
-      toast.success("작성자 정보가 저장되었습니다.");
-      setOriginalValues(prev => ({ ...prev, author, manager, currency }));
+      toast.success("재정출납부 정보가 저장되었습니다.");
+      setOriginalValues(prev => ({ ...prev, appTitle, author, manager, currency }));
     }
   };
 
@@ -431,12 +440,12 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* 오른쪽: 작성자 정보 및 메모 */}
+        {/* 오른쪽: 재정출납부 정보 및 메모 */}
         <div className="space-y-4 flex flex-col">
-          {/* 작성자 정보 */}
+          {/* 재정출납부 정보 */}
           <Card>
             <CardHeader className="py-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">작성자 정보</CardTitle>
+              <CardTitle className="text-lg">재정출납부 정보</CardTitle>
               <Button 
                 size="sm" 
                 onClick={handleSaveAuthorInfo} 
@@ -446,6 +455,16 @@ export default function SettingsPage() {
               </Button>
             </CardHeader>
             <CardContent className="space-y-3">
+              <div className="space-y-1">
+                <Label htmlFor="appTitle" className="text-xs">재정출납부 명칭</Label>
+                <Input
+                  id="appTitle"
+                  value={appTitle}
+                  onChange={(e) => setAppTitle(e.target.value)}
+                  placeholder="재정관리"
+                  className="h-9"
+                />
+              </div>
               <div className="space-y-1">
                 <Label htmlFor="author" className="text-xs">작성자</Label>
                 <Input
