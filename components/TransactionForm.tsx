@@ -173,7 +173,12 @@ export default function TransactionForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    // form submit은 추가 버튼에서만 호출됨
+    await handleAdd();
+  };
+
+  // 추가 버튼 핸들러 - 항상 새 거래 추가
+  const handleAdd = async () => {
     if (!currentItem || !amount) {
       return;
     }
@@ -190,11 +195,7 @@ export default function TransactionForm({
     };
 
     try {
-      if (selectedTransaction) {
-        await onUpdate(selectedTransaction.id, data);
-      } else {
-        await onSubmit(data);
-      }
+      await onSubmit(data); // 항상 추가
       handleClear();
     } finally {
       setLoading(false);
@@ -312,7 +313,7 @@ export default function TransactionForm({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0"
-            className="h-9"
+            className="h-9 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
         </div>
 

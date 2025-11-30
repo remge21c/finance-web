@@ -111,10 +111,10 @@ export default function TransactionTable({
               <TableHead className="w-28">날짜</TableHead>
               <TableHead className="w-16">구분</TableHead>
               <TableHead className="w-24">항목</TableHead>
-              <TableHead>내용</TableHead>
+              <TableHead className="w-40">내용</TableHead>
               <TableHead className="w-28 text-right">금액 ({currency})</TableHead>
-              <TableHead>메모</TableHead>
-              <TableHead className="w-20">작업</TableHead>
+              <TableHead className="min-w-[120px]">메모</TableHead>
+              <TableHead className="w-16">작업</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -178,7 +178,16 @@ export default function TransactionTable({
       </div>
 
       {/* 하단 정보 */}
-      <div className="flex items-center justify-end p-4 border-t">
+      <div className="flex items-center justify-between p-4 border-t">
+        {/* 왼쪽: 선택 합계 */}
+        <div className="text-sm text-gray-600">
+          {selectedIds.length > 0 && (
+            <span>
+              선택 합계: <strong>{formatAmount(selectedSum)} {currency}</strong> ({selectedIds.length}개)
+            </span>
+          )}
+        </div>
+        {/* 오른쪽: 현재 잔액 */}
         <div className="text-lg font-bold">
           현재 잔액:{" "}
           <span className={balance >= 0 ? "text-emerald-600" : "text-red-600"}>
