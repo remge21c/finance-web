@@ -16,6 +16,7 @@ import type { Transaction, TransactionInput, Settings } from "@/types/database";
 interface TransactionFormProps {
   settings: Settings | null;
   selectedTransaction: Transaction | null;
+  selectedIds?: string[]; // 선택된 항목 ID 배열
   transactions?: Transaction[]; // 메모 빈도 계산용
   onSubmit: (data: TransactionInput) => Promise<void>;
   onUpdate: (id: string, data: TransactionInput) => Promise<void>;
@@ -28,6 +29,7 @@ interface TransactionFormProps {
 export default function TransactionForm({
   settings,
   selectedTransaction,
+  selectedIds = [],
   transactions = [],
   onSubmit,
   onUpdate,
@@ -224,10 +226,16 @@ export default function TransactionForm({
     }
   };
 
-  // 삭제 버튼 핸들러
+  // 삭제 버튼 핸들러 - 선택된 항목이 여러 개면 모두 삭제
   const handleDelete = async () => {
-    if (!selectedTransaction || !onDelete) return;
-    await onDelete([selectedTransaction.id]);
+    if (!onDelete) return;
+    
+    // 선택된 항목이 여러 개면 모두 삭제, 아니면 현재 선택된 거래만 삭제
+    const idsToDelete = selectedIds.length > 0 ? selectedIds : (selectedTransaction ? [selectedTransaction.id] : []);
+    
+    if (idsToDelete.length === 0) return;
+    
+    await onDelete(idsToDelete);
     handleClear();
   };
 
@@ -374,11 +382,11 @@ export default function TransactionForm({
           <Button
             type="button"
             variant="destructive"
-            disabled={loading || !selectedTransaction}
+            disabled={loading || (selectedIds.length === 0 && !selectedTransaction)}
             onClick={handleDelete}
             className="h-9 px-3"
           >
-            삭제
+            삭제{selectedIds.length > 1 ? ` (${selectedIds.length})` : ""}
           </Button>
           <Button
             type="button"

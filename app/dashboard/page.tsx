@@ -180,6 +180,7 @@ export default function DashboardPage() {
       <TransactionForm
         settings={settings}
         selectedTransaction={selectedTransaction}
+        selectedIds={selectedIds}
         transactions={transactions}
         onSubmit={handleSubmit}
         onUpdate={handleUpdate}
