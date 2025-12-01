@@ -25,7 +25,7 @@ interface TransactionTableProps {
   selectedIds: string[];
   onSelect: (ids: string[]) => void;
   onEdit: (transaction: Transaction) => void;
-  onDeleteSelected: () => void;
+  onDeleteSelected: (ids: string[]) => void;
   viewMode: "weekly" | "all";
 }
 
@@ -195,7 +195,7 @@ export default function TransactionTable({
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={onDeleteSelected}
+                onClick={() => onDeleteSelected(selectedIds)}
                 className="h-8 px-3"
               >
                 선택 삭제

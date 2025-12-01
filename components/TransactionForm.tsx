@@ -20,7 +20,7 @@ interface TransactionFormProps {
   transactions?: Transaction[]; // 메모 빈도 계산용
   onSubmit: (data: TransactionInput) => Promise<void>;
   onUpdate: (id: string, data: TransactionInput) => Promise<void>;
-  onDelete?: () => Promise<void>;
+  onDelete?: (ids: string[]) => Promise<void>;
   onClear: () => void;
   onCsvExport?: () => void; // CSV 저장
   onCsvImport?: (data: TransactionInput[]) => Promise<void>; // CSV 불러오기
@@ -229,7 +229,17 @@ export default function TransactionForm({
   // 삭제 버튼 핸들러
   const handleDelete = async () => {
     if (!onDelete) return;
-    await onDelete();
+    
+    const idsToDelete =
+      selectedIds.length > 0
+        ? selectedIds
+        : selectedTransaction
+          ? [selectedTransaction.id]
+          : [];
+    
+    if (idsToDelete.length === 0) return;
+    
+    await onDelete(idsToDelete);
     handleClear();
   };
 
