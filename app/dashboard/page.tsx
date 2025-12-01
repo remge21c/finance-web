@@ -37,14 +37,28 @@ export default function DashboardPage() {
     }
   };
 
-  const handleDelete = async (ids: string[]) => {
-    if (!confirm(`${ids.length}개 항목을 삭제하시겠습니까?`)) return;
+  const handleDelete = async (ids?: string[]) => {
+    const targetIds =
+      ids && ids.length > 0
+        ? ids
+        : selectedIds.length > 0
+          ? selectedIds
+          : selectedTransaction
+            ? [selectedTransaction.id]
+            : [];
+
+    if (targetIds.length === 0) {
+      toast.error("삭제할 항목을 선택하세요.");
+      return;
+    }
+
+    if (!confirm(`${targetIds.length}개 항목을 삭제하시겠습니까?`)) return;
     
-    const result = await deleteMultipleTransactions(ids);
+    const result = await deleteMultipleTransactions(targetIds);
     if (result.error) {
       toast.error("삭제 실패: " + result.error);
     } else {
-      toast.success(`${ids.length}개 항목이 삭제되었습니다.`);
+      toast.success(`${targetIds.length}개 항목이 삭제되었습니다.`);
       setSelectedIds([]);
       setSelectedTransaction(null); // 폼도 초기화
     }
@@ -198,7 +212,7 @@ export default function DashboardPage() {
         selectedIds={selectedIds}
         onSelect={handleSelect}
         onEdit={handleEdit}
-        onDelete={handleDelete}
+        onDeleteSelected={() => handleDelete()}
         viewMode={viewMode}
       />
     </div>

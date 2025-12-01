@@ -25,7 +25,7 @@ interface TransactionTableProps {
   selectedIds: string[];
   onSelect: (ids: string[]) => void;
   onEdit: (transaction: Transaction) => void;
-  onDelete: (ids: string[]) => void;
+  onDeleteSelected: () => void;
   viewMode: "weekly" | "all";
 }
 
@@ -35,7 +35,7 @@ export default function TransactionTable({
   selectedIds,
   onSelect,
   onEdit,
-  onDelete,
+  onDeleteSelected,
   viewMode,
 }: TransactionTableProps) {
   const currency = settings?.currency || "원";
@@ -76,22 +76,14 @@ export default function TransactionTable({
   }, [selectedIds, filteredTransactions]);
 
   const handleSelectAll = () => {
-    console.log("전체선택 클릭 - 현재 선택:", visibleSelectedIds.length, "전체:", filteredTransactions.length);
-    
     if (visibleSelectedIds.length === filteredTransactions.length && filteredTransactions.length > 0) {
-      // 모두 선택된 상태 -> 전체 해제
-      console.log("전체 해제");
       onSelect([]);
     } else {
-      // 일부만 선택 또는 아무것도 선택 안됨 -> 전체 선택
-      const allIds = filteredTransactions.map((t) => t.id);
-      console.log("전체 선택:", allIds);
-      onSelect(allIds);
+      onSelect(filteredTransactions.map((t) => t.id));
     }
   };
 
   const handleSelectOne = (id: string) => {
-    console.log("개별 선택 클릭:", id);
     if (selectedIds.includes(id)) {
       onSelect(selectedIds.filter((i) => i !== id));
     } else {
@@ -203,7 +195,7 @@ export default function TransactionTable({
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => onDelete(selectedIds)}
+                onClick={onDeleteSelected}
                 className="h-8 px-3"
               >
                 선택 삭제
