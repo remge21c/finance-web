@@ -39,8 +39,9 @@ export default function AllListPage() {
   const { settings, loading: settingsLoading } = useSettings();
 
   const today = new Date();
-  const [startDate, setStartDate] = useState(format(startOfMonth(today), "yyyy-MM-dd"));
-  const [endDate, setEndDate] = useState(format(endOfMonth(today), "yyyy-MM-dd"));
+  // 기본값: 이번 주 (월요일 ~ 일요일)
+  const [startDate, setStartDate] = useState(format(startOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd"));
+  const [endDate, setEndDate] = useState(format(endOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd"));
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [itemFilter, setItemFilter] = useState<string>("all");
 
@@ -266,6 +267,7 @@ export default function AllListPage() {
     </div>
   );
 }
+
 
 
 

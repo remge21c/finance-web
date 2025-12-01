@@ -79,7 +79,7 @@ export default function RegisterPage() {
         toast.error("사용자 상태 생성 실패: " + (statusError.message || statusError.code || "알 수 없는 오류"));
         return;
       }
-      
+
       console.log("사용자 상태 생성 성공:", statusData);
 
       // 3. 기본 설정 생성 (이미 존재하면 무시)
@@ -110,7 +110,7 @@ export default function RegisterPage() {
       // 첫 번째 사용자는 바로 로그인, 이후 사용자는 승인 대기 안내
       if (isFirstUser) {
         toast.success("관리자 계정으로 등록되었습니다!");
-        router.push("/login");
+      router.push("/login");
       } else {
         toast.success("가입 신청이 완료되었습니다. 관리자 승인을 기다려주세요.");
         router.push("/pending");

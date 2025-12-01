@@ -179,12 +179,22 @@ export default function TransactionTable({
 
       {/* 하단 정보 */}
       <div className="flex items-center justify-between p-4 border-t">
-        {/* 왼쪽: 선택 합계 */}
-        <div className="text-sm text-gray-600">
+        {/* 왼쪽: 선택 합계 및 삭제 버튼 */}
+        <div className="flex items-center gap-3">
           {selectedIds.length > 0 && (
-            <span>
-              선택 합계: <strong>{formatAmount(selectedSum)} {currency}</strong> ({selectedIds.length}개)
-            </span>
+            <>
+              <div className="text-sm text-gray-600">
+                선택 합계: <strong>{formatAmount(selectedSum)} {currency}</strong> ({selectedIds.length}개)
+              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => onDelete(selectedIds)}
+                className="h-8 px-3"
+              >
+                선택 삭제
+              </Button>
+            </>
           )}
         </div>
         {/* 오른쪽: 현재 잔액 */}
