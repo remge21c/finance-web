@@ -228,12 +228,22 @@ export default function TransactionForm({
 
   // 삭제 버튼 핸들러 - 선택된 항목이 여러 개면 모두 삭제
   const handleDelete = async () => {
-    if (!onDelete) return;
+    console.log("삭제 버튼 클릭 - selectedIds:", selectedIds, "selectedTransaction:", selectedTransaction?.id);
+    
+    if (!onDelete) {
+      console.log("onDelete가 없음");
+      return;
+    }
     
     // 선택된 항목이 여러 개면 모두 삭제, 아니면 현재 선택된 거래만 삭제
     const idsToDelete = selectedIds.length > 0 ? selectedIds : (selectedTransaction ? [selectedTransaction.id] : []);
     
-    if (idsToDelete.length === 0) return;
+    console.log("삭제할 ID들:", idsToDelete);
+    
+    if (idsToDelete.length === 0) {
+      console.log("삭제할 항목 없음");
+      return;
+    }
     
     await onDelete(idsToDelete);
     handleClear();
@@ -386,7 +396,7 @@ export default function TransactionForm({
             onClick={handleDelete}
             className="h-9 px-3"
           >
-            삭제{selectedIds.length > 1 ? ` (${selectedIds.length})` : ""}
+            삭제{selectedIds.length > 0 ? ` (${selectedIds.length})` : ""}
           </Button>
           <Button
             type="button"
