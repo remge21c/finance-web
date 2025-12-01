@@ -62,6 +62,7 @@ export default function DashboardPage() {
 
   // 체크박스 선택 핸들러 - 선택 시 폼에도 데이터 로드
   const handleSelect = (ids: string[]) => {
+    console.log("handleSelect 호출 - ids:", ids);
     setSelectedIds(ids);
     
     // 단일 선택 시 해당 거래를 폼에 로드

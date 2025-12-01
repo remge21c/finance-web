@@ -396,7 +396,7 @@ export default function TransactionForm({
             onClick={handleDelete}
             className="h-9 px-3"
           >
-            삭제{selectedIds.length > 0 ? ` (${selectedIds.length})` : ""}
+            삭제 ({selectedIds.length})
           </Button>
           <Button
             type="button"

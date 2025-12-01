@@ -69,15 +69,29 @@ export default function TransactionTable({
     }, 0);
   }, [transactions]);
 
+  // 현재 보이는 항목들의 ID만 필터링
+  const visibleSelectedIds = useMemo(() => {
+    const filteredIds = filteredTransactions.map((t) => t.id);
+    return selectedIds.filter((id) => filteredIds.includes(id));
+  }, [selectedIds, filteredTransactions]);
+
   const handleSelectAll = () => {
-    if (selectedIds.length === filteredTransactions.length) {
+    console.log("전체선택 클릭 - 현재 선택:", visibleSelectedIds.length, "전체:", filteredTransactions.length);
+    
+    if (visibleSelectedIds.length === filteredTransactions.length && filteredTransactions.length > 0) {
+      // 모두 선택된 상태 -> 전체 해제
+      console.log("전체 해제");
       onSelect([]);
     } else {
-      onSelect(filteredTransactions.map((t) => t.id));
+      // 일부만 선택 또는 아무것도 선택 안됨 -> 전체 선택
+      const allIds = filteredTransactions.map((t) => t.id);
+      console.log("전체 선택:", allIds);
+      onSelect(allIds);
     }
   };
 
   const handleSelectOne = (id: string) => {
+    console.log("개별 선택 클릭:", id);
     if (selectedIds.includes(id)) {
       onSelect(selectedIds.filter((i) => i !== id));
     } else {
@@ -103,7 +117,7 @@ export default function TransactionTable({
                 <Checkbox
                   checked={
                     filteredTransactions.length > 0 &&
-                    selectedIds.length === filteredTransactions.length
+                    visibleSelectedIds.length === filteredTransactions.length
                   }
                   onCheckedChange={handleSelectAll}
                 />
