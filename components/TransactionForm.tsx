@@ -16,11 +16,11 @@ import type { Transaction, TransactionInput, Settings } from "@/types/database";
 interface TransactionFormProps {
   settings: Settings | null;
   selectedTransaction: Transaction | null;
-  selectedIds?: string[]; // 선택된 항목 ID 배열
+  selectedCount: number; // 선택된 항목 개수
   transactions?: Transaction[]; // 메모 빈도 계산용
   onSubmit: (data: TransactionInput) => Promise<void>;
   onUpdate: (id: string, data: TransactionInput) => Promise<void>;
-  onDelete?: (ids: string[]) => Promise<void>;
+  onDelete?: () => void; // 삭제 버튼 클릭 핸들러 (부모에서 처리)
   onClear: () => void;
   onCsvExport?: () => void; // CSV 저장
   onCsvImport?: (data: TransactionInput[]) => Promise<void>; // CSV 불러오기
@@ -29,7 +29,7 @@ interface TransactionFormProps {
 export default function TransactionForm({
   settings,
   selectedTransaction,
-  selectedIds = [],
+  selectedCount = 0,
   transactions = [],
   onSubmit,
   onUpdate,
@@ -226,21 +226,11 @@ export default function TransactionForm({
     }
   };
 
-  // 삭제 버튼 핸들러
-  const handleDelete = async () => {
-    if (!onDelete) return;
-    
-    const idsToDelete =
-      selectedIds.length > 0
-        ? selectedIds
-        : selectedTransaction
-          ? [selectedTransaction.id]
-          : [];
-    
-    if (idsToDelete.length === 0) return;
-    
-    await onDelete(idsToDelete);
-    handleClear();
+  // 삭제 버튼 핸들러 - 부모 컴포넌트에서 처리
+  const handleDeleteClick = () => {
+    if (onDelete) {
+      onDelete();
+    }
   };
 
   const handleClear = () => {
@@ -386,13 +376,13 @@ export default function TransactionForm({
           <Button
             type="button"
             variant="destructive"
-            disabled={loading || (selectedIds.length === 0 && !selectedTransaction)}
-            onClick={handleDelete}
+            disabled={loading || (selectedCount === 0 && !selectedTransaction)}
+            onClick={handleDeleteClick}
             className="h-9 px-3"
           >
             삭제
-            {selectedIds.length > 0
-              ? ` (${selectedIds.length})`
+            {selectedCount > 0
+              ? ` (${selectedCount})`
               : selectedTransaction
                 ? " (1)"
                 : ""}

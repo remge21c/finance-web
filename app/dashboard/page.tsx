@@ -37,7 +37,32 @@ export default function DashboardPage() {
     }
   };
 
-  const handleDelete = async (ids: string[]) => {
+  // 폼에서 삭제 버튼 클릭 시 (현재 상태 기준으로 삭제)
+  const handleDeleteFromForm = async () => {
+    // 최신 selectedIds 사용
+    const ids = selectedIds.length > 0 
+      ? selectedIds 
+      : (selectedTransaction ? [selectedTransaction.id] : []);
+    
+    if (ids.length === 0) {
+      toast.error("삭제할 항목을 선택하세요.");
+      return;
+    }
+
+    if (!confirm(`${ids.length}개 항목을 삭제하시겠습니까?`)) return;
+    
+    const result = await deleteMultipleTransactions(ids);
+    if (result.error) {
+      toast.error("삭제 실패: " + result.error);
+    } else {
+      toast.success(`${ids.length}개 항목이 삭제되었습니다.`);
+      setSelectedIds([]);
+      setSelectedTransaction(null);
+    }
+  };
+
+  // 테이블에서 선택 삭제 버튼 클릭 시 (전달받은 ids 사용)
+  const handleDeleteSelected = async (ids: string[]) => {
     if (!ids || ids.length === 0) {
       toast.error("삭제할 항목을 선택하세요.");
       return;
@@ -51,7 +76,7 @@ export default function DashboardPage() {
     } else {
       toast.success(`${ids.length}개 항목이 삭제되었습니다.`);
       setSelectedIds([]);
-      setSelectedTransaction(null); // 폼도 초기화
+      setSelectedTransaction(null);
     }
   };
 
@@ -186,11 +211,11 @@ export default function DashboardPage() {
       <TransactionForm
         settings={settings}
         selectedTransaction={selectedTransaction}
-        selectedIds={selectedIds}
+        selectedCount={selectedIds.length}
         transactions={transactions}
         onSubmit={handleSubmit}
         onUpdate={handleUpdate}
-        onDelete={handleDelete}
+        onDelete={handleDeleteFromForm}
         onClear={handleClear}
         onCsvExport={handleCsvExport}
         onCsvImport={handleCsvImport}
@@ -203,7 +228,7 @@ export default function DashboardPage() {
         selectedIds={selectedIds}
         onSelect={handleSelect}
         onEdit={handleEdit}
-        onDeleteSelected={handleDelete}
+        onDeleteSelected={handleDeleteSelected}
         viewMode={viewMode}
       />
     </div>
