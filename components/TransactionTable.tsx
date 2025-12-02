@@ -185,11 +185,11 @@ export default function TransactionTable({
       </div>
 
       {/* 하단 정보 */}
-      <div className="p-4 border-t space-y-3">
-        {/* 상단: 선택 합계 및 삭제 버튼 (왼쪽), CSV 버튼 (오른쪽) */}
+      <div className="p-4 border-t">
         <div className="flex items-center justify-between">
+          {/* 왼쪽: 선택 합계 및 삭제 버튼 */}
           <div className="flex items-center gap-3">
-            {selectedIds.length > 0 && (
+            {selectedIds.length > 0 ? (
               <>
                 <div className="text-sm text-gray-600">
                   선택 합계: <strong>{formatAmount(selectedSum)} {currency}</strong> ({selectedIds.length}개)
@@ -203,9 +203,16 @@ export default function TransactionTable({
                   선택 삭제
                 </Button>
               </>
+            ) : (
+              <div className="text-lg font-bold">
+                현재 잔액:{" "}
+                <span className={balance >= 0 ? "text-emerald-600" : "text-red-600"}>
+                  {formatAmount(balance)} {currency}
+                </span>
+              </div>
             )}
           </div>
-          {/* CSV 버튼들 */}
+          {/* 오른쪽: CSV 버튼들 */}
           <div className="flex items-center gap-2">
             {onCsvExport && (
               <Button
@@ -230,13 +237,6 @@ export default function TransactionTable({
               </Button>
             )}
           </div>
-        </div>
-        {/* 하단: 현재 잔액 (중앙) */}
-        <div className="text-center text-lg font-bold">
-          현재 잔액:{" "}
-          <span className={balance >= 0 ? "text-emerald-600" : "text-red-600"}>
-            {formatAmount(balance)} {currency}
-          </span>
         </div>
       </div>
     </div>
