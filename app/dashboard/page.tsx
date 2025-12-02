@@ -198,30 +198,110 @@ export default function DashboardPage() {
     toast.success("CSV 파일이 저장되었습니다.");
   };
 
-  // CSV 불러오기 함수
-  const handleCsvImport = async (data: TransactionInput[]) => {
-    if (data.length === 0) {
-      toast.error("불러올 데이터가 없습니다.");
-      return;
-    }
+  // CSV 불러오기 트리거 (파일 선택 대화상자 열기)
+  const handleCsvImportClick = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".csv";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
 
-    let successCount = 0;
-    let errorCount = 0;
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const text = (event.target?.result as string) || "";
+        const lines = text
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0);
+        
+        // 첫 번째 줄은 헤더로 가정
+        const dataLines = lines.slice(1);
+        const importedData: TransactionInput[] = [];
 
-    for (const item of data) {
-      const result = await addTransaction(item);
-      if (result.error) {
-        errorCount++;
-      } else {
-        successCount++;
-      }
-    }
+        // CSV 파싱 유틸
+        const parseCsvLine = (line: string) => {
+          const result: string[] = [];
+          let current = "";
+          let inQuotes = false;
 
-    if (errorCount > 0) {
-      toast.warning(`${successCount}개 성공, ${errorCount}개 실패`);
-    } else {
-      toast.success(`${successCount}개 항목을 불러왔습니다.`);
-    }
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              if (inQuotes && line[i + 1] === '"') {
+                current += '"';
+                i++;
+              } else {
+                inQuotes = !inQuotes;
+              }
+            } else if (char === "," && !inQuotes) {
+              result.push(current);
+              current = "";
+            } else {
+              current += char;
+            }
+          }
+          result.push(current);
+          return result.map((value) => value.replace(/\r/g, ""));
+        };
+
+        dataLines.forEach((line) => {
+          const values = parseCsvLine(line).map((value) =>
+            value.replace(/^"|"$/g, "").trim()
+          );
+
+          if (values.length >= 5) {
+            const [
+              csvDate,
+              csvType,
+              csvItem,
+              csvDescription = "",
+              csvAmount = "",
+              csvMemo = "",
+            ] = values;
+
+            const normalizedType = csvType === "수입" ? "수입" : csvType === "지출" ? "지출" : null;
+            const normalizedAmount = Number(csvAmount.replace(/,/g, ""));
+
+            if (csvDate && normalizedType && csvItem && !Number.isNaN(normalizedAmount)) {
+              importedData.push({
+                date: csvDate,
+                type: normalizedType,
+                item: csvItem,
+                description: csvDescription,
+                amount: normalizedAmount,
+                memo: csvMemo,
+              });
+            }
+          }
+        });
+
+        if (importedData.length === 0) {
+          toast.error("불러올 데이터가 없습니다.");
+          return;
+        }
+
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const item of importedData) {
+          const result = await addTransaction(item);
+          if (result.error) {
+            errorCount++;
+          } else {
+            successCount++;
+          }
+        }
+
+        if (errorCount > 0) {
+          toast.warning(`${successCount}개 성공, ${errorCount}개 실패`);
+        } else {
+          toast.success(`${successCount}개 항목을 불러왔습니다.`);
+        }
+      };
+      reader.readAsText(file, "UTF-8");
+    };
+    input.click();
   };
 
   if (loading) {
@@ -267,8 +347,6 @@ export default function DashboardPage() {
         onUpdate={handleUpdate}
         onDelete={handleDeleteSelected}
         onClear={handleClear}
-        onCsvExport={handleCsvExport}
-        onCsvImport={handleCsvImport}
       />
 
       {/* 거래 테이블 */}
@@ -278,8 +356,9 @@ export default function DashboardPage() {
         selectedIds={selectedIds}
         onToggleSelect={handleToggleSelect}
         onToggleSelectAll={handleToggleSelectAll}
-        onEdit={handleEdit}
         onDeleteSelected={handleDeleteSelected}
+        onCsvExport={handleCsvExport}
+        onCsvImport={handleCsvImportClick}
         viewMode={viewMode}
       />
     </div>

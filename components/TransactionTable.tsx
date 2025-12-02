@@ -25,8 +25,9 @@ interface TransactionTableProps {
   selectedIds: string[];
   onToggleSelect: (transaction: Transaction, checked: boolean) => void;
   onToggleSelectAll: (ids: string[], checked: boolean) => void;
-  onEdit: (transaction: Transaction) => void;
   onDeleteSelected: () => Promise<void> | void;
+  onCsvExport?: () => void;
+  onCsvImport?: () => void;
   viewMode: "weekly" | "all";
 }
 
@@ -36,8 +37,9 @@ export default function TransactionTable({
   selectedIds,
   onToggleSelect,
   onToggleSelectAll,
-  onEdit,
   onDeleteSelected,
+  onCsvExport,
+  onCsvImport,
   viewMode,
 }: TransactionTableProps) {
   const currency = settings?.currency || "원";
@@ -127,13 +129,12 @@ export default function TransactionTable({
               <TableHead className="w-[180px]">내용</TableHead>
               <TableHead className="w-[100px] text-right">금액 ({currency})</TableHead>
               <TableHead className="w-[140px]">메모</TableHead>
-              <TableHead className="w-[60px]">작업</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredTransactions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                   {viewMode === "weekly" 
                     ? "이번 주 거래 내역이 없습니다." 
                     : "거래 내역이 없습니다."}
@@ -143,11 +144,12 @@ export default function TransactionTable({
               filteredTransactions.map((transaction, index) => (
                 <TableRow
                   key={transaction.id}
-                  className={`${
+                  className={`cursor-pointer ${
                     index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                  } ${selectedIds.includes(transaction.id) ? "bg-emerald-50" : ""}`}
+                  } ${selectedIds.includes(transaction.id) ? "bg-emerald-50" : ""} hover:bg-emerald-100`}
+                  onClick={() => onToggleSelect(transaction, !selectedIds.includes(transaction.id))}
                 >
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <Checkbox
                       checked={selectedIds.includes(transaction.id)}
                       onCheckedChange={(checked) =>
@@ -175,16 +177,6 @@ export default function TransactionTable({
                   <TableCell className="text-gray-500 text-sm truncate">
                     {transaction.memo}
                   </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEdit(transaction)}
-                      className="h-7 px-2 text-emerald-600 hover:text-emerald-700"
-                    >
-                      수정
-                    </Button>
-                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -193,27 +185,54 @@ export default function TransactionTable({
       </div>
 
       {/* 하단 정보 */}
-      <div className="flex items-center justify-between p-4 border-t">
-        {/* 왼쪽: 선택 합계 및 삭제 버튼 */}
-        <div className="flex items-center gap-3">
-          {selectedIds.length > 0 && (
-            <>
-              <div className="text-sm text-gray-600">
-                선택 합계: <strong>{formatAmount(selectedSum)} {currency}</strong> ({selectedIds.length}개)
-              </div>
+      <div className="p-4 border-t space-y-3">
+        {/* 상단: 선택 합계 및 삭제 버튼 (왼쪽), CSV 버튼 (오른쪽) */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {selectedIds.length > 0 && (
+              <>
+                <div className="text-sm text-gray-600">
+                  선택 합계: <strong>{formatAmount(selectedSum)} {currency}</strong> ({selectedIds.length}개)
+                </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDeleteClick}
+                  className="h-8 px-3"
+                >
+                  선택 삭제
+                </Button>
+              </>
+            )}
+          </div>
+          {/* CSV 버튼들 */}
+          <div className="flex items-center gap-2">
+            {onCsvExport && (
               <Button
-                variant="destructive"
+                type="button"
+                variant="outline"
                 size="sm"
-                onClick={handleDeleteClick}
-                className="h-8 px-3"
+                onClick={onCsvExport}
+                className="h-8 px-3 border-green-500 text-green-600 hover:bg-green-50"
               >
-                선택 삭제
+                CSV저장
               </Button>
-            </>
-          )}
+            )}
+            {onCsvImport && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onCsvImport}
+                className="h-8 px-3 border-orange-500 text-orange-600 hover:bg-orange-50"
+              >
+                CSV불러오기
+              </Button>
+            )}
+          </div>
         </div>
-        {/* 오른쪽: 현재 잔액 */}
-        <div className="text-lg font-bold">
+        {/* 하단: 현재 잔액 (중앙) */}
+        <div className="text-center text-lg font-bold">
           현재 잔액:{" "}
           <span className={balance >= 0 ? "text-emerald-600" : "text-red-600"}>
             {formatAmount(balance)} {currency}

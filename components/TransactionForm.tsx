@@ -435,38 +435,17 @@ export default function TransactionForm({
           >
             새입력
           </Button>
-          {/* CSV 저장 버튼 */}
-          {onCsvExport && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCsvExport}
-              className="h-9 px-3 border-green-500 text-green-600 hover:bg-green-50"
-            >
-              CSV저장
-            </Button>
-          )}
-          {/* CSV 불러오기 버튼 */}
-          {onCsvImport && (
-            <>
-              <input
-                ref={csvInputRef}
-                type="file"
-                accept=".csv"
-                onChange={handleCsvFileChange}
-                className="hidden"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => csvInputRef.current?.click()}
-                className="h-9 px-3 border-orange-500 text-orange-600 hover:bg-orange-50"
-              >
-                CSV불러오기
-              </Button>
-            </>
-          )}
         </div>
+        {/* CSV 파일 입력 (숨김) */}
+        {onCsvImport && (
+          <input
+            ref={csvInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleCsvFileChange}
+            className="hidden"
+          />
+        )}
       </div>
     </form>
   );
