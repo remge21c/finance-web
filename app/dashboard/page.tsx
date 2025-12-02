@@ -37,47 +37,115 @@ export default function DashboardPage() {
     }
   };
 
-  // 폼에서 삭제 버튼 클릭 시 (현재 상태 기준으로 삭제)
-  const handleDeleteFromForm = async () => {
-    // 최신 selectedIds 사용
-    const ids = selectedIds.length > 0 
-      ? selectedIds 
-      : (selectedTransaction ? [selectedTransaction.id] : []);
-    
+  // 선택 상태에 따라 폼의 단일 선택 정보를 동기화
+  const syncSelectedTransaction = (nextIds: string[], lastSelected?: Transaction | null) => {
+    if (nextIds.length === 0) {
+      setSelectedTransaction(null);
+      return;
+    }
+
+    if (nextIds.length === 1) {
+      if (lastSelected && lastSelected.id === nextIds[0]) {
+        setSelectedTransaction(lastSelected);
+        return;
+      }
+      const target = transactions.find((t) => t.id === nextIds[0]) || null;
+      setSelectedTransaction(target);
+      return;
+    }
+
+    if (lastSelected) {
+      setSelectedTransaction(lastSelected);
+    }
+  };
+
+  // 개별 항목 체크 토글
+  const handleToggleSelect = (transaction: Transaction, checked: boolean) => {
+    setSelectedIds((prev) => {
+      let next: string[];
+
+      if (checked) {
+        if (prev.includes(transaction.id)) {
+          return prev;
+        }
+        next = [...prev, transaction.id];
+      } else {
+        if (!prev.includes(transaction.id)) {
+          return prev;
+        }
+        next = prev.filter((id) => id !== transaction.id);
+      }
+
+      syncSelectedTransaction(next, checked ? transaction : undefined);
+      return next;
+    });
+  };
+
+  // 화면에 보이는 항목 전체 선택/해제
+  const handleToggleSelectAll = (ids: string[], checked: boolean) => {
+    if (ids.length === 0) {
+      if (!checked) {
+        setSelectedIds([]);
+        setSelectedTransaction(null);
+      }
+      return;
+    }
+
+    const removeSet = new Set(ids);
+
+    setSelectedIds((prev) => {
+      let next: string[];
+
+      if (checked) {
+        const merged = new Set(prev);
+        ids.forEach((id) => merged.add(id));
+        next = Array.from(merged);
+      } else {
+        let changed = false;
+        next = prev.filter((id) => {
+          if (removeSet.has(id)) {
+            changed = true;
+            return false;
+          }
+          return true;
+        });
+        if (!changed) {
+          return prev;
+        }
+      }
+
+      syncSelectedTransaction(next);
+      return next;
+    });
+  };
+
+  // 현재 선택 상태 기준 삭제
+  const handleDeleteSelected = async () => {
+    const ids =
+      selectedIds.length > 0
+        ? selectedIds
+        : selectedTransaction
+          ? [selectedTransaction.id]
+          : [];
+
     if (ids.length === 0) {
       toast.error("삭제할 항목을 선택하세요.");
       return;
     }
 
-    if (!confirm(`${ids.length}개 항목을 삭제하시겠습니까?`)) return;
-    
-    const result = await deleteMultipleTransactions(ids);
-    if (result.error) {
-      toast.error("삭제 실패: " + result.error);
-    } else {
-      toast.success(`${ids.length}개 항목이 삭제되었습니다.`);
-      setSelectedIds([]);
-      setSelectedTransaction(null);
-    }
-  };
-
-  // 테이블에서 선택 삭제 버튼 클릭 시 (전달받은 ids 사용)
-  const handleDeleteSelected = async (ids: string[]) => {
-    if (!ids || ids.length === 0) {
-      toast.error("삭제할 항목을 선택하세요.");
+    if (!confirm(`${ids.length}개 항목을 삭제하시겠습니까?`)) {
       return;
     }
 
-    if (!confirm(`${ids.length}개 항목을 삭제하시겠습니까?`)) return;
-    
     const result = await deleteMultipleTransactions(ids);
     if (result.error) {
       toast.error("삭제 실패: " + result.error);
-    } else {
-      toast.success(`${ids.length}개 항목이 삭제되었습니다.`);
-      setSelectedIds([]);
-      setSelectedTransaction(null);
+      return;
     }
+
+    toast.success(`${ids.length}개 항목이 삭제되었습니다.`);
+    setSelectedIds([]);
+    setSelectedTransaction(null);
   };
 
   const handleEdit = (transaction: Transaction) => {
@@ -88,24 +156,6 @@ export default function DashboardPage() {
   const handleClear = () => {
     setSelectedTransaction(null);
     setSelectedIds([]); // 새입력 시 선택 해제
-  };
-
-  // 체크박스 선택 핸들러 - 선택 시 폼에도 데이터 로드
-  const handleSelect = (ids: string[]) => {
-    console.log("handleSelect 호출 - ids:", ids);
-    setSelectedIds(ids);
-    
-    // 단일 선택 시 해당 거래를 폼에 로드
-    if (ids.length === 1) {
-      const transaction = transactions.find((t) => t.id === ids[0]);
-      if (transaction) {
-        setSelectedTransaction(transaction);
-      }
-    } else if (ids.length === 0) {
-      // 선택 해제 시 폼도 초기화
-      setSelectedTransaction(null);
-    }
-    // 다중 선택 시에는 폼 유지 (마지막 선택된 항목)
   };
 
   // CSV 저장 함수
@@ -215,7 +265,7 @@ export default function DashboardPage() {
         transactions={transactions}
         onSubmit={handleSubmit}
         onUpdate={handleUpdate}
-        onDelete={handleDeleteFromForm}
+        onDelete={handleDeleteSelected}
         onClear={handleClear}
         onCsvExport={handleCsvExport}
         onCsvImport={handleCsvImport}
@@ -226,7 +276,8 @@ export default function DashboardPage() {
         transactions={transactions}
         settings={settings}
         selectedIds={selectedIds}
-        onSelect={handleSelect}
+        onToggleSelect={handleToggleSelect}
+        onToggleSelectAll={handleToggleSelectAll}
         onEdit={handleEdit}
         onDeleteSelected={handleDeleteSelected}
         viewMode={viewMode}

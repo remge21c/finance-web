@@ -20,7 +20,7 @@ interface TransactionFormProps {
   transactions?: Transaction[]; // 메모 빈도 계산용
   onSubmit: (data: TransactionInput) => Promise<void>;
   onUpdate: (id: string, data: TransactionInput) => Promise<void>;
-  onDelete?: () => void; // 삭제 버튼 클릭 핸들러 (부모에서 처리)
+  onDelete?: () => Promise<void>; // 삭제 버튼 클릭 시 부모 로직 실행
   onClear: () => void;
   onCsvExport?: () => void; // CSV 저장
   onCsvImport?: (data: TransactionInput[]) => Promise<void>; // CSV 불러오기
@@ -226,11 +226,11 @@ export default function TransactionForm({
     }
   };
 
-  // 삭제 버튼 핸들러 - 부모 컴포넌트에서 처리
-  const handleDeleteClick = () => {
-    if (onDelete) {
-      onDelete();
-    }
+  // 삭제 버튼 핸들러 - 부모 컴포넌트 로직 실행 후 폼 초기화
+  const handleDeleteClick = async () => {
+    if (!onDelete) return;
+    await onDelete();
+    handleClear();
   };
 
   const handleClear = () => {

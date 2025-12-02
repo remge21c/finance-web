@@ -23,9 +23,10 @@ interface TransactionTableProps {
   transactions: Transaction[];
   settings: Settings | null;
   selectedIds: string[];
-  onSelect: (ids: string[]) => void;
+  onToggleSelect: (transaction: Transaction, checked: boolean) => void;
+  onToggleSelectAll: (ids: string[], checked: boolean) => void;
   onEdit: (transaction: Transaction) => void;
-  onDeleteSelected: (ids: string[]) => void;
+  onDeleteSelected: () => Promise<void> | void;
   viewMode: "weekly" | "all";
 }
 
@@ -33,7 +34,8 @@ export default function TransactionTable({
   transactions,
   settings,
   selectedIds,
-  onSelect,
+  onToggleSelect,
+  onToggleSelectAll,
   onEdit,
   onDeleteSelected,
   viewMode,
@@ -69,25 +71,31 @@ export default function TransactionTable({
     }, 0);
   }, [transactions]);
 
-  // 현재 보이는 항목들의 ID만 필터링
+  // 현재 화면에 보이는 ID 집합
+  const visibleIds = useMemo(
+    () => filteredTransactions.map((t) => t.id),
+    [filteredTransactions]
+  );
+
+  // 현재 보이는 항목들 중 선택된 ID
   const visibleSelectedIds = useMemo(() => {
-    const filteredIds = filteredTransactions.map((t) => t.id);
-    return selectedIds.filter((id) => filteredIds.includes(id));
-  }, [selectedIds, filteredTransactions]);
+    return selectedIds.filter((id) => visibleIds.includes(id));
+  }, [selectedIds, visibleIds]);
 
-  const handleSelectAll = () => {
-    if (visibleSelectedIds.length === filteredTransactions.length && filteredTransactions.length > 0) {
-      onSelect([]);
-    } else {
-      onSelect(filteredTransactions.map((t) => t.id));
-    }
-  };
+  const allVisibleSelected =
+    filteredTransactions.length > 0 &&
+    visibleSelectedIds.length === filteredTransactions.length;
 
-  const handleSelectOne = (id: string) => {
-    if (selectedIds.includes(id)) {
-      onSelect(selectedIds.filter((i) => i !== id));
-    } else {
-      onSelect([...selectedIds, id]);
+  const headerCheckboxState =
+    allVisibleSelected && filteredTransactions.length > 0
+      ? true
+      : visibleSelectedIds.length > 0
+        ? "indeterminate"
+        : false;
+
+  const handleDeleteClick = () => {
+    if (onDeleteSelected) {
+      void onDeleteSelected();
     }
   };
 
@@ -107,11 +115,10 @@ export default function TransactionTable({
             <TableRow className="bg-gray-50">
               <TableHead className="w-10">
                 <Checkbox
-                  checked={
-                    filteredTransactions.length > 0 &&
-                    visibleSelectedIds.length === filteredTransactions.length
+                  checked={headerCheckboxState}
+                  onCheckedChange={(checked) =>
+                    onToggleSelectAll(visibleIds, checked === true)
                   }
-                  onCheckedChange={handleSelectAll}
                 />
               </TableHead>
               <TableHead className="w-[100px]">날짜</TableHead>
@@ -143,7 +150,9 @@ export default function TransactionTable({
                   <TableCell>
                     <Checkbox
                       checked={selectedIds.includes(transaction.id)}
-                      onCheckedChange={() => handleSelectOne(transaction.id)}
+                      onCheckedChange={(checked) =>
+                        onToggleSelect(transaction, checked === true)
+                      }
                     />
                   </TableCell>
                   <TableCell className="truncate">{transaction.date}</TableCell>
@@ -195,7 +204,7 @@ export default function TransactionTable({
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => onDeleteSelected(selectedIds)}
+                onClick={handleDeleteClick}
                 className="h-8 px-3"
               >
                 선택 삭제
