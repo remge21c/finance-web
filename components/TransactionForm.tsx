@@ -13,6 +13,34 @@ import {
 } from "@/components/ui/select";
 import type { Transaction, TransactionInput, Settings } from "@/types/database";
 
+// CSV 한 줄을 안전하게 파싱하는 유틸 (쉼표/따옴표/공백 모두 대응)
+const parseCsvLine = (line: string) => {
+  const result: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++; // 이스케이프된 따옴표 건너뛰기
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === "," && !inQuotes) {
+      result.push(current);
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+
+  result.push(current);
+  return result.map((value) => value.replace(/\r/g, ""));
+};
+
 interface TransactionFormProps {
   settings: Settings | null;
   selectedTransaction: Transaction | null;
@@ -58,30 +86,42 @@ export default function TransactionForm({
 
     const reader = new FileReader();
     reader.onload = async (event) => {
-      const text = event.target?.result as string;
-      const lines = text.split("\n").filter((line) => line.trim());
+      const text = (event.target?.result as string) || "";
+      const lines = text
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
       
       // 첫 번째 줄은 헤더로 가정
       const dataLines = lines.slice(1);
       const importedData: TransactionInput[] = [];
 
       dataLines.forEach((line) => {
-        // CSV 파싱 (쉼표로 구분, 따옴표 처리)
-        const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-        const cleanValues = values.map((v) => v.replace(/^"|"$/g, "").trim());
+        const values = parseCsvLine(line).map((value) =>
+          value.replace(/^"|"$/g, "").trim()
+        );
 
-        if (cleanValues.length >= 5) {
-          const [csvDate, csvType, csvItem, csvDescription, csvAmount, csvMemo] = cleanValues;
-          
-          // 유효한 데이터인지 확인
-          if (csvDate && csvType && csvItem && csvAmount) {
+        if (values.length >= 5) {
+          const [
+            csvDate,
+            csvType,
+            csvItem,
+            csvDescription = "",
+            csvAmount = "",
+            csvMemo = "",
+          ] = values;
+
+          const normalizedType = csvType === "수입" ? "수입" : csvType === "지출" ? "지출" : null;
+          const normalizedAmount = Number(csvAmount.replace(/,/g, ""));
+
+          if (csvDate && normalizedType && csvItem && !Number.isNaN(normalizedAmount)) {
             importedData.push({
               date: csvDate,
-              type: csvType as "수입" | "지출",
+              type: normalizedType,
               item: csvItem,
-              description: csvDescription || "",
-              amount: parseFloat(csvAmount) || 0,
-              memo: csvMemo || "",
+              description: csvDescription,
+              amount: normalizedAmount,
+              memo: csvMemo,
             });
           }
         }
