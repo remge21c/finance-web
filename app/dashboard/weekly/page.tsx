@@ -116,10 +116,143 @@ export default function WeeklyReportPage() {
     }
   };
 
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
-    documentTitle: `주간보고서_${format(weekRange.start, "yyyyMMdd")}-${format(weekRange.end, "yyyyMMdd")}`,
-  });
+  // 새 창에서 미리보기 열기
+  const handlePrint = () => {
+    const printContent = printRef.current;
+    if (!printContent) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>주간보고서_${format(weekRange.start, "yyyyMMdd")}-${format(weekRange.end, "yyyyMMdd")}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { 
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+              padding: 20mm;
+              background: white;
+            }
+            @page { 
+              size: A4; 
+              margin: 15mm;
+            }
+            @media print {
+              body { padding: 0; }
+              .no-print { display: none !important; }
+            }
+            table { 
+              width: 100%; 
+              border-collapse: collapse; 
+              margin-bottom: 12px;
+              font-size: 11px;
+            }
+            th, td { 
+              border: 1px solid #ddd; 
+              padding: 6px 8px; 
+              text-align: left;
+            }
+            th { 
+              background: #f5f5f5; 
+              font-weight: 600;
+            }
+            .text-right { text-align: right; }
+            .text-center { text-align: center; }
+            .card { 
+              border: 1px solid #e5e7eb; 
+              border-radius: 8px; 
+              margin-bottom: 12px;
+              overflow: hidden;
+            }
+            .card-header { 
+              padding: 8px 12px; 
+              font-weight: 600;
+              font-size: 14px;
+            }
+            .bg-blue-50 { background: #eff6ff; color: #1e40af; }
+            .bg-red-50 { background: #fef2f2; color: #b91c1c; }
+            .card-content { padding: 0; }
+            .summary-row { 
+              display: flex; 
+              justify-content: space-between; 
+              padding: 6px 12px;
+              border-bottom: 1px solid #f3f4f6;
+            }
+            .summary-row:last-child { border-bottom: none; }
+            .summary-row.total { 
+              border-top: 2px solid #ddd; 
+              padding-top: 8px;
+              margin-top: 4px;
+              font-weight: 700;
+            }
+            .text-blue-600 { color: #2563eb; }
+            .text-red-600 { color: #dc2626; }
+            .text-emerald-600 { color: #059669; }
+            .grid-2 { 
+              display: grid; 
+              grid-template-columns: 1fr 1fr; 
+              gap: 12px;
+              margin-bottom: 12px;
+            }
+            .account-grid {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 8px;
+              padding: 12px;
+              border-bottom: 1px solid #f3f4f6;
+            }
+            .account-item { text-align: center; }
+            .account-label { 
+              font-size: 10px; 
+              color: #6b7280; 
+              margin-bottom: 4px;
+            }
+            .account-value { 
+              font-weight: 600;
+              font-size: 12px;
+            }
+            h1 { 
+              text-align: center; 
+              font-size: 20px; 
+              margin-bottom: 8px;
+              font-weight: 700;
+            }
+            .date-range { 
+              text-align: center; 
+              color: #6b7280; 
+              margin-bottom: 16px;
+              font-size: 12px;
+            }
+            .print-btn {
+              position: fixed;
+              top: 20px;
+              right: 20px;
+              padding: 10px 20px;
+              background: #059669;
+              color: white;
+              border: none;
+              border-radius: 6px;
+              cursor: pointer;
+              font-weight: 600;
+              z-index: 1000;
+            }
+            .print-btn:hover { background: #047857; }
+            @media print {
+              .print-btn { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <button class="print-btn no-print" onclick="window.print()">인쇄</button>
+          ${printContent.innerHTML}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   if (loading) {
     return (
@@ -160,7 +293,13 @@ export default function WeeklyReportPage() {
       </div>
 
       {/* 출력 영역 */}
-      <div ref={printRef} className="print:p-8">
+      <div ref={printRef} className="bg-white p-6">
+        {/* 제목 및 기간 */}
+        <h1 className="text-xl font-bold text-center mb-2">주간 보고서</h1>
+        <div className="text-center text-gray-600 text-sm mb-4">
+          보고 기간: {format(weekRange.start, "yyyy년 M월 d일", { locale: ko })} ~ {format(weekRange.end, "M월 d일", { locale: ko })}
+        </div>
+        
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* 수입 테이블 */}
           <Card>
@@ -179,20 +318,35 @@ export default function WeeklyReportPage() {
                 </TableHeader>
                 <TableBody>
                   {incomeTransactions.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-4 text-gray-400">
-                        수입 내역 없음
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    incomeTransactions.map((t, i) => (
-                      <TableRow key={t.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                        <TableCell>{format(parseISO(t.date), "MM-dd")}</TableCell>
-                        <TableCell>{t.item}</TableCell>
-                        <TableCell>{t.description}</TableCell>
-                        <TableCell className="text-right">{formatAmount(Number(t.amount))}</TableCell>
+                    // 빈 행 30개 추가 (A4 용지 채우기)
+                    Array.from({ length: 30 }).map((_, i) => (
+                      <TableRow key={`empty-income-${i}`} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                        <TableCell>&nbsp;</TableCell>
+                        <TableCell>&nbsp;</TableCell>
+                        <TableCell>&nbsp;</TableCell>
+                        <TableCell>&nbsp;</TableCell>
                       </TableRow>
                     ))
+                  ) : (
+                    <>
+                      {incomeTransactions.map((t, i) => (
+                        <TableRow key={t.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                          <TableCell>{format(parseISO(t.date), "MM-dd")}</TableCell>
+                          <TableCell>{t.item}</TableCell>
+                          <TableCell>{t.description}</TableCell>
+                          <TableCell className="text-right">{formatAmount(Number(t.amount))}</TableCell>
+                        </TableRow>
+                      ))}
+                      {/* 나머지 빈 행 추가 */}
+                      {Array.from({ length: Math.max(0, 30 - incomeTransactions.length) }).map((_, i) => (
+                        <TableRow key={`empty-income-${i}`} className={(incomeTransactions.length + i) % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                          <TableCell>&nbsp;</TableCell>
+                          <TableCell>&nbsp;</TableCell>
+                          <TableCell>&nbsp;</TableCell>
+                          <TableCell>&nbsp;</TableCell>
+                        </TableRow>
+                      ))}
+                    </>
                   )}
                 </TableBody>
               </Table>
@@ -216,20 +370,35 @@ export default function WeeklyReportPage() {
                 </TableHeader>
                 <TableBody>
                   {expenseTransactions.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-4 text-gray-400">
-                        지출 내역 없음
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    expenseTransactions.map((t, i) => (
-                      <TableRow key={t.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                        <TableCell>{format(parseISO(t.date), "MM-dd")}</TableCell>
-                        <TableCell>{t.item}</TableCell>
-                        <TableCell>{t.description}</TableCell>
-                        <TableCell className="text-right">{formatAmount(Number(t.amount))}</TableCell>
+                    // 빈 행 30개 추가 (A4 용지 채우기)
+                    Array.from({ length: 30 }).map((_, i) => (
+                      <TableRow key={`empty-expense-${i}`} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                        <TableCell>&nbsp;</TableCell>
+                        <TableCell>&nbsp;</TableCell>
+                        <TableCell>&nbsp;</TableCell>
+                        <TableCell>&nbsp;</TableCell>
                       </TableRow>
                     ))
+                  ) : (
+                    <>
+                      {expenseTransactions.map((t, i) => (
+                        <TableRow key={t.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                          <TableCell>{format(parseISO(t.date), "MM-dd")}</TableCell>
+                          <TableCell>{t.item}</TableCell>
+                          <TableCell>{t.description}</TableCell>
+                          <TableCell className="text-right">{formatAmount(Number(t.amount))}</TableCell>
+                        </TableRow>
+                      ))}
+                      {/* 나머지 빈 행 추가 */}
+                      {Array.from({ length: Math.max(0, 30 - expenseTransactions.length) }).map((_, i) => (
+                        <TableRow key={`empty-expense-${i}`} className={(expenseTransactions.length + i) % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                          <TableCell>&nbsp;</TableCell>
+                          <TableCell>&nbsp;</TableCell>
+                          <TableCell>&nbsp;</TableCell>
+                          <TableCell>&nbsp;</TableCell>
+                        </TableRow>
+                      ))}
+                    </>
                   )}
                 </TableBody>
               </Table>
@@ -317,21 +486,6 @@ export default function WeeklyReportPage() {
           </Card>
         </div>
 
-        {/* 서명란 */}
-        <div className="grid grid-cols-2 gap-8 mt-6 print:mt-8">
-          <Card>
-            <CardContent className="py-4 text-center">
-              <div className="text-sm text-gray-600 mb-2">작성자: {settings?.author || ""}</div>
-              <div className="h-12 border-b border-gray-300"></div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="py-4 text-center">
-              <div className="text-sm text-gray-600 mb-2">책임자: {settings?.manager || ""}</div>
-              <div className="h-12 border-b border-gray-300"></div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </div>
   );
