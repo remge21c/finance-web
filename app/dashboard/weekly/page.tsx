@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
-import { useTeam } from "@/lib/hooks/useTeam";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useTransactions } from "@/lib/hooks/useTransactions";
 import { useSettings } from "@/lib/hooks/useSettings";
 import { Button } from "@/components/ui/button";
@@ -30,9 +29,8 @@ import { ko } from "date-fns/locale";
 import { useReactToPrint } from "react-to-print";
 
 export default function WeeklyReportPage() {
-  const { teamId, loading: teamLoading } = useTeam();
-  const { transactions, loading: txLoading } = useTransactions(teamId);
-  const { settings, loading: settingsLoading, updateSettings } = useSettings(teamId);
+  const { transactions, loading: txLoading } = useTransactions();
+  const { settings, loading: settingsLoading, updateSettings } = useSettings();
   
   const [weekOffset, setWeekOffset] = useState(0);
   const [cashAmount, setCashAmount] = useState("");
@@ -41,17 +39,17 @@ export default function WeeklyReportPage() {
   
   const printRef = useRef<HTMLDivElement>(null);
 
-  const loading = teamLoading || txLoading || settingsLoading;
+  const loading = txLoading || settingsLoading;
   const currency = settings?.currency || "원";
 
   // 초기 금액 설정
-  useState(() => {
+  useEffect(() => {
     if (settings) {
       setCashAmount(settings.cash_amount?.toString() || "0");
       setTouchAmount(settings.touch_amount?.toString() || "0");
       setOtherAmount(settings.other_amount?.toString() || "0");
     }
-  });
+  }, [settings]);
 
   // 주간 범위 계산
   const weekRange = useMemo(() => {
