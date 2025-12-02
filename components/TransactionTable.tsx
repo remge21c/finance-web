@@ -149,7 +149,7 @@ export default function TransactionTable({
                   } ${selectedIds.includes(transaction.id) ? "bg-emerald-50" : ""} hover:bg-emerald-100`}
                   onClick={() => onToggleSelect(transaction, !selectedIds.includes(transaction.id))}
                 >
-                  <TableCell onClick={(e) => e.stopPropagation()}>
+                  <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                     <Checkbox
                       checked={selectedIds.includes(transaction.id)}
                       onCheckedChange={(checked) =>
@@ -157,8 +157,8 @@ export default function TransactionTable({
                       }
                     />
                   </TableCell>
-                  <TableCell className="truncate">{transaction.date}</TableCell>
-                  <TableCell>
+                  <TableCell className="text-center truncate">{transaction.date}</TableCell>
+                  <TableCell className="text-center">
                     <span
                       className={`px-2 py-1 rounded text-xs font-medium ${
                         transaction.type === "수입"
@@ -169,12 +169,12 @@ export default function TransactionTable({
                       {transaction.type}
                     </span>
                   </TableCell>
-                  <TableCell className="truncate">{transaction.item}</TableCell>
-                  <TableCell className="truncate">{transaction.description}</TableCell>
+                  <TableCell className="text-center truncate">{transaction.item}</TableCell>
+                  <TableCell className="text-left truncate">{transaction.description}</TableCell>
                   <TableCell className="text-right font-medium">
                     {formatAmount(Number(transaction.amount))}
                   </TableCell>
-                  <TableCell className="text-gray-500 text-sm truncate">
+                  <TableCell className="text-left text-gray-500 text-sm truncate">
                     {transaction.memo}
                   </TableCell>
                 </TableRow>
