@@ -260,14 +260,14 @@ export default function AllListPage() {
             </div>
 
             {/* 빠른 선택 버튼 */}
-            <div className="col-span-2 space-y-2">
+            <div className="col-span-2 flex items-center gap-2">
               {/* 주 단위 네비게이션 */}
               <div className="flex items-center gap-1">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => moveWeek("prev")}
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-7 p-0 text-xs"
                   title="한 주 앞으로"
                 >
                   ←
@@ -276,7 +276,7 @@ export default function AllListPage() {
                   variant="outline"
                   size="sm"
                   onClick={setThisWeek}
-                  className="flex-1 h-8 text-xs"
+                  className="h-8 px-2 text-xs whitespace-nowrap"
                 >
                   이번주
                 </Button>
@@ -284,7 +284,7 @@ export default function AllListPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => moveWeek("next")}
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-7 p-0 text-xs"
                   title="한 주 뒤로"
                 >
                   →
@@ -296,7 +296,7 @@ export default function AllListPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => moveMonth("prev")}
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-7 p-0 text-xs"
                   title="한 달 앞으로"
                 >
                   ←
@@ -305,7 +305,7 @@ export default function AllListPage() {
                   variant="outline"
                   size="sm"
                   onClick={setThisMonth}
-                  className="flex-1 h-8 text-xs"
+                  className="h-8 px-2 text-xs whitespace-nowrap"
                 >
                   이번달
                 </Button>
@@ -313,7 +313,7 @@ export default function AllListPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => moveMonth("next")}
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-7 p-0 text-xs"
                   title="한 달 뒤로"
                 >
                   →
@@ -324,7 +324,7 @@ export default function AllListPage() {
                 variant="outline"
                 size="sm"
                 onClick={setThisYear}
-                className="w-full h-8 text-xs"
+                className="h-8 px-2 text-xs whitespace-nowrap"
               >
                 올해
               </Button>
