@@ -200,37 +200,37 @@ export default function AllListPage() {
 
       {/* 필터 */}
       <Card>
-        <CardContent className="py-4">
+        <CardContent className="py-4 px-4 overflow-hidden">
           <div className="grid grid-cols-2 md:grid-cols-6 gap-3 items-end">
             {/* 시작일 */}
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-0">
               <Label htmlFor="startDate" className="text-xs">시작일</Label>
               <Input
                 id="startDate"
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="h-9"
+                className="h-9 w-full"
               />
             </div>
 
             {/* 종료일 */}
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-0">
               <Label htmlFor="endDate" className="text-xs">종료일</Label>
               <Input
                 id="endDate"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="h-9"
+                className="h-9 w-full"
               />
             </div>
 
             {/* 구분 */}
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-0">
               <Label className="text-xs">구분</Label>
               <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setItemFilter("all"); }}>
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-9 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -242,10 +242,10 @@ export default function AllListPage() {
             </div>
 
             {/* 항목 */}
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-0">
               <Label className="text-xs">항목</Label>
               <Select value={itemFilter} onValueChange={setItemFilter}>
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-9 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -260,14 +260,14 @@ export default function AllListPage() {
             </div>
 
             {/* 빠른 선택 버튼 */}
-            <div className="col-span-2 flex items-center gap-2">
+            <div className="col-span-2 flex items-center gap-1 md:gap-2 flex-wrap min-w-0">
               {/* 주 단위 네비게이션 */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 flex-shrink-0">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => moveWeek("prev")}
-                  className="h-8 w-7 p-0 text-xs"
+                  className="h-8 w-7 p-0 text-xs flex-shrink-0"
                   title="한 주 앞으로"
                 >
                   ◀
@@ -276,7 +276,7 @@ export default function AllListPage() {
                   variant="outline"
                   size="sm"
                   onClick={setThisWeek}
-                  className="h-8 px-4 text-xs whitespace-nowrap"
+                  className="h-8 px-2 md:px-4 text-xs whitespace-nowrap flex-shrink-0"
                 >
                   이번주
                 </Button>
@@ -284,19 +284,19 @@ export default function AllListPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => moveWeek("next")}
-                  className="h-8 w-7 p-0 text-xs"
+                  className="h-8 w-7 p-0 text-xs flex-shrink-0"
                   title="한 주 뒤로"
                 >
                   ▶
                 </Button>
               </div>
               {/* 월 단위 네비게이션 */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 flex-shrink-0">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => moveMonth("prev")}
-                  className="h-8 w-7 p-0 text-xs"
+                  className="h-8 w-7 p-0 text-xs flex-shrink-0"
                   title="한 달 앞으로"
                 >
                   ◀
@@ -305,7 +305,7 @@ export default function AllListPage() {
                   variant="outline"
                   size="sm"
                   onClick={setThisMonth}
-                  className="h-8 px-4 text-xs whitespace-nowrap"
+                  className="h-8 px-2 md:px-4 text-xs whitespace-nowrap flex-shrink-0"
                 >
                   이번달
                 </Button>
@@ -313,7 +313,7 @@ export default function AllListPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => moveMonth("next")}
-                  className="h-8 w-7 p-0 text-xs"
+                  className="h-8 w-7 p-0 text-xs flex-shrink-0"
                   title="한 달 뒤로"
                 >
                   ▶
@@ -324,7 +324,7 @@ export default function AllListPage() {
                 variant="outline"
                 size="sm"
                 onClick={setThisYear}
-                className="h-8 px-4 text-xs whitespace-nowrap"
+                className="h-8 px-2 md:px-4 text-xs whitespace-nowrap flex-shrink-0"
               >
                 올해
               </Button>
