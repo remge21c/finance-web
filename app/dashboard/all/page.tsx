@@ -270,13 +270,13 @@ export default function AllListPage() {
                   className="h-8 w-7 p-0 text-xs"
                   title="한 주 앞으로"
                 >
-                  ←
+                  ◀
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={setThisWeek}
-                  className="h-8 px-2 text-xs whitespace-nowrap"
+                  className="h-8 px-4 text-xs whitespace-nowrap"
                 >
                   이번주
                 </Button>
@@ -287,7 +287,7 @@ export default function AllListPage() {
                   className="h-8 w-7 p-0 text-xs"
                   title="한 주 뒤로"
                 >
-                  →
+                  ▶
                 </Button>
               </div>
               {/* 월 단위 네비게이션 */}
@@ -299,13 +299,13 @@ export default function AllListPage() {
                   className="h-8 w-7 p-0 text-xs"
                   title="한 달 앞으로"
                 >
-                  ←
+                  ◀
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={setThisMonth}
-                  className="h-8 px-2 text-xs whitespace-nowrap"
+                  className="h-8 px-4 text-xs whitespace-nowrap"
                 >
                   이번달
                 </Button>
@@ -316,7 +316,7 @@ export default function AllListPage() {
                   className="h-8 w-7 p-0 text-xs"
                   title="한 달 뒤로"
                 >
-                  →
+                  ▶
                 </Button>
               </div>
               {/* 올해 버튼 */}
@@ -324,7 +324,7 @@ export default function AllListPage() {
                 variant="outline"
                 size="sm"
                 onClick={setThisYear}
-                className="h-8 px-2 text-xs whitespace-nowrap"
+                className="h-8 px-4 text-xs whitespace-nowrap"
               >
                 올해
               </Button>
