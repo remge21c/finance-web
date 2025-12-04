@@ -205,15 +205,13 @@ export default function TransactionTable({
             </>
           )}
         </div>
-          {/* 중앙: 현재 잔액 */}
-          {selectedIds.length === 0 && (
-            <div className="flex-1 text-center text-lg font-bold">
+          {/* 중앙: 현재 잔액 (항상 표시) */}
+          <div className="flex-1 text-center text-lg font-bold">
           현재 잔액:{" "}
           <span className={balance >= 0 ? "text-emerald-600" : "text-red-600"}>
             {formatAmount(balance)} {currency}
           </span>
-            </div>
-          )}
+          </div>
           {/* 오른쪽: CSV 버튼들 */}
           <div className="flex items-center gap-2 flex-1 justify-end">
             {onCsvExport && (
