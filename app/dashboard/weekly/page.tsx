@@ -146,73 +146,31 @@ export default function WeeklyReportPage() {
           <style>
             @page {
               size: A4;
-              margin: 10mm;
+              margin: 8mm;
+            }
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
             }
             body {
-              font-family: 'Malgun Gothic', sans-serif;
-              margin: 0;
-              padding: 20mm;
+              font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+              padding: 8mm;
+              font-size: 10px;
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
             }
-            .report-header {
-              text-align: center;
-              margin-bottom: 20px;
-            }
-            .report-title {
-              font-size: 24px;
-              font-weight: bold;
-              margin-bottom: 10px;
-            }
-            .report-info {
-              font-size: 12px;
-              color: #666;
-              margin-bottom: 20px;
-            }
             table {
-              width: 100%;
               border-collapse: collapse;
-              margin-bottom: 20px;
-              font-size: 11px;
+              width: 100%;
             }
             th, td {
               border: 1px solid #000;
-              padding: 6px;
-              text-align: left;
-            }
-            th {
-              background-color: #f0f0f0;
-              font-weight: bold;
-              text-align: center;
-            }
-            .income-table th {
-              background-color: #e3f2fd;
-            }
-            .expense-table th {
-              background-color: #ffebee;
-            }
-            .summary-section {
-              margin-top: 20px;
-            }
-            .summary-box {
-              border: 1px solid #000;
-              padding: 10px;
-              margin-bottom: 10px;
-            }
-            .summary-title {
-              font-weight: bold;
-              margin-bottom: 8px;
-              font-size: 12px;
-            }
-            .summary-row {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 4px;
-              font-size: 11px;
+              padding: 3px;
             }
             @media print {
               body {
-                padding: 0;
+                padding: 8mm;
               }
             }
           </style>
@@ -221,7 +179,9 @@ export default function WeeklyReportPage() {
           ${printContent}
           <script>
             window.onload = function() {
-              window.print();
+              setTimeout(function() {
+                window.print();
+              }, 100);
             };
           </script>
         </body>
@@ -270,147 +230,173 @@ export default function WeeklyReportPage() {
 
       {/* 출력 영역 (화면에서는 숨김) */}
       <div ref={printRef} className="hidden">
-        <div className="report-header">
-          <div className="report-title">주간보고서</div>
-          <div className="report-info">
-            보고 기간: {format(weekRange.start, "yyyy년 MM월 dd일", { locale: ko })} ~ {format(weekRange.end, "yyyy년 MM월 dd일", { locale: ko })} 생성일: {format(new Date(), "yyyy년 MM월 dd일 HH:mm", { locale: ko })}
+        {/* 헤더 섹션 */}
+        <div style={{ textAlign: 'center', marginBottom: '15px' }}>
+          <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#22c55e', marginBottom: '8px' }}>주간보고서</div>
+          <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
+            보고 기간: {format(weekRange.start, "yyyy년 MM월 dd일", { locale: ko })} ~ {format(weekRange.end, "yyyy년 MM월 dd일", { locale: ko })}
+          </div>
+          <div style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
+            생성일: {format(new Date(), "yyyy년 MM월 dd일 HH:mm", { locale: ko })}
+          </div>
+          <div style={{ borderTop: '2px solid #22c55e', width: '100%', marginTop: '8px' }}></div>
+        </div>
+
+        {/* 수입/지출 테이블 섹션 (나란히 배치) */}
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+          {/* 수입 내역 (왼쪽) */}
+          <div style={{ flex: '1' }}>
+            <div style={{ fontSize: '13px', fontWeight: 'bold', textAlign: 'center', marginBottom: '6px' }}>수입 내역</div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
+              <thead>
+                <tr>
+                  <th style={{ border: '1px solid #000', padding: '4px', textAlign: 'center', backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>날짜</th>
+                  <th style={{ border: '1px solid #000', padding: '4px', textAlign: 'center', backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>항목</th>
+                  <th style={{ border: '1px solid #000', padding: '4px', textAlign: 'center', backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>내용</th>
+                  <th style={{ border: '1px solid #000', padding: '4px', textAlign: 'center', backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>금액</th>
+                </tr>
+              </thead>
+              <tbody>
+                {incomeTransactions.length === 0 ? (
+                  Array.from({ length: 20 }).map((_, i) => (
+                    <tr key={`empty-income-${i}`}>
+                      <td style={{ border: '1px solid #000', padding: '4px' }}></td>
+                      <td style={{ border: '1px solid #000', padding: '4px' }}></td>
+                      <td style={{ border: '1px solid #000', padding: '4px' }}></td>
+                      <td style={{ border: '1px solid #000', padding: '4px' }}></td>
+                    </tr>
+                  ))
+                ) : (
+                  <>
+                    {incomeTransactions.map((t) => (
+                      <tr key={t.id}>
+                        <td style={{ border: '1px solid #000', padding: '4px', textAlign: 'center' }}>{format(parseISO(t.date), "MM-dd")}</td>
+                        <td style={{ border: '1px solid #000', padding: '4px', textAlign: 'center' }}>{t.item}</td>
+                        <td style={{ border: '1px solid #000', padding: '4px' }}>{t.description || ''}</td>
+                        <td style={{ border: '1px solid #000', padding: '4px', textAlign: 'right' }}>{formatAmount(Number(t.amount))}</td>
+                      </tr>
+                    ))}
+                    {Array.from({ length: Math.max(0, 20 - incomeTransactions.length) }).map((_, i) => (
+                      <tr key={`empty-income-${i}`}>
+                        <td style={{ border: '1px solid #000', padding: '4px' }}></td>
+                        <td style={{ border: '1px solid #000', padding: '4px' }}></td>
+                        <td style={{ border: '1px solid #000', padding: '4px' }}></td>
+                        <td style={{ border: '1px solid #000', padding: '4px' }}></td>
+                      </tr>
+                    ))}
+                  </>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 지출 내역 (오른쪽) */}
+          <div style={{ flex: '1' }}>
+            <div style={{ fontSize: '13px', fontWeight: 'bold', textAlign: 'center', marginBottom: '6px' }}>지출 내역</div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
+              <thead>
+                <tr>
+                  <th style={{ border: '1px solid #000', padding: '4px', textAlign: 'center', backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>날짜</th>
+                  <th style={{ border: '1px solid #000', padding: '4px', textAlign: 'center', backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>항목</th>
+                  <th style={{ border: '1px solid #000', padding: '4px', textAlign: 'center', backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>내용</th>
+                  <th style={{ border: '1px solid #000', padding: '4px', textAlign: 'center', backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>금액</th>
+                </tr>
+              </thead>
+              <tbody>
+                {expenseTransactions.length === 0 ? (
+                  Array.from({ length: 20 }).map((_, i) => (
+                    <tr key={`empty-expense-${i}`}>
+                      <td style={{ border: '1px solid #000', padding: '4px' }}></td>
+                      <td style={{ border: '1px solid #000', padding: '4px' }}></td>
+                      <td style={{ border: '1px solid #000', padding: '4px' }}></td>
+                      <td style={{ border: '1px solid #000', padding: '4px' }}></td>
+                    </tr>
+                  ))
+                ) : (
+                  <>
+                    {expenseTransactions.map((t) => (
+                      <tr key={t.id}>
+                        <td style={{ border: '1px solid #000', padding: '4px', textAlign: 'center' }}>{format(parseISO(t.date), "MM-dd")}</td>
+                        <td style={{ border: '1px solid #000', padding: '4px', textAlign: 'center' }}>{t.item}</td>
+                        <td style={{ border: '1px solid #000', padding: '4px' }}>{t.description || ''}</td>
+                        <td style={{ border: '1px solid #000', padding: '4px', textAlign: 'right', color: '#dc2626' }}>{formatAmount(Number(t.amount))}</td>
+                      </tr>
+                    ))}
+                    {Array.from({ length: Math.max(0, 20 - expenseTransactions.length) }).map((_, i) => (
+                      <tr key={`empty-expense-${i}`}>
+                        <td style={{ border: '1px solid #000', padding: '4px' }}></td>
+                        <td style={{ border: '1px solid #000', padding: '4px' }}></td>
+                        <td style={{ border: '1px solid #000', padding: '4px' }}></td>
+                        <td style={{ border: '1px solid #000', padding: '4px' }}></td>
+                      </tr>
+                    ))}
+                  </>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {/* 수입 내역 */}
-        <div className="income-section">
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '10px' }}>수입 내역</h3>
-          <table className="income-table" style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
-            <thead>
-              <tr>
-                <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', backgroundColor: '#e3f2fd' }}>날짜</th>
-                <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', backgroundColor: '#e3f2fd' }}>항목</th>
-                <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', backgroundColor: '#e3f2fd' }}>내용</th>
-                <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', backgroundColor: '#e3f2fd' }}>금액</th>
-              </tr>
-            </thead>
-            <tbody>
-              {incomeTransactions.length === 0 ? (
-                Array.from({ length: 30 }).map((_, i) => (
-                  <tr key={`empty-income-${i}`}>
-                    <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-                    <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-                    <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-                    <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-                  </tr>
-                ))
-              ) : (
-                <>
-                  {incomeTransactions.map((t) => (
-                    <tr key={t.id}>
-                      <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>{format(parseISO(t.date), "MM-dd")}</td>
-                      <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>{t.item}</td>
-                      <td style={{ border: '1px solid #000', padding: '6px' }}>{t.description || ''}</td>
-                      <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'right' }}>{formatAmount(Number(t.amount))}</td>
-                    </tr>
-                  ))}
-                  {Array.from({ length: Math.max(0, 30 - incomeTransactions.length) }).map((_, i) => (
-                    <tr key={`empty-income-${i}`}>
-                      <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-                      <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-                      <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-                      <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-                    </tr>
-                  ))}
-                </>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* 지출 내역 */}
-        <div className="expense-section">
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '10px' }}>지출 내역</h3>
-          <table className="expense-table" style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
-            <thead>
-              <tr>
-                <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', backgroundColor: '#ffebee' }}>날짜</th>
-                <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', backgroundColor: '#ffebee' }}>항목</th>
-                <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', backgroundColor: '#ffebee' }}>내용</th>
-                <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', backgroundColor: '#ffebee' }}>금액</th>
-              </tr>
-            </thead>
-            <tbody>
-              {expenseTransactions.length === 0 ? (
-                Array.from({ length: 30 }).map((_, i) => (
-                  <tr key={`empty-expense-${i}`}>
-                    <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-                    <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-                    <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-                    <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-                  </tr>
-                ))
-              ) : (
-                <>
-                  {expenseTransactions.map((t) => (
-                    <tr key={t.id}>
-                      <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>{format(parseISO(t.date), "MM-dd")}</td>
-                      <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>{t.item}</td>
-                      <td style={{ border: '1px solid #000', padding: '6px' }}>{t.description || ''}</td>
-                      <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'right' }}>{formatAmount(Number(t.amount))}</td>
-                    </tr>
-                  ))}
-                  {Array.from({ length: Math.max(0, 30 - expenseTransactions.length) }).map((_, i) => (
-                    <tr key={`empty-expense-${i}`}>
-                      <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-                      <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-                      <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-                      <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-                    </tr>
-                  ))}
-                </>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* 요약 정보 */}
-        <div className="summary-section" style={{ marginTop: '20px' }}>
-          <div className="summary-box" style={{ border: '1px solid #000', padding: '10px', marginBottom: '10px' }}>
-            <div className="summary-title" style={{ fontWeight: 'bold', marginBottom: '8px' }}>주간 요약</div>
-            <div className="summary-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-              <span>지난주 이월금:</span>
+        {/* 요약 섹션 (나란히 배치) */}
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+          {/* 주간 요약 (왼쪽) */}
+          <div style={{ flex: '1', border: '1px solid #000', padding: '8px' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '12px' }}>주간 요약</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '11px' }}>
+              <span>지난주 잔액:</span>
               <span>{formatAmount(lastWeekBalance)} {currency}</span>
             </div>
-            <div className="summary-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-              <span>이번주 총 수입:</span>
-              <span>{formatAmount(incomeTotal)} {currency}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '11px' }}>
+              <span>총 수입:</span>
+              <span style={{ color: '#2563eb' }}>{formatAmount(incomeTotal)} {currency}</span>
             </div>
-            <div className="summary-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-              <span>이번주 총 지출:</span>
-              <span>{formatAmount(expenseTotal)} {currency}</span>
-            </div>
-            <div className="summary-row" style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #000', paddingTop: '4px', marginTop: '4px' }}>
-              <span style={{ fontWeight: 'bold' }}>이번주 잔액:</span>
-              <span style={{ fontWeight: 'bold' }}>{formatAmount(currentBalance)} {currency}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '11px' }}>
+              <span>총 지출:</span>
+              <span style={{ color: '#dc2626' }}>{formatAmount(expenseTotal)} {currency}</span>
             </div>
           </div>
 
-          <div className="summary-box" style={{ border: '1px solid #000', padding: '10px' }}>
-            <div className="summary-title" style={{ fontWeight: 'bold', marginBottom: '8px' }}>계좌 현황</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '8px' }}>
+          {/* 계좌 현황 (오른쪽) */}
+          <div style={{ flex: '1', border: '1px solid #000', padding: '8px' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '12px' }}>계좌 현황</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginBottom: '8px' }}>
               <div>
-                <div style={{ fontSize: '11px', marginBottom: '4px' }}>현금</div>
-                <div style={{ border: '1px solid #000', padding: '4px', textAlign: 'right' }}>{formatAmount(parseFloat(cashAmount || "0"))}</div>
+                <div style={{ fontSize: '10px', marginBottom: '2px' }}>현금</div>
+                <div style={{ border: '1px solid #000', padding: '3px', textAlign: 'right', fontSize: '10px' }}>{formatAmount(parseFloat(cashAmount || "0"))}</div>
               </div>
               <div>
-                <div style={{ fontSize: '11px', marginBottom: '4px' }}>터치앤고</div>
-                <div style={{ border: '1px solid #000', padding: '4px', textAlign: 'right' }}>{formatAmount(parseFloat(touchAmount || "0"))}</div>
+                <div style={{ fontSize: '10px', marginBottom: '2px' }}>터치앤고</div>
+                <div style={{ border: '1px solid #000', padding: '3px', textAlign: 'right', fontSize: '10px' }}>{formatAmount(parseFloat(touchAmount || "0"))}</div>
               </div>
               <div>
-                <div style={{ fontSize: '11px', marginBottom: '4px' }}>기타</div>
-                <div style={{ border: '1px solid #000', padding: '4px', textAlign: 'right' }}>{formatAmount(parseFloat(otherAmount || "0"))}</div>
+                <div style={{ fontSize: '10px', marginBottom: '2px' }}>기타</div>
+                <div style={{ border: '1px solid #000', padding: '3px', textAlign: 'right', fontSize: '10px' }}>{formatAmount(parseFloat(otherAmount || "0"))}</div>
               </div>
             </div>
-            <div className="summary-row" style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #000', paddingTop: '4px', marginTop: '4px' }}>
-              <span style={{ fontWeight: 'bold' }}>총액:</span>
-              <span style={{ fontWeight: 'bold' }}>{formatAmount(totalAccount)} {currency}</span>
-            </div>
+          </div>
+        </div>
+
+        {/* 잔액 및 총계 표시 */}
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+          <div style={{ flex: '1', textAlign: 'center' }}>
+            <div style={{ fontSize: '11px', marginBottom: '4px' }}>주간 잔액</div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#22c55e' }}>{formatAmount(currentBalance)} {currency}</div>
+          </div>
+          <div style={{ flex: '1', textAlign: 'center' }}>
+            <div style={{ fontSize: '11px', marginBottom: '4px' }}>총 계좌</div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#22c55e' }}>{formatAmount(totalAccount)} {currency}</div>
+          </div>
+        </div>
+
+        {/* 서명란 */}
+        <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+          <div style={{ flex: '1', border: '2px solid #22c55e', padding: '8px' }}>
+            <div style={{ fontSize: '11px', marginBottom: '20px' }}>작성자: {settings?.author || ''}</div>
+            <div style={{ border: '1px solid #000', height: '30px' }}></div>
+          </div>
+          <div style={{ flex: '1', border: '2px solid #22c55e', padding: '8px' }}>
+            <div style={{ fontSize: '11px', marginBottom: '20px' }}>책임자: {settings?.manager || ''}</div>
+            <div style={{ border: '1px solid #000', height: '30px' }}></div>
           </div>
         </div>
       </div>
