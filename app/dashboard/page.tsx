@@ -136,15 +136,15 @@ export default function DashboardPage() {
     if (!confirm(`${ids.length}개 항목을 삭제하시겠습니까?`)) {
       return;
     }
-
+    
     const result = await deleteMultipleTransactions(ids);
     if (result.error) {
       toast.error("삭제 실패: " + result.error);
       return;
     }
 
-    toast.success(`${ids.length}개 항목이 삭제되었습니다.`);
-    setSelectedIds([]);
+      toast.success(`${ids.length}개 항목이 삭제되었습니다.`);
+      setSelectedIds([]);
     setSelectedTransaction(null);
   };
 

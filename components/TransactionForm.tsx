@@ -218,7 +218,7 @@ export default function TransactionForm({
     // form submit은 추가 버튼에서만 호출됨
     await handleAdd();
   };
-
+    
   // 추가 버튼 핸들러 - 항상 새 거래 추가
   const handleAdd = async () => {
     if (!currentItem || !amount) {
@@ -259,7 +259,7 @@ export default function TransactionForm({
     };
 
     try {
-      await onUpdate(selectedTransaction.id, data);
+        await onUpdate(selectedTransaction.id, data);
       handleClear();
     } finally {
       setLoading(false);

@@ -207,7 +207,7 @@ export default function AllListPage() {
                   <TableHead className="w-[100px]">항목</TableHead>
                   <TableHead className="w-[180px]">내용</TableHead>
                   <TableHead className="w-[100px] text-right">금액 ({currency})</TableHead>
-                  <TableHead className="w-[140px]">메모</TableHead>
+                  <TableHead className="w-[210px]">메모</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

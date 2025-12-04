@@ -128,7 +128,7 @@ export default function TransactionTable({
               <TableHead className="w-[100px] text-center">항목</TableHead>
               <TableHead className="w-[180px] text-center">내용</TableHead>
               <TableHead className="w-[100px] text-center">금액 ({currency})</TableHead>
-              <TableHead className="w-[140px] text-center">메모</TableHead>
+              <TableHead className="w-[210px] text-center">메모</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -189,29 +189,29 @@ export default function TransactionTable({
         <div className="flex items-center justify-between">
           {/* 왼쪽: 선택 합계 및 삭제 버튼 */}
           <div className="flex items-center gap-3 flex-1">
-            {selectedIds.length > 0 && (
-              <>
+          {selectedIds.length > 0 && (
+            <>
                 <div className="text-sm text-gray-600">
                   선택 합계: <strong>{formatAmount(selectedSum)} {currency}</strong> ({selectedIds.length}개)
                 </div>
-                <Button
-                  variant="destructive"
-                  size="sm"
+              <Button
+                variant="destructive"
+                size="sm"
                   onClick={handleDeleteClick}
                   className="h-8 px-3"
-                >
+              >
                   선택 삭제
-                </Button>
-              </>
-            )}
-          </div>
+              </Button>
+            </>
+          )}
+        </div>
           {/* 중앙: 현재 잔액 */}
           {selectedIds.length === 0 && (
             <div className="flex-1 text-center text-lg font-bold">
-              현재 잔액:{" "}
-              <span className={balance >= 0 ? "text-emerald-600" : "text-red-600"}>
-                {formatAmount(balance)} {currency}
-              </span>
+          현재 잔액:{" "}
+          <span className={balance >= 0 ? "text-emerald-600" : "text-red-600"}>
+            {formatAmount(balance)} {currency}
+          </span>
             </div>
           )}
           {/* 오른쪽: CSV 버튼들 */}

@@ -316,22 +316,6 @@ export default function WeeklyReportPage() {
             </CardContent>
           </Card>
         </div>
-
-        {/* 서명란 */}
-        <div className="grid grid-cols-2 gap-8 mt-6 print:mt-8">
-          <Card>
-            <CardContent className="py-4 text-center">
-              <div className="text-sm text-gray-600 mb-2">작성자: {settings?.author || ""}</div>
-              <div className="h-12 border-b border-gray-300"></div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="py-4 text-center">
-              <div className="text-sm text-gray-600 mb-2">책임자: {settings?.manager || ""}</div>
-              <div className="h-12 border-b border-gray-300"></div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </div>
   );
