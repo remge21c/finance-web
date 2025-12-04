@@ -1,18 +1,12 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useTransactions } from "@/lib/hooks/useTransactions";
 import { useSettings } from "@/lib/hooks/useSettings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -32,8 +26,6 @@ import {
   isBefore,
 } from "date-fns";
 import { ko } from "date-fns/locale";
-import { useReactToPrint } from "react-to-print";
-import { PrinterIcon } from "lucide-react";
 
 export default function WeeklyReportPage() {
   const { transactions, loading: txLoading } = useTransactions();
@@ -43,9 +35,6 @@ export default function WeeklyReportPage() {
   const [cashAmount, setCashAmount] = useState("");
   const [touchAmount, setTouchAmount] = useState("");
   const [otherAmount, setOtherAmount] = useState("");
-  const [showPrintPreview, setShowPrintPreview] = useState(false);
-  
-  const printRef = useRef<HTMLDivElement>(null);
 
   const loading = txLoading || settingsLoading;
   const currency = settings?.currency || "원";
@@ -124,69 +113,414 @@ export default function WeeklyReportPage() {
     }
   };
 
-  // 새 창으로 출력 미리보기 열기
+  // 새 창으로 HTML 보고서 생성
   const handlePrint = () => {
-    if (!printRef.current) return;
-
     const printWindow = window.open("", "_blank", "width=800,height=600");
     if (!printWindow) {
       toast.error("팝업이 차단되었습니다. 팝업 차단을 해제해주세요.");
       return;
     }
 
-    const printContent = printRef.current.innerHTML;
-    const currentDate = new Date();
-    const reportDate = format(currentDate, "yyyy년 MM월 dd일 HH:mm");
+    // 보고 기간 및 생성일 포맷팅
+    const reportPeriod = `${format(weekRange.start, "yyyy년 MM월 dd일", { locale: ko })} ~ ${format(weekRange.end, "yyyy년 MM월 dd일", { locale: ko })}`;
+    const createdDate = format(new Date(), "yyyy년 MM월 dd일 HH:mm", { locale: ko });
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>주간보고서_${format(weekRange.start, "yyyyMMdd")}-${format(weekRange.end, "yyyyMMdd")}</title>
-          <style>
-            @page {
-              size: A4;
-              margin: 8mm;
-            }
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-            }
+    // 수입 내역 테이블 행 생성
+    const incomeRows = [];
+    const maxRows = 24; // 최대 24행
+    const incomeDataRows = incomeTransactions.map((t) => {
+      const date = format(parseISO(t.date), "MM/dd");
+      return `<tr>
+        <td>${date}</td>
+        <td>${t.item}</td>
+        <td>${t.description || ''}</td>
+        <td class="amount income">${formatAmount(Number(t.amount))}</td>
+      </tr>`;
+    }).join('');
+    
+    // 빈 행 추가
+    const emptyIncomeRows = Array.from({ length: Math.max(0, maxRows - incomeTransactions.length) })
+      .map(() => `<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>`)
+      .join('');
+    
+    const incomeTableRows = incomeDataRows + emptyIncomeRows;
+
+    // 지출 내역 테이블 행 생성
+    const expenseRows = [];
+    const expenseDataRows = expenseTransactions.map((t) => {
+      const date = format(parseISO(t.date), "MM/dd");
+      return `<tr>
+        <td>${date}</td>
+        <td>${t.item}</td>
+        <td>${t.description || ''}</td>
+        <td class="amount expense">${formatAmount(Number(t.amount))}</td>
+      </tr>`;
+    }).join('');
+    
+    // 빈 행 추가
+    const emptyExpenseRows = Array.from({ length: Math.max(0, maxRows - expenseTransactions.length) })
+      .map(() => `<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>`)
+      .join('');
+    
+    const expenseTableRows = expenseDataRows + emptyExpenseRows;
+
+    // 작성자 및 책임자 정보
+    const author = settings?.author || '';
+    const manager = settings?.manager || '';
+
+    const htmlContent = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주간보고서</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+        @media screen {
             body {
-              font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
-              padding: 8mm;
-              font-size: 10px;
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
+                font-family: 'Malgun Gothic', Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: #f0f0f0;
+                display: flex;
+                justify-content: center;
+                align-items: flex-start;
+                min-height: 100vh;
             }
-            table {
-              border-collapse: collapse;
-              width: 100%;
+            .report-container {
+                width: 210mm;
+                min-height: 297mm;
+                background-color: white;
+                padding: 10mm;
+                box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                border-radius: 5px;
             }
-            th, td {
-              border: 1px solid #000;
-              padding: 3px;
+        }
+        @media print {
+            body {
+                font-family: 'Malgun Gothic', Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: white;
             }
-            @media print {
-              body {
-                padding: 8mm;
-              }
+            .report-container {
+                width: 100%;
+                min-height: 100vh;
+                background-color: white;
+                padding: 0;
+                box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
             }
-          </style>
-        </head>
-        <body>
-          ${printContent}
-          <script>
-            window.onload = function() {
-              setTimeout(function() {
-                window.print();
-              }, 100);
-            };
-          </script>
-        </body>
-      </html>
-    `);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 8mm;
+            border-bottom: 2px solid #2E7D32;
+            padding-bottom: 5mm;
+        }
+        .header h1 {
+            color: #2E7D32;
+            margin: 0;
+            font-size: 28px;
+        }
+        .header p {
+            color: #666;
+            margin: 5px 0 0 0;
+            font-size: 14px;
+        }
+        .content {
+            display: flex;
+            gap: 8mm;
+            flex: 1;
+            margin-bottom: 8mm;
+        }
+        .section {
+            flex: 1;
+        }
+        .section h3 {
+            background-color: #2E7D32;
+            color: white;
+            padding: 8px;
+            margin: 0 0 10px 0;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 5mm;
+            font-size: 11px;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: left;
+            font-size: 11px;
+            line-height: 1.3;
+        }
+        .data-table th:last-child, .data-table td:last-child {
+            text-align: right;
+        }
+        .data-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .data-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        @media print {
+            .data-table {
+                font-size: 10px;
+            }
+            .data-table th, .data-table td {
+                padding: 3px;
+                font-size: 10px;
+                line-height: 1.2;
+            }
+        }
+        .summary-section {
+            display: flex;
+            gap: 5mm;
+            margin-bottom: 3mm;
+        }
+        .summary {
+            flex: 1;
+            background-color: #f8f9fa;
+            padding: 5px;
+            border-radius: 3px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .account-info {
+            flex: 1;
+            background-color: #f8f9fa;
+            padding: 5px;
+            border-radius: 3px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        @media print {
+            .summary-section {
+                margin-bottom: 2mm;
+            }
+            .summary, .account-info {
+                padding: 3px;
+                font-size: 10px;
+            }
+        }
+        .summary h4 {
+            color: #2E7D32;
+            margin-top: 0;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 3px 0;
+            padding: 2px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .summary-row:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 16px;
+            color: #2E7D32;
+        }
+        .account-info h4 {
+            color: #2E7D32;
+            margin-top: 0;
+        }
+        .account-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 3px 0;
+            padding: 2px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .account-row:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 16px;
+            color: #2E7D32;
+        }
+        .total-account {
+            font-weight: bold;
+            font-size: 18px;
+            color: #2E7D32;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+        .amount {
+            text-align: right;
+            font-weight: bold;
+        }
+        .income {
+            color: #1976D2;
+        }
+        .expense {
+            color: #D32F2F;
+        }
+        .signature-section {
+            margin-top: 5px;
+            padding-top: 5px;
+        }
+        .signature-label {
+            font-weight: bold;
+            color: #2E7D32;
+            font-size: 12px;
+            text-align: center;
+            margin-bottom: 3px;
+        }
+        .signature-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 50px;
+        }
+        .signature-box {
+            flex: 1;
+            text-align: center;
+            border: 2px solid #2E7D32;
+            border-radius: 8px;
+            padding: 5px;
+            background-color: #f9f9f9;
+            min-height: 40px;
+        }
+        .signature-line {
+            border: 1px solid #333;
+            width: 100%;
+            height: 40px;
+            background-color: white;
+            border-radius: 4px;
+        }
+        @media print {
+            .signature-section {
+                margin-top: 3px;
+                padding-top: 3px;
+            }
+            .signature-label {
+                font-size: 10px;
+            }
+            .signature-box {
+                padding: 3px;
+                min-height: 30px;
+            }
+            .signature-line {
+                height: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-container">
+        <div class="header">
+            <h1>주간보고서</h1>
+            <p>보고 기간: ${reportPeriod}</p>
+            <p>생성일: ${createdDate}</p>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <h3>수입 내역</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 15%;">날짜</th>
+                            <th style="width: 20%;">항목</th>
+                            <th style="width: 50%;">내용</th>
+                            <th style="width: 15%;">금액</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${incomeTableRows}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h3>지출 내역</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 15%;">날짜</th>
+                            <th style="width: 20%;">항목</th>
+                            <th style="width: 50%;">내용</th>
+                            <th style="width: 15%;">금액</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${expenseTableRows}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="summary-section">
+            <div class="summary">
+                <h4>주간 요약</h4>
+                <div class="summary-row">
+                    <span>지난주 잔액:</span>
+                    <span class="amount">${formatAmount(lastWeekBalance)} ${currency}</span>
+                </div>
+                <div class="summary-row">
+                    <span>총 수입:</span>
+                    <span class="amount income">${formatAmount(incomeTotal)} ${currency}</span>
+                </div>
+                <div class="summary-row">
+                    <span>총 지출:</span>
+                    <span class="amount expense">${formatAmount(expenseTotal)} ${currency}</span>
+                </div>
+                <div class="summary-row total-account">
+                    <span>주간 잔액:</span>
+                    <span class="amount">${formatAmount(currentBalance)} ${currency}</span>
+                </div>
+            </div>
+            
+            <div class="account-info">
+                <h4>계좌 현황</h4>
+                <div class="account-row">
+                    <span>현금:</span>
+                    <span class="amount">${formatAmount(parseFloat(cashAmount || "0"))} ${currency}</span>
+                </div>
+                <div class="account-row">
+                    <span>터치앤고:</span>
+                    <span class="amount">${formatAmount(parseFloat(touchAmount || "0"))} ${currency}</span>
+                </div>
+                <div class="account-row">
+                    <span>기타:</span>
+                    <span class="amount">${formatAmount(parseFloat(otherAmount || "0"))} ${currency}</span>
+                </div>
+                <div class="account-row total-account">
+                    <span>총 계좌:</span>
+                    <span class="amount">${formatAmount(totalAccount)} ${currency}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="signature-section">
+            <div class="signature-row">
+                <div class="signature-box">
+                    <div class="signature-label">작성자: ${author}</div>
+                    <div class="signature-line"></div>
+                </div>
+                <div class="signature-box">
+                    <div class="signature-label">책임자: ${manager}</div>
+                    <div class="signature-line"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`;
+
+    printWindow.document.write(htmlContent);
     printWindow.document.close();
   };
 
@@ -226,179 +560,6 @@ export default function WeeklyReportPage() {
       {/* 주간 범위 표시 */}
       <div className="text-center text-gray-600">
         {format(weekRange.start, "yyyy년 M월 d일", { locale: ko })} ~ {format(weekRange.end, "M월 d일", { locale: ko })}
-      </div>
-
-      {/* 출력 영역 (화면에서는 숨김) */}
-      <div ref={printRef} className="hidden">
-        {/* 헤더 섹션 */}
-        <div style={{ textAlign: 'center', marginBottom: '15px' }}>
-          <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#22c55e', marginBottom: '8px' }}>주간보고서</div>
-          <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
-            보고 기간: {format(weekRange.start, "yyyy년 MM월 dd일", { locale: ko })} ~ {format(weekRange.end, "yyyy년 MM월 dd일", { locale: ko })}
-          </div>
-          <div style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
-            생성일: {format(new Date(), "yyyy년 MM월 dd일 HH:mm", { locale: ko })}
-          </div>
-          <div style={{ borderTop: '2px solid #22c55e', width: '100%', marginTop: '8px' }}></div>
-        </div>
-
-        {/* 수입/지출 테이블 섹션 (나란히 배치) */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-          {/* 수입 내역 (왼쪽) */}
-          <div style={{ flex: '1' }}>
-            <div style={{ fontSize: '13px', fontWeight: 'bold', textAlign: 'center', marginBottom: '6px' }}>수입 내역</div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
-              <thead>
-                <tr>
-                  <th style={{ border: '1px solid #000', padding: '4px', textAlign: 'center', backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>날짜</th>
-                  <th style={{ border: '1px solid #000', padding: '4px', textAlign: 'center', backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>항목</th>
-                  <th style={{ border: '1px solid #000', padding: '4px', textAlign: 'center', backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>내용</th>
-                  <th style={{ border: '1px solid #000', padding: '4px', textAlign: 'center', backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>금액</th>
-                </tr>
-              </thead>
-              <tbody>
-                {incomeTransactions.length === 0 ? (
-                  Array.from({ length: 20 }).map((_, i) => (
-                    <tr key={`empty-income-${i}`}>
-                      <td style={{ border: '1px solid #000', padding: '4px' }}></td>
-                      <td style={{ border: '1px solid #000', padding: '4px' }}></td>
-                      <td style={{ border: '1px solid #000', padding: '4px' }}></td>
-                      <td style={{ border: '1px solid #000', padding: '4px' }}></td>
-                    </tr>
-                  ))
-                ) : (
-                  <>
-                    {incomeTransactions.map((t) => (
-                      <tr key={t.id}>
-                        <td style={{ border: '1px solid #000', padding: '4px', textAlign: 'center' }}>{format(parseISO(t.date), "MM-dd")}</td>
-                        <td style={{ border: '1px solid #000', padding: '4px', textAlign: 'center' }}>{t.item}</td>
-                        <td style={{ border: '1px solid #000', padding: '4px' }}>{t.description || ''}</td>
-                        <td style={{ border: '1px solid #000', padding: '4px', textAlign: 'right' }}>{formatAmount(Number(t.amount))}</td>
-                      </tr>
-                    ))}
-                    {Array.from({ length: Math.max(0, 20 - incomeTransactions.length) }).map((_, i) => (
-                      <tr key={`empty-income-${i}`}>
-                        <td style={{ border: '1px solid #000', padding: '4px' }}></td>
-                        <td style={{ border: '1px solid #000', padding: '4px' }}></td>
-                        <td style={{ border: '1px solid #000', padding: '4px' }}></td>
-                        <td style={{ border: '1px solid #000', padding: '4px' }}></td>
-                      </tr>
-                    ))}
-                  </>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* 지출 내역 (오른쪽) */}
-          <div style={{ flex: '1' }}>
-            <div style={{ fontSize: '13px', fontWeight: 'bold', textAlign: 'center', marginBottom: '6px' }}>지출 내역</div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
-              <thead>
-                <tr>
-                  <th style={{ border: '1px solid #000', padding: '4px', textAlign: 'center', backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>날짜</th>
-                  <th style={{ border: '1px solid #000', padding: '4px', textAlign: 'center', backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>항목</th>
-                  <th style={{ border: '1px solid #000', padding: '4px', textAlign: 'center', backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>내용</th>
-                  <th style={{ border: '1px solid #000', padding: '4px', textAlign: 'center', backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>금액</th>
-                </tr>
-              </thead>
-              <tbody>
-                {expenseTransactions.length === 0 ? (
-                  Array.from({ length: 20 }).map((_, i) => (
-                    <tr key={`empty-expense-${i}`}>
-                      <td style={{ border: '1px solid #000', padding: '4px' }}></td>
-                      <td style={{ border: '1px solid #000', padding: '4px' }}></td>
-                      <td style={{ border: '1px solid #000', padding: '4px' }}></td>
-                      <td style={{ border: '1px solid #000', padding: '4px' }}></td>
-                    </tr>
-                  ))
-                ) : (
-                  <>
-                    {expenseTransactions.map((t) => (
-                      <tr key={t.id}>
-                        <td style={{ border: '1px solid #000', padding: '4px', textAlign: 'center' }}>{format(parseISO(t.date), "MM-dd")}</td>
-                        <td style={{ border: '1px solid #000', padding: '4px', textAlign: 'center' }}>{t.item}</td>
-                        <td style={{ border: '1px solid #000', padding: '4px' }}>{t.description || ''}</td>
-                        <td style={{ border: '1px solid #000', padding: '4px', textAlign: 'right', color: '#dc2626' }}>{formatAmount(Number(t.amount))}</td>
-                      </tr>
-                    ))}
-                    {Array.from({ length: Math.max(0, 20 - expenseTransactions.length) }).map((_, i) => (
-                      <tr key={`empty-expense-${i}`}>
-                        <td style={{ border: '1px solid #000', padding: '4px' }}></td>
-                        <td style={{ border: '1px solid #000', padding: '4px' }}></td>
-                        <td style={{ border: '1px solid #000', padding: '4px' }}></td>
-                        <td style={{ border: '1px solid #000', padding: '4px' }}></td>
-                      </tr>
-                    ))}
-                  </>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* 요약 섹션 (나란히 배치) */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-          {/* 주간 요약 (왼쪽) */}
-          <div style={{ flex: '1', border: '1px solid #000', padding: '8px' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '12px' }}>주간 요약</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '11px' }}>
-              <span>지난주 잔액:</span>
-              <span>{formatAmount(lastWeekBalance)} {currency}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '11px' }}>
-              <span>총 수입:</span>
-              <span style={{ color: '#2563eb' }}>{formatAmount(incomeTotal)} {currency}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '11px' }}>
-              <span>총 지출:</span>
-              <span style={{ color: '#dc2626' }}>{formatAmount(expenseTotal)} {currency}</span>
-            </div>
-          </div>
-
-          {/* 계좌 현황 (오른쪽) */}
-          <div style={{ flex: '1', border: '1px solid #000', padding: '8px' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '12px' }}>계좌 현황</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginBottom: '8px' }}>
-              <div>
-                <div style={{ fontSize: '10px', marginBottom: '2px' }}>현금</div>
-                <div style={{ border: '1px solid #000', padding: '3px', textAlign: 'right', fontSize: '10px' }}>{formatAmount(parseFloat(cashAmount || "0"))}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '10px', marginBottom: '2px' }}>터치앤고</div>
-                <div style={{ border: '1px solid #000', padding: '3px', textAlign: 'right', fontSize: '10px' }}>{formatAmount(parseFloat(touchAmount || "0"))}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '10px', marginBottom: '2px' }}>기타</div>
-                <div style={{ border: '1px solid #000', padding: '3px', textAlign: 'right', fontSize: '10px' }}>{formatAmount(parseFloat(otherAmount || "0"))}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 잔액 및 총계 표시 */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-          <div style={{ flex: '1', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', marginBottom: '4px' }}>주간 잔액</div>
-            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#22c55e' }}>{formatAmount(currentBalance)} {currency}</div>
-          </div>
-          <div style={{ flex: '1', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', marginBottom: '4px' }}>총 계좌</div>
-            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#22c55e' }}>{formatAmount(totalAccount)} {currency}</div>
-          </div>
-        </div>
-
-        {/* 서명란 */}
-        <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-          <div style={{ flex: '1', border: '2px solid #22c55e', padding: '8px' }}>
-            <div style={{ fontSize: '11px', marginBottom: '20px' }}>작성자: {settings?.author || ''}</div>
-            <div style={{ border: '1px solid #000', height: '30px' }}></div>
-          </div>
-          <div style={{ flex: '1', border: '2px solid #22c55e', padding: '8px' }}>
-            <div style={{ fontSize: '11px', marginBottom: '20px' }}>책임자: {settings?.manager || ''}</div>
-            <div style={{ border: '1px solid #000', height: '30px' }}></div>
-          </div>
-        </div>
       </div>
 
       {/* 화면 표시 영역 */}
@@ -729,4 +890,5 @@ export default function WeeklyReportPage() {
     </div>
   );
 }
+
 
