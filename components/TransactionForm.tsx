@@ -360,7 +360,7 @@ export default function TransactionForm({
         </div>
 
         {/* 메모 (텍스트 입력 + 드롭다운) */}
-        <div className="space-y-1 relative w-[120px]">
+        <div className="space-y-1 relative w-[180px]">
           <Label htmlFor="memo" className="text-xs">메모</Label>
           <Input
             ref={memoInputRef}
