@@ -32,6 +32,10 @@ import {
   format,
   parseISO,
   isWithinInterval,
+  addWeeks,
+  subWeeks,
+  addMonths,
+  subMonths,
 } from "date-fns";
 
 export default function AllListPage() {
@@ -103,6 +107,82 @@ export default function AllListPage() {
   const setThisYear = () => {
     setStartDate(format(startOfYear(today), "yyyy-MM-dd"));
     setEndDate(format(endOfYear(today), "yyyy-MM-dd"));
+  };
+
+  // 주 단위 이동
+  const moveWeek = (direction: "prev" | "next") => {
+    const currentStart = parseISO(startDate);
+    const currentEnd = parseISO(endDate);
+    
+    // 현재 범위가 주 단위인지 확인 (대략적으로)
+    const daysDiff = Math.abs((currentEnd.getTime() - currentStart.getTime()) / (1000 * 60 * 60 * 24));
+    
+    let newStart: Date;
+    let newEnd: Date;
+    
+    if (daysDiff <= 7) {
+      // 주 단위로 이동
+      if (direction === "prev") {
+        newStart = subWeeks(currentStart, 1);
+        newEnd = subWeeks(currentEnd, 1);
+      } else {
+        newStart = addWeeks(currentStart, 1);
+        newEnd = addWeeks(currentEnd, 1);
+      }
+    } else {
+      // 주 단위가 아니면 현재 시작일 기준으로 주 단위 설정
+      const weekStart = startOfWeek(currentStart, { weekStartsOn: 1 });
+      if (direction === "prev") {
+        newStart = subWeeks(weekStart, 1);
+        newEnd = endOfWeek(newStart, { weekStartsOn: 1 });
+      } else {
+        newStart = addWeeks(weekStart, 1);
+        newEnd = endOfWeek(newStart, { weekStartsOn: 1 });
+      }
+    }
+    
+    setStartDate(format(newStart, "yyyy-MM-dd"));
+    setEndDate(format(newEnd, "yyyy-MM-dd"));
+  };
+
+  // 월 단위 이동
+  const moveMonth = (direction: "prev" | "next") => {
+    const currentStart = parseISO(startDate);
+    const currentEnd = parseISO(endDate);
+    
+    // 현재 범위가 월 단위인지 확인
+    const startMonth = startOfMonth(currentStart);
+    const endMonth = endOfMonth(currentStart);
+    const isMonthRange = 
+      format(currentStart, "yyyy-MM-dd") === format(startMonth, "yyyy-MM-dd") &&
+      format(currentEnd, "yyyy-MM-dd") === format(endMonth, "yyyy-MM-dd");
+    
+    let newStart: Date;
+    let newEnd: Date;
+    
+    if (isMonthRange) {
+      // 월 단위로 이동
+      if (direction === "prev") {
+        newStart = subMonths(currentStart, 1);
+        newEnd = endOfMonth(newStart);
+      } else {
+        newStart = addMonths(currentStart, 1);
+        newEnd = endOfMonth(newStart);
+      }
+    } else {
+      // 월 단위가 아니면 현재 시작일 기준으로 월 단위 설정
+      const monthStart = startOfMonth(currentStart);
+      if (direction === "prev") {
+        newStart = subMonths(monthStart, 1);
+        newEnd = endOfMonth(newStart);
+      } else {
+        newStart = addMonths(monthStart, 1);
+        newEnd = endOfMonth(newStart);
+      }
+    }
+    
+    setStartDate(format(newStart, "yyyy-MM-dd"));
+    setEndDate(format(newEnd, "yyyy-MM-dd"));
   };
 
   if (loading) {
@@ -180,14 +260,72 @@ export default function AllListPage() {
             </div>
 
             {/* 빠른 선택 버튼 */}
-            <div className="col-span-2 flex space-x-2">
-              <Button variant="outline" size="sm" onClick={setThisWeek} className="flex-1 h-9">
-                이번주
-              </Button>
-              <Button variant="outline" size="sm" onClick={setThisMonth} className="flex-1 h-9">
-                이번달
-              </Button>
-              <Button variant="outline" size="sm" onClick={setThisYear} className="flex-1 h-9">
+            <div className="col-span-2 space-y-2">
+              {/* 주 단위 네비게이션 */}
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => moveWeek("prev")}
+                  className="h-8 w-8 p-0"
+                  title="한 주 앞으로"
+                >
+                  ←
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={setThisWeek}
+                  className="flex-1 h-8 text-xs"
+                >
+                  이번주
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => moveWeek("next")}
+                  className="h-8 w-8 p-0"
+                  title="한 주 뒤로"
+                >
+                  →
+                </Button>
+              </div>
+              {/* 월 단위 네비게이션 */}
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => moveMonth("prev")}
+                  className="h-8 w-8 p-0"
+                  title="한 달 앞으로"
+                >
+                  ←
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={setThisMonth}
+                  className="flex-1 h-8 text-xs"
+                >
+                  이번달
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => moveMonth("next")}
+                  className="h-8 w-8 p-0"
+                  title="한 달 뒤로"
+                >
+                  →
+                </Button>
+              </div>
+              {/* 올해 버튼 */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={setThisYear}
+                className="w-full h-8 text-xs"
+              >
                 올해
               </Button>
             </div>
