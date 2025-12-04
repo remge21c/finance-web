@@ -128,7 +128,7 @@ export default function TransactionTable({
               <TableHead className="w-[100px] text-center">항목</TableHead>
               <TableHead className="w-[180px] text-center">내용</TableHead>
               <TableHead className="w-[100px] text-center">금액 ({currency})</TableHead>
-              <TableHead className="w-[210px] text-center">메모</TableHead>
+              <TableHead className="w-[147px] text-center">메모</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
