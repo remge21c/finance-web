@@ -42,8 +42,10 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar user={user} isSuperAdmin={isSuperAdmin} appTitle={appTitle} />
-      <main className="container mx-auto px-4 py-6">
-        {children}
+      <main className="container mx-auto px-4">
+        <div className="pt-6">
+          {children}
+        </div>
       </main>
     </div>
   );

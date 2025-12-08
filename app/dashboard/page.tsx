@@ -315,7 +315,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-4">
       {/* 헤더와 입력 폼 - 함께 고정 */}
-      <div className="sticky top-[56px] z-40 bg-white border-b shadow-sm">
+      <div className="sticky top-[56px] z-40 bg-white border-b shadow-sm pt-6">
         {/* 헤더 */}
         <div className="pb-4 pt-2 border-b">
           <div className="flex items-center justify-between">

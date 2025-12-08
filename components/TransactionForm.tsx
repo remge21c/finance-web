@@ -162,29 +162,6 @@ export default function TransactionForm({
     );
   }, [memo, memoSuggestions]);
 
-  // 수입항목/지출항목 최대 글자수 계산 (드롭다운 폭 조정용)
-  const maxIncomeItemLength = useMemo(() => {
-    const items = settings?.income_items || [];
-    if (items.length === 0) return 0;
-    return Math.max(...items.map((item) => item.length));
-  }, [settings?.income_items]);
-
-  const maxExpenseItemLength = useMemo(() => {
-    const items = settings?.expense_items || [];
-    if (items.length === 0) return 0;
-    return Math.max(...items.map((item) => item.length));
-  }, [settings?.expense_items]);
-
-  // 드롭다운 폭 계산 (한글 기준 약 1.2배, 최소 100px, 최대 200px)
-  const incomeItemWidth = useMemo(() => {
-    const calculated = Math.max(100, maxIncomeItemLength * 12 + 40);
-    return Math.min(calculated, 200);
-  }, [maxIncomeItemLength]);
-
-  const expenseItemWidth = useMemo(() => {
-    const calculated = Math.max(100, maxExpenseItemLength * 12 + 40);
-    return Math.min(calculated, 200);
-  }, [maxExpenseItemLength]);
 
   // 메모 입력 필드 외부 클릭 시 드롭다운 닫기
   useEffect(() => {
@@ -324,7 +301,7 @@ export default function TransactionForm({
         </div>
 
         {/* 수입항목 */}
-        <div className="space-y-1" style={{ width: `${incomeItemWidth}px` }}>
+        <div className="space-y-1 w-[250px]">
           <Label htmlFor="income-item" className="text-xs">수입항목</Label>
           <Select value={incomeItem} onValueChange={handleIncomeItemChange}>
             <SelectTrigger className="h-9 w-full">
@@ -341,7 +318,7 @@ export default function TransactionForm({
         </div>
 
         {/* 지출항목 */}
-        <div className="space-y-1" style={{ width: `${expenseItemWidth}px` }}>
+        <div className="space-y-1 w-[250px]">
           <Label htmlFor="expense-item" className="text-xs">지출항목</Label>
           <Select value={expenseItem} onValueChange={handleExpenseItemChange}>
             <SelectTrigger className="h-9 w-full">

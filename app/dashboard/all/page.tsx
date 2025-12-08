@@ -214,7 +214,7 @@ export default function AllListPage() {
   return (
     <div className="space-y-4">
       {/* 헤더와 필터 - 함께 고정 */}
-      <div className="sticky top-[56px] z-40 bg-white border-b shadow-sm">
+      <div className="sticky top-[56px] z-40 bg-white border-b shadow-sm pt-6">
         {/* 헤더 */}
         <div className="pb-4 pt-2 border-b">
           <h1 className="text-2xl font-bold text-gray-800">전체 목록 보기</h1>
