@@ -301,7 +301,7 @@ export default function TransactionForm({
         </div>
 
         {/* 수입항목 */}
-        <div className="space-y-1 w-[220px]">
+        <div className="space-y-1 w-[200px]">
           <Label htmlFor="income-item" className="text-xs">수입항목</Label>
           <Select value={incomeItem} onValueChange={handleIncomeItemChange}>
             <SelectTrigger className="h-9 w-full">
@@ -318,7 +318,7 @@ export default function TransactionForm({
         </div>
 
         {/* 지출항목 */}
-        <div className="space-y-1 w-[220px]">
+        <div className="space-y-1 w-[200px]">
           <Label htmlFor="expense-item" className="text-xs">지출항목</Label>
           <Select value={expenseItem} onValueChange={handleExpenseItemChange}>
             <SelectTrigger className="h-9 w-full">
