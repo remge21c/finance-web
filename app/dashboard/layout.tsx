@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Navbar from "@/components/Navbar";
+import { DataProvider } from "@/lib/contexts/DataContext";
 
 // 매 요청마다 새로 렌더링 (설정 변경 반영)
 export const dynamic = "force-dynamic";
@@ -42,11 +43,13 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar user={user} isSuperAdmin={isSuperAdmin} appTitle={appTitle} />
-      <main className="container mx-auto px-4">
-        <div className="pt-6">
-          {children}
-        </div>
-      </main>
+      <DataProvider>
+        <main className="container mx-auto px-4">
+          <div className="pt-6">
+            {children}
+          </div>
+        </main>
+      </DataProvider>
     </div>
   );
 }
