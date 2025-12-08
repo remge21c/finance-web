@@ -314,43 +314,46 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-4">
-      {/* 헤더 - Sticky */}
-      <div className="sticky top-[56px] z-40 bg-white pb-4 pt-2 border-b shadow-sm">
-        <div className="flex flex-col items-center gap-2">
-          <h1 className="text-2xl font-bold text-gray-800">재정출납부</h1>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant={viewMode === "weekly" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setViewMode("weekly")}
-              className={viewMode === "weekly" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
-            >
-              주간보기
-            </Button>
-            <Button
-              variant={viewMode === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setViewMode("all")}
-              className={viewMode === "all" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
-            >
-              전체보기
-            </Button>
+      {/* 헤더와 입력 폼 - 함께 고정 */}
+      <div className="sticky top-[56px] z-40 bg-white border-b shadow-sm">
+        {/* 헤더 */}
+        <div className="pb-4 pt-2 border-b">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-800">재정출납부</h1>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant={viewMode === "weekly" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("weekly")}
+                className={viewMode === "weekly" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+              >
+                주간보기
+              </Button>
+              <Button
+                variant={viewMode === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("all")}
+                className={viewMode === "all" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+              >
+                전체보기
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* 입력 폼 - Sticky */}
-      <div className="sticky top-[140px] z-30 bg-white pb-4">
-        <TransactionForm
-          settings={settings}
-          selectedTransaction={selectedTransaction}
-          selectedCount={selectedIds.length}
-          transactions={transactions}
-          onSubmit={handleSubmit}
-          onUpdate={handleUpdate}
-          onDelete={handleDeleteSelected}
-          onClear={handleClear}
-        />
+        {/* 입력 폼 */}
+        <div className="pb-4 pt-4">
+          <TransactionForm
+            settings={settings}
+            selectedTransaction={selectedTransaction}
+            selectedCount={selectedIds.length}
+            transactions={transactions}
+            onSubmit={handleSubmit}
+            onUpdate={handleUpdate}
+            onDelete={handleDeleteSelected}
+            onClear={handleClear}
+          />
+        </div>
       </div>
 
       {/* 거래 테이블 */}

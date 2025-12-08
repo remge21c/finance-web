@@ -213,15 +213,17 @@ export default function AllListPage() {
 
   return (
     <div className="space-y-4">
-      {/* 헤더 - Sticky */}
-      <div className="sticky top-[56px] z-40 bg-white pb-4 pt-2 border-b shadow-sm">
-        <h1 className="text-2xl font-bold text-gray-800 text-center">전체 목록 보기</h1>
-      </div>
+      {/* 헤더와 필터 - 함께 고정 */}
+      <div className="sticky top-[56px] z-40 bg-white border-b shadow-sm">
+        {/* 헤더 */}
+        <div className="pb-4 pt-2 border-b">
+          <h1 className="text-2xl font-bold text-gray-800">전체 목록 보기</h1>
+        </div>
 
-      {/* 필터 - Sticky */}
-      <div className="sticky top-[120px] z-30 bg-white pb-4">
-        <Card>
-          <CardContent className="py-4 px-4 overflow-hidden">
+        {/* 필터 */}
+        <div className="pb-4 pt-4">
+          <Card>
+            <CardContent className="py-4 px-4 overflow-hidden">
           <div className="grid grid-cols-2 md:grid-cols-6 gap-3 items-center">
             {/* 시작일 */}
             <div className="space-y-1 min-w-0">
@@ -353,6 +355,7 @@ export default function AllListPage() {
           </div>
         </CardContent>
       </Card>
+        </div>
       </div>
 
       {/* 결과 테이블 - 엑셀 스타일 */}
