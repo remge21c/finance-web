@@ -44,17 +44,26 @@ export default function TransactionTable({
 }: TransactionTableProps) {
   const currency = settings?.currency || "원";
 
-  // 주간/전체 필터링
+  // 주간/전체 필터링 (최근 날짜가 위로 오도록 내림차순 정렬)
   const filteredTransactions = useMemo(() => {
-    if (viewMode === "all") return transactions;
+    let filtered = transactions;
+    
+    if (viewMode === "weekly") {
+      const today = new Date();
+      const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // 월요일 시작
+      const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
 
-    const today = new Date();
-    const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // 월요일 시작
-    const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+      filtered = transactions.filter((t) => {
+        const date = parseISO(t.date);
+        return isWithinInterval(date, { start: weekStart, end: weekEnd });
+      });
+    }
 
-    return transactions.filter((t) => {
-      const date = parseISO(t.date);
-      return isWithinInterval(date, { start: weekStart, end: weekEnd });
+    // 날짜 내림차순 정렬 (최근 날짜가 위로)
+    return [...filtered].sort((a, b) => {
+      const dateA = parseISO(a.date).getTime();
+      const dateB = parseISO(b.date).getTime();
+      return dateB - dateA; // 내림차순
     });
   }, [transactions, viewMode]);
 

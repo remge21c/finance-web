@@ -40,7 +40,7 @@ export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정�
   ];
 
   return (
-    <nav className="bg-emerald-700 text-white shadow-lg">
+    <nav className="sticky top-0 z-50 bg-emerald-700 text-white shadow-lg">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-14">
           {/* 로고 */}

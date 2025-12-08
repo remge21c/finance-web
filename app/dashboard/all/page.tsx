@@ -52,9 +52,9 @@ export default function AllListPage() {
   const loading = txLoading || settingsLoading;
   const currency = settings?.currency || "원";
 
-  // 필터링된 거래
+  // 필터링된 거래 (최근 날짜가 위로 오도록 내림차순 정렬)
   const filteredTransactions = useMemo(() => {
-    return transactions.filter((t) => {
+    const filtered = transactions.filter((t) => {
       const date = parseISO(t.date);
       const start = parseISO(startDate);
       const end = parseISO(endDate);
@@ -70,6 +70,13 @@ export default function AllListPage() {
       
       return true;
     });
+
+    // 날짜 내림차순 정렬 (최근 날짜가 위로)
+    return [...filtered].sort((a, b) => {
+      const dateA = parseISO(a.date).getTime();
+      const dateB = parseISO(b.date).getTime();
+      return dateB - dateA; // 내림차순
+    });
   }, [transactions, startDate, endDate, typeFilter, itemFilter]);
 
   // 총액 계산
@@ -83,6 +90,17 @@ export default function AllListPage() {
     if (typeFilter === "지출") return settings?.expense_items || [];
     return [...(settings?.income_items || []), ...(settings?.expense_items || [])];
   }, [typeFilter, settings]);
+
+  // 항목 필터 드롭다운 폭 계산
+  const maxItemLength = useMemo(() => {
+    if (items.length === 0) return 0;
+    return Math.max(...items.map((item) => item.length));
+  }, [items]);
+
+  const itemFilterWidth = useMemo(() => {
+    const calculated = Math.max(100, maxItemLength * 12 + 40);
+    return Math.min(calculated, 200);
+  }, [maxItemLength]);
 
   const formatAmount = (amount: number) => {
     return amount.toLocaleString("ko-KR", {
@@ -196,15 +214,15 @@ export default function AllListPage() {
   return (
     <div className="space-y-4">
       {/* 헤더 - Sticky */}
-      <div className="sticky top-0 z-40 bg-white pb-4 pt-2 border-b shadow-sm">
-        <h1 className="text-2xl font-bold text-gray-800">전체 목록 보기</h1>
+      <div className="sticky top-[56px] z-40 bg-white pb-4 pt-2 border-b shadow-sm">
+        <h1 className="text-2xl font-bold text-gray-800 text-center">전체 목록 보기</h1>
       </div>
 
       {/* 필터 - Sticky */}
-      <div className="sticky top-[60px] z-30 bg-white pb-4">
+      <div className="sticky top-[120px] z-30 bg-white pb-4">
         <Card>
           <CardContent className="py-4 px-4 overflow-hidden">
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 items-end">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 items-center">
             {/* 시작일 */}
             <div className="space-y-1 min-w-0">
               <Label htmlFor="startDate" className="text-xs">시작일</Label>
@@ -245,13 +263,13 @@ export default function AllListPage() {
             </div>
 
             {/* 항목 */}
-            <div className="space-y-1 min-w-0">
+            <div className="space-y-1 min-w-0" style={{ minWidth: `${itemFilterWidth}px` }}>
               <Label className="text-xs">항목</Label>
               <Select value={itemFilter} onValueChange={setItemFilter}>
                 <SelectTrigger className="h-9 w-full">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent style={{ minWidth: `${itemFilterWidth}px` }}>
                   <SelectItem value="all">전체</SelectItem>
                   {items.map((item) => (
                     <SelectItem key={item} value={item}>

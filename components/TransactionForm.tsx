@@ -162,6 +162,30 @@ export default function TransactionForm({
     );
   }, [memo, memoSuggestions]);
 
+  // 수입항목/지출항목 최대 글자수 계산 (드롭다운 폭 조정용)
+  const maxIncomeItemLength = useMemo(() => {
+    const items = settings?.income_items || [];
+    if (items.length === 0) return 0;
+    return Math.max(...items.map((item) => item.length));
+  }, [settings?.income_items]);
+
+  const maxExpenseItemLength = useMemo(() => {
+    const items = settings?.expense_items || [];
+    if (items.length === 0) return 0;
+    return Math.max(...items.map((item) => item.length));
+  }, [settings?.expense_items]);
+
+  // 드롭다운 폭 계산 (한글 기준 약 1.2배, 최소 100px, 최대 200px)
+  const incomeItemWidth = useMemo(() => {
+    const calculated = Math.max(100, maxIncomeItemLength * 12 + 40);
+    return Math.min(calculated, 200);
+  }, [maxIncomeItemLength]);
+
+  const expenseItemWidth = useMemo(() => {
+    const calculated = Math.max(100, maxExpenseItemLength * 12 + 40);
+    return Math.min(calculated, 200);
+  }, [maxExpenseItemLength]);
+
   // 메모 입력 필드 외부 클릭 시 드롭다운 닫기
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -286,7 +310,7 @@ export default function TransactionForm({
 
   return (
     <form onSubmit={handleSubmit} className="bg-white p-4 rounded-lg shadow mb-4">
-      <div className="flex flex-wrap items-end gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {/* 날짜 */}
         <div className="space-y-1 w-[130px]">
           <Label htmlFor="date" className="text-xs">날짜</Label>
@@ -300,13 +324,13 @@ export default function TransactionForm({
         </div>
 
         {/* 수입항목 */}
-        <div className="space-y-1 w-[100px]">
+        <div className="space-y-1" style={{ width: `${incomeItemWidth}px` }}>
           <Label htmlFor="income-item" className="text-xs">수입항목</Label>
           <Select value={incomeItem} onValueChange={handleIncomeItemChange}>
-            <SelectTrigger className="h-9">
+            <SelectTrigger className="h-9 w-full">
               <SelectValue placeholder="수입" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="min-w-[var(--radix-select-trigger-width)]">
               {(settings?.income_items || []).map((i) => (
                 <SelectItem key={i} value={i}>
                   {i}
@@ -317,13 +341,13 @@ export default function TransactionForm({
         </div>
 
         {/* 지출항목 */}
-        <div className="space-y-1 w-[100px]">
+        <div className="space-y-1" style={{ width: `${expenseItemWidth}px` }}>
           <Label htmlFor="expense-item" className="text-xs">지출항목</Label>
           <Select value={expenseItem} onValueChange={handleExpenseItemChange}>
-            <SelectTrigger className="h-9">
+            <SelectTrigger className="h-9 w-full">
               <SelectValue placeholder="지출" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="min-w-[var(--radix-select-trigger-width)]">
               {(settings?.expense_items || []).map((i) => (
                 <SelectItem key={i} value={i}>
                   {i}
@@ -397,7 +421,7 @@ export default function TransactionForm({
         </div>
 
         {/* 버튼들 - 추가, 수정, 삭제, 새입력, CSV저장, CSV불러오기 */}
-        <div className="flex space-x-1 flex-wrap gap-1 items-end">
+        <div className="flex space-x-1 flex-wrap gap-1 items-center">
           <Button
             type="submit"
             disabled={loading || !currentItem || !amount}

@@ -315,8 +315,8 @@ export default function DashboardPage() {
   return (
     <div className="space-y-4">
       {/* 헤더 - Sticky */}
-      <div className="sticky top-0 z-40 bg-white pb-4 pt-2 border-b shadow-sm">
-        <div className="flex items-center justify-between">
+      <div className="sticky top-[56px] z-40 bg-white pb-4 pt-2 border-b shadow-sm">
+        <div className="flex flex-col items-center gap-2">
           <h1 className="text-2xl font-bold text-gray-800">재정출납부</h1>
           <div className="flex items-center space-x-2">
             <Button
@@ -340,7 +340,7 @@ export default function DashboardPage() {
       </div>
 
       {/* 입력 폼 - Sticky */}
-      <div className="sticky top-[72px] z-30 bg-white pb-4">
+      <div className="sticky top-[140px] z-30 bg-white pb-4">
         <TransactionForm
           settings={settings}
           selectedTransaction={selectedTransaction}
