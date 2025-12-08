@@ -370,7 +370,7 @@ export default function AllListPage() {
                   <TableHead className="w-[100px] border border-gray-300 px-3 py-2 text-center font-semibold">항목</TableHead>
                   <TableHead className="w-[180px] border border-gray-300 px-3 py-2 text-center font-semibold">내용</TableHead>
                   <TableHead className="w-[100px] border border-gray-300 px-3 py-2 text-right font-semibold">금액 ({currency})</TableHead>
-                  <TableHead className="w-[147px] border border-gray-300 px-3 py-2 text-center font-semibold">메모</TableHead>
+                  <TableHead className="w-[118px] border border-gray-300 px-3 py-2 text-center font-semibold">메모</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
