@@ -314,40 +314,44 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-4">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-800">재정출납부</h1>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant={viewMode === "weekly" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setViewMode("weekly")}
-            className={viewMode === "weekly" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
-          >
-            주간보기
-          </Button>
-          <Button
-            variant={viewMode === "all" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setViewMode("all")}
-            className={viewMode === "all" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
-          >
-            전체보기
-          </Button>
+      {/* 헤더 - Sticky */}
+      <div className="sticky top-0 z-40 bg-white pb-4 pt-2 border-b shadow-sm">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-800">재정출납부</h1>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant={viewMode === "weekly" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("weekly")}
+              className={viewMode === "weekly" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+            >
+              주간보기
+            </Button>
+            <Button
+              variant={viewMode === "all" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("all")}
+              className={viewMode === "all" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+            >
+              전체보기
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* 입력 폼 */}
-      <TransactionForm
-        settings={settings}
-        selectedTransaction={selectedTransaction}
-        selectedCount={selectedIds.length}
-        transactions={transactions}
-        onSubmit={handleSubmit}
-        onUpdate={handleUpdate}
-        onDelete={handleDeleteSelected}
-        onClear={handleClear}
-      />
+      {/* 입력 폼 - Sticky */}
+      <div className="sticky top-[72px] z-30 bg-white pb-4">
+        <TransactionForm
+          settings={settings}
+          selectedTransaction={selectedTransaction}
+          selectedCount={selectedIds.length}
+          transactions={transactions}
+          onSubmit={handleSubmit}
+          onUpdate={handleUpdate}
+          onDelete={handleDeleteSelected}
+          onClear={handleClear}
+        />
+      </div>
 
       {/* 거래 테이블 */}
       <TransactionTable

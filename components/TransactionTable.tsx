@@ -110,12 +110,12 @@ export default function TransactionTable({
 
   return (
     <div className="bg-white rounded-lg shadow">
-      {/* 테이블 */}
+      {/* 테이블 - 엑셀 스타일 */}
       <div className="overflow-x-auto">
-        <Table className="table-fixed w-full">
+        <Table className="w-full border-collapse">
           <TableHeader>
-            <TableRow className="bg-gray-50">
-              <TableHead className="w-10 text-center">
+            <TableRow className="bg-gray-100 border-b-2 border-gray-300">
+              <TableHead className="w-10 border border-gray-300 px-2 py-2 text-center">
                 <Checkbox
                   checked={headerCheckboxState}
                   onCheckedChange={(checked) =>
@@ -123,18 +123,18 @@ export default function TransactionTable({
                   }
                 />
               </TableHead>
-              <TableHead className="w-[100px] text-center">날짜</TableHead>
-              <TableHead className="w-[60px] text-center">구분</TableHead>
-              <TableHead className="w-[100px] text-center">항목</TableHead>
-              <TableHead className="w-[180px] text-center">내용</TableHead>
-              <TableHead className="w-[100px] text-center">금액 ({currency})</TableHead>
-              <TableHead className="w-[147px] text-center">메모</TableHead>
+              <TableHead className="w-[100px] border border-gray-300 px-3 py-2 text-center font-semibold">날짜</TableHead>
+              <TableHead className="w-[60px] border border-gray-300 px-3 py-2 text-center font-semibold">구분</TableHead>
+              <TableHead className="w-[100px] border border-gray-300 px-3 py-2 text-center font-semibold">항목</TableHead>
+              <TableHead className="w-[180px] border border-gray-300 px-3 py-2 text-center font-semibold">내용</TableHead>
+              <TableHead className="w-[100px] border border-gray-300 px-3 py-2 text-center font-semibold">금액 ({currency})</TableHead>
+              <TableHead className="w-[147px] border border-gray-300 px-3 py-2 text-center font-semibold">메모</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredTransactions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={7} className="text-center py-8 text-gray-500 border border-gray-300">
                   {viewMode === "weekly" 
                     ? "이번 주 거래 내역이 없습니다." 
                     : "거래 내역이 없습니다."}
@@ -144,12 +144,12 @@ export default function TransactionTable({
               filteredTransactions.map((transaction, index) => (
                 <TableRow
                   key={transaction.id}
-                  className={`cursor-pointer ${
+                  className={`cursor-pointer border-b border-gray-300 ${
                     index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                  } ${selectedIds.includes(transaction.id) ? "bg-emerald-50" : ""} hover:bg-emerald-100`}
+                  } ${selectedIds.includes(transaction.id) ? "bg-emerald-100" : ""} hover:bg-blue-50`}
                   onClick={() => onToggleSelect(transaction, !selectedIds.includes(transaction.id))}
                 >
-                  <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                  <TableCell className="border border-gray-300 px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}>
                     <Checkbox
                       checked={selectedIds.includes(transaction.id)}
                       onCheckedChange={(checked) =>
@@ -157,8 +157,8 @@ export default function TransactionTable({
                       }
                     />
                   </TableCell>
-                  <TableCell className="text-center truncate">{transaction.date}</TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="border border-gray-300 px-3 py-2 text-center truncate">{transaction.date}</TableCell>
+                  <TableCell className="border border-gray-300 px-3 py-2 text-center">
                     <span
                       className={`px-2 py-1 rounded text-xs font-medium ${
                         transaction.type === "수입"
@@ -169,12 +169,12 @@ export default function TransactionTable({
                       {transaction.type}
                     </span>
                   </TableCell>
-                  <TableCell className="text-center truncate">{transaction.item}</TableCell>
-                  <TableCell className="text-left truncate">{transaction.description}</TableCell>
-                  <TableCell className="text-right font-medium">
+                  <TableCell className="border border-gray-300 px-3 py-2 text-center truncate">{transaction.item}</TableCell>
+                  <TableCell className="border border-gray-300 px-3 py-2 text-left truncate">{transaction.description}</TableCell>
+                  <TableCell className="border border-gray-300 px-3 py-2 text-right font-medium">
                     {formatAmount(Number(transaction.amount))}
                   </TableCell>
-                  <TableCell className="text-left text-gray-500 text-sm truncate">
+                  <TableCell className="border border-gray-300 px-3 py-2 text-left text-gray-500 text-sm truncate">
                     {transaction.memo}
                   </TableCell>
                 </TableRow>
@@ -185,7 +185,7 @@ export default function TransactionTable({
       </div>
 
       {/* 하단 정보 */}
-      <div className="p-4 border-t">
+      <div className="p-4 border-t-2 border-gray-300 bg-gray-50">
         <div className="flex items-center justify-between">
           {/* 왼쪽: 선택 합계 및 삭제 버튼 */}
           <div className="flex items-center gap-3 flex-1">

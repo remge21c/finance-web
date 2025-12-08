@@ -195,12 +195,15 @@ export default function AllListPage() {
 
   return (
     <div className="space-y-4">
-      {/* 헤더 */}
-      <h1 className="text-2xl font-bold text-gray-800">전체 목록 보기</h1>
+      {/* 헤더 - Sticky */}
+      <div className="sticky top-0 z-40 bg-white pb-4 pt-2 border-b shadow-sm">
+        <h1 className="text-2xl font-bold text-gray-800">전체 목록 보기</h1>
+      </div>
 
-      {/* 필터 */}
-      <Card>
-        <CardContent className="py-4 px-4 overflow-hidden">
+      {/* 필터 - Sticky */}
+      <div className="sticky top-[60px] z-30 bg-white pb-4">
+        <Card>
+          <CardContent className="py-4 px-4 overflow-hidden">
           <div className="grid grid-cols-2 md:grid-cols-6 gap-3 items-end">
             {/* 시작일 */}
             <div className="space-y-1 min-w-0">
@@ -332,26 +335,27 @@ export default function AllListPage() {
           </div>
         </CardContent>
       </Card>
+      </div>
 
-      {/* 결과 테이블 */}
+      {/* 결과 테이블 - 엑셀 스타일 */}
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table className="table-fixed w-full">
+            <Table className="w-full border-collapse">
               <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead className="w-[100px]">날짜</TableHead>
-                  <TableHead className="w-[60px]">구분</TableHead>
-                  <TableHead className="w-[100px]">항목</TableHead>
-                  <TableHead className="w-[180px]">내용</TableHead>
-                  <TableHead className="w-[100px] text-right">금액 ({currency})</TableHead>
-                  <TableHead className="w-[147px]">메모</TableHead>
+                <TableRow className="bg-gray-100 border-b-2 border-gray-300">
+                  <TableHead className="w-[100px] border border-gray-300 px-3 py-2 text-center font-semibold">날짜</TableHead>
+                  <TableHead className="w-[60px] border border-gray-300 px-3 py-2 text-center font-semibold">구분</TableHead>
+                  <TableHead className="w-[100px] border border-gray-300 px-3 py-2 text-center font-semibold">항목</TableHead>
+                  <TableHead className="w-[180px] border border-gray-300 px-3 py-2 text-center font-semibold">내용</TableHead>
+                  <TableHead className="w-[100px] border border-gray-300 px-3 py-2 text-right font-semibold">금액 ({currency})</TableHead>
+                  <TableHead className="w-[147px] border border-gray-300 px-3 py-2 text-center font-semibold">메모</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredTransactions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={6} className="text-center py-8 text-gray-500 border border-gray-300">
                       조회 결과가 없습니다.
                     </TableCell>
                   </TableRow>
@@ -359,10 +363,12 @@ export default function AllListPage() {
                   filteredTransactions.map((t, index) => (
                     <TableRow
                       key={t.id}
-                      className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                      className={`border-b border-gray-300 ${
+                        index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                      } hover:bg-blue-50`}
                     >
-                      <TableCell className="truncate">{t.date}</TableCell>
-                      <TableCell>
+                      <TableCell className="border border-gray-300 px-3 py-2 truncate">{t.date}</TableCell>
+                      <TableCell className="border border-gray-300 px-3 py-2">
                         <span
                           className={`px-2 py-1 rounded text-xs font-medium ${
                             t.type === "수입"
@@ -373,12 +379,12 @@ export default function AllListPage() {
                           {t.type}
                         </span>
                       </TableCell>
-                      <TableCell className="truncate">{t.item}</TableCell>
-                      <TableCell className="truncate">{t.description}</TableCell>
-                      <TableCell className="text-right font-medium">
+                      <TableCell className="border border-gray-300 px-3 py-2 truncate">{t.item}</TableCell>
+                      <TableCell className="border border-gray-300 px-3 py-2 truncate">{t.description}</TableCell>
+                      <TableCell className="border border-gray-300 px-3 py-2 text-right font-medium">
                         {formatAmount(Number(t.amount))}
                       </TableCell>
-                      <TableCell className="text-gray-500 text-sm truncate">
+                      <TableCell className="border border-gray-300 px-3 py-2 text-gray-500 text-sm truncate">
                         {t.memo}
                       </TableCell>
                     </TableRow>
@@ -389,7 +395,7 @@ export default function AllListPage() {
           </div>
 
           {/* 총액 표시 */}
-          <div className="flex justify-end p-4 border-t bg-emerald-50">
+          <div className="flex justify-end p-4 border-t-2 border-gray-300 bg-emerald-50">
             <div className="text-lg">
               <span className="text-gray-600">조회된 총액: </span>
               <span className="font-bold text-emerald-700">
