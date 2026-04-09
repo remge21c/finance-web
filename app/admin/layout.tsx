@@ -19,7 +19,7 @@ export default async function AdminLayout({
     .from("finance_user_status")
     .select("is_super_admin")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (!userStatus?.is_super_admin) {
     redirect("/dashboard");

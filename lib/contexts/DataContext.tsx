@@ -85,10 +85,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
       .from("finance_settings")
       .select("*")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("설정 조회 실패:", error);
+      return;
+    }
+
+    if (!data) {
       // 설정이 없으면 기본 설정 생성
       const { data: newSettings, error: insertError } = await supabase
         .from("finance_settings")

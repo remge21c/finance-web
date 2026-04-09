@@ -29,8 +29,15 @@ CREATE POLICY "finance_user_status_select" ON finance_user_status
   FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "finance_user_status_update" ON finance_user_status;
-CREATE POLICY "finance_user_status_update" ON finance_user_status 
-  FOR UPDATE USING (true);
+CREATE POLICY "finance_user_status_update" ON finance_user_status
+  FOR UPDATE USING (
+    user_id = auth.uid()
+    OR
+    EXISTS (
+      SELECT 1 FROM finance_user_status
+      WHERE user_id = auth.uid() AND is_super_admin = true
+    )
+  );
 
 -- 인덱스
 CREATE INDEX IF NOT EXISTS idx_finance_user_status_user_id ON finance_user_status(user_id);
@@ -88,8 +95,8 @@ CREATE TABLE IF NOT EXISTS finance_settings (
 ALTER TABLE finance_settings ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "finance_settings_insert" ON finance_settings;
-CREATE POLICY "finance_settings_insert" ON finance_settings 
-  FOR INSERT WITH CHECK (true);
+CREATE POLICY "finance_settings_insert" ON finance_settings
+  FOR INSERT WITH CHECK (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "finance_settings_select" ON finance_settings;
 CREATE POLICY "finance_settings_select" ON finance_settings 

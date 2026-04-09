@@ -68,31 +68,33 @@ export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정�
           </div>
 
           {/* 사용자 메뉴 */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="text-white hover:bg-emerald-600"
-              >
-                {user.email}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {isSuperAdmin && (
-                <>
-                  <DropdownMenuItem asChild>
-                    <Link href="/admin/users" className="cursor-pointer">
-                      🔧 사용자 관리
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
-              <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-                로그아웃
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center space-x-2">
+            {isSuperAdmin && (
+              <Link href="/admin/users">
+                <Button
+                  variant="ghost"
+                  className="text-white hover:bg-emerald-600 border border-emerald-400 text-sm"
+                >
+                  🔧 사용자 관리
+                </Button>
+              </Link>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="text-white hover:bg-emerald-600"
+                >
+                  {user.email}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                  로그아웃
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         {/* 모바일 네비게이션 */}
