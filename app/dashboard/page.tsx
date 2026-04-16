@@ -10,7 +10,9 @@ import TransactionForm from "@/components/TransactionForm";
 import TransactionTable from "@/components/TransactionTable";
 import NoGroupAvailable from "@/components/NoGroupAvailable";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { Eye, CalendarDays, List } from "lucide-react";
 import type { Transaction, TransactionInput } from "@/types/database";
 
 export default function DashboardPage() {
@@ -321,7 +323,10 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">로딩 중...</div>
+        <div className="flex items-center gap-2 text-slate-400 text-sm">
+          <span className="h-4 w-4 border-2 border-slate-200 border-t-emerald-500 rounded-full animate-spin" />
+          로딩 중...
+        </div>
       </div>
     );
   }
@@ -342,39 +347,44 @@ export default function DashboardPage() {
   return (
     <div className="space-y-4">
       {/* 헤더와 입력 폼 - 함께 고정 */}
-      <div className="sticky top-[56px] z-40 bg-white border-b shadow-sm pt-6">
-        {/* 헤더 */}
-        <div className="pb-4 pt-2 border-b">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 text-center">
-              <h1 className="text-2xl font-bold text-gray-800">재정출납부</h1>
+      <div className="sticky top-[56px] z-40 bg-slate-50 border-b border-slate-200 pt-5 pb-4">
+        {/* 첫 번째 카드: 헤더 + 입력 폼 */}
+        <Card className="shadow-sm bg-white">
+          <CardContent className="p-4">
+            {/* 헤더 */}
+            <div className="pb-3 border-b border-slate-100 mb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-xl font-bold text-slate-800">재정출납부</h1>
+                  <p className="text-xs text-slate-400 mt-0.5">{currentGroup?.name}</p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant={viewMode === "weekly" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setViewMode("weekly")}
+                    className={`gap-1.5 text-xs h-8 ${viewMode === "weekly" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+                  >
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    주간보기
+                  </Button>
+                  <Button
+                    variant={viewMode === "all" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setViewMode("all")}
+                    className={`gap-1.5 text-xs h-8 ${viewMode === "all" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+                  >
+                    <List className="h-3.5 w-3.5" />
+                    전체보기
+                  </Button>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant={viewMode === "weekly" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewMode("weekly")}
-                className={viewMode === "weekly" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
-              >
-                주간보기
-              </Button>
-              <Button
-                variant={viewMode === "all" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewMode("all")}
-                className={viewMode === "all" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
-              >
-                전체보기
-              </Button>
-            </div>
-          </div>
-        </div>
 
-        {/* 입력 폼 */}
-        <div className="pb-4 pt-4">
+            {/* 입력 폼 */}
           {!hasWritePermission && (
-            <div className="mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-md text-sm text-amber-700 flex items-center space-x-2">
-              <span>👁️</span>
+            <div className="mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 flex items-center gap-2">
+              <Eye className="h-4 w-4 flex-shrink-0" />
               <span>읽기 전용 모드 — 이 그룹의 데이터를 조회만 할 수 있습니다.</span>
             </div>
           )}
@@ -389,7 +399,8 @@ export default function DashboardPage() {
             onClear={handleClear}
             readOnly={!hasWritePermission}
           />
-        </div>
+        </CardContent>
+      </Card>
       </div>
 
       {/* 거래 테이블 */}
@@ -403,6 +414,7 @@ export default function DashboardPage() {
         onCsvExport={handleCsvExport}
         onCsvImport={handleCsvImportClick}
         viewMode={viewMode}
+        readOnly={!hasWritePermission}
       />
     </div>
   );

@@ -214,17 +214,17 @@ export default function AllListPage() {
   return (
     <div className="space-y-4">
       {/* 헤더와 필터 - 함께 고정 */}
-      <div className="sticky top-[56px] z-40 bg-white border-b shadow-sm pt-6">
-        {/* 헤더 */}
-        <div className="pb-4 pt-2 border-b text-center">
-          <h1 className="text-2xl font-bold text-gray-800">전체 목록 보기</h1>
-        </div>
+      <div className="sticky top-[56px] z-40 bg-slate-50 border-b border-slate-200 pt-5 pb-4">
+        {/* 첫 번째 카드: 헤더 + 필터 */}
+        <Card className="shadow-sm bg-white">
+          <CardContent className="p-4">
+            {/* 헤더 */}
+            <div className="pb-3 border-b border-slate-100 mb-3">
+              <h1 className="text-xl font-bold text-slate-800">전체 목록</h1>
+            </div>
 
-        {/* 필터 */}
-        <div className="pb-4 pt-4">
-          <Card>
-            <CardContent className="py-4 px-4 overflow-hidden">
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 items-center">
+            {/* 필터 */}
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-3 items-center">
             {/* 시작일 */}
             <div className="space-y-1 min-w-0">
               <Label htmlFor="startDate" className="text-xs">시작일</Label>
@@ -355,13 +355,12 @@ export default function AllListPage() {
           </div>
         </CardContent>
       </Card>
-        </div>
       </div>
 
       {/* 결과 테이블 - 엑셀 스타일 */}
-      <Card className="overflow-hidden">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
+      <Card className="shadow-sm">
+        <CardContent className="p-4">
+          <div className="overflow-x-auto rounded-lg border border-gray-300">
             <Table className="w-full border-collapse">
               <TableHeader>
                 <TableRow className="bg-gray-100 border-b-2 border-gray-300">
@@ -416,7 +415,7 @@ export default function AllListPage() {
           </div>
 
           {/* 총액 표시 */}
-          <div className="flex justify-end p-4 border-t-2 border-gray-300 bg-emerald-50">
+          <div className="mt-4 flex justify-end p-4 border-t-2 border-gray-300 bg-emerald-50 rounded-lg">
             <div className="text-lg">
               <span className="text-gray-600">조회된 총액: </span>
               <span className="font-bold text-emerald-700">

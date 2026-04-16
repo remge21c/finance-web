@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Transaction, Settings } from "@/types/database";
 import {
@@ -29,6 +30,7 @@ interface TransactionTableProps {
   onCsvExport?: () => void;
   onCsvImport?: () => void;
   viewMode: "weekly" | "all";
+  readOnly?: boolean;
 }
 
 export default function TransactionTable({
@@ -41,16 +43,17 @@ export default function TransactionTable({
   onCsvExport,
   onCsvImport,
   viewMode,
+  readOnly = false,
 }: TransactionTableProps) {
   const currency = settings?.currency || "원";
 
   // 주간/전체 필터링 (최근 날짜가 위로 오도록 내림차순 정렬)
   const filteredTransactions = useMemo(() => {
     let filtered = transactions;
-    
+
     if (viewMode === "weekly") {
       const today = new Date();
-      const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // 월요일 시작
+      const weekStart = startOfWeek(today, { weekStartsOn: 1 });
       const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
 
       filtered = transactions.filter((t) => {
@@ -63,7 +66,7 @@ export default function TransactionTable({
     return [...filtered].sort((a, b) => {
       const dateA = parseISO(a.date).getTime();
       const dateB = parseISO(b.date).getTime();
-      return dateB - dateA; // 내림차순
+      return dateB - dateA;
     });
   }, [transactions, viewMode]);
 
@@ -118,137 +121,142 @@ export default function TransactionTable({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      {/* 테이블 - 엑셀 스타일 */}
-      <div className="overflow-x-auto">
-        <Table className="w-full border-collapse">
-          <TableHeader>
-            <TableRow className="bg-gray-100 border-b-2 border-gray-300">
-              <TableHead className="w-10 border border-gray-300 px-2 py-2 text-center">
-                <Checkbox
-                  checked={headerCheckboxState}
-                  onCheckedChange={(checked) =>
-                    onToggleSelectAll(visibleIds, checked === true)
-                  }
-                />
-              </TableHead>
-              <TableHead className="w-[100px] border border-gray-300 px-3 py-2 text-center font-semibold">날짜</TableHead>
-              <TableHead className="w-[60px] border border-gray-300 px-3 py-2 text-center font-semibold">구분</TableHead>
-              <TableHead className="w-[100px] border border-gray-300 px-3 py-2 text-center font-semibold">항목</TableHead>
-              <TableHead className="w-[180px] border border-gray-300 px-3 py-2 text-center font-semibold">내용</TableHead>
-              <TableHead className="w-[100px] border border-gray-300 px-3 py-2 text-center font-semibold">금액 ({currency})</TableHead>
-              <TableHead className="w-[118px] border border-gray-300 px-3 py-2 text-center font-semibold">메모</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredTransactions.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-gray-500 border border-gray-300">
-                  {viewMode === "weekly" 
-                    ? "이번 주 거래 내역이 없습니다." 
-                    : "거래 내역이 없습니다."}
-                </TableCell>
+    <Card className="shadow-sm overflow-hidden">
+      <CardContent className="p-4">
+        {/* 테이블 - 엑셀 스타일 */}
+        <div className="overflow-x-auto rounded-lg border border-gray-300">
+          <Table className="w-full border-collapse">
+            <TableHeader>
+              <TableRow className="bg-gray-100 border-b-2 border-gray-300">
+                <TableHead className="w-10 border border-gray-300 px-2 py-2 text-center">
+                  <Checkbox
+                    checked={headerCheckboxState}
+                    onCheckedChange={(checked) =>
+                      onToggleSelectAll(visibleIds, checked === true)
+                    }
+                  />
+                </TableHead>
+                <TableHead className="w-[100px] border border-gray-300 px-3 py-2 text-center font-semibold">날짜</TableHead>
+                <TableHead className="w-[60px] border border-gray-300 px-3 py-2 text-center font-semibold">구분</TableHead>
+                <TableHead className="w-[100px] border border-gray-300 px-3 py-2 text-center font-semibold">항목</TableHead>
+                <TableHead className="w-[180px] border border-gray-300 px-3 py-2 text-center font-semibold">내용</TableHead>
+                <TableHead className="w-[100px] border border-gray-300 px-3 py-2 text-center font-semibold">금액 ({currency})</TableHead>
+                <TableHead className="w-[118px] border border-gray-300 px-3 py-2 text-center font-semibold">메모</TableHead>
               </TableRow>
-            ) : (
-              filteredTransactions.map((transaction, index) => (
-                <TableRow
-                  key={transaction.id}
-                  className={`cursor-pointer border-b border-gray-300 ${
-                    index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                  } ${selectedIds.includes(transaction.id) ? "bg-emerald-100" : ""} hover:bg-blue-50`}
-                  onClick={() => onToggleSelect(transaction, !selectedIds.includes(transaction.id))}
-                >
-                  <TableCell className="border border-gray-300 px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}>
-                    <Checkbox
-                      checked={selectedIds.includes(transaction.id)}
-                      onCheckedChange={(checked) =>
-                        onToggleSelect(transaction, checked === true)
-                      }
-                    />
-                  </TableCell>
-                  <TableCell className="border border-gray-300 px-3 py-2 text-center truncate">{transaction.date}</TableCell>
-                  <TableCell className="border border-gray-300 px-3 py-2 text-center">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${
-                        transaction.type === "수입"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {transaction.type}
-                    </span>
-                  </TableCell>
-                  <TableCell className="border border-gray-300 px-3 py-2 text-center truncate">{transaction.item}</TableCell>
-                  <TableCell className="border border-gray-300 px-3 py-2 text-left truncate">{transaction.description}</TableCell>
-                  <TableCell className="border border-gray-300 px-3 py-2 text-right font-medium">
-                    {formatAmount(Number(transaction.amount))}
-                  </TableCell>
-                  <TableCell className="border border-gray-300 px-3 py-2 text-left text-gray-500 text-sm truncate">
-                    {transaction.memo}
+            </TableHeader>
+            <TableBody>
+              {filteredTransactions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-gray-500 border border-gray-300">
+                    {viewMode === "weekly"
+                      ? "이번 주 거래 내역이 없습니다."
+                      : "거래 내역이 없습니다."}
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ) : (
+                filteredTransactions.map((transaction, index) => (
+                  <TableRow
+                    key={transaction.id}
+                    className={`cursor-pointer border-b border-gray-300 ${
+                      index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                    } ${selectedIds.includes(transaction.id) ? "bg-emerald-100" : ""} hover:bg-blue-50`}
+                    onClick={() => onToggleSelect(transaction, !selectedIds.includes(transaction.id))}
+                  >
+                    <TableCell className="border border-gray-300 px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedIds.includes(transaction.id)}
+                        onCheckedChange={(checked) =>
+                          onToggleSelect(transaction, checked === true)
+                        }
+                      />
+                    </TableCell>
+                    <TableCell className="border border-gray-300 px-3 py-2 text-center truncate">{transaction.date}</TableCell>
+                    <TableCell className="border border-gray-300 px-3 py-2 text-center">
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          transaction.type === "수입"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {transaction.type}
+                      </span>
+                    </TableCell>
+                    <TableCell className="border border-gray-300 px-3 py-2 text-center truncate">{transaction.item}</TableCell>
+                    <TableCell className="border border-gray-300 px-3 py-2 text-left truncate">{transaction.description}</TableCell>
+                    <TableCell className="border border-gray-300 px-3 py-2 text-right font-medium">
+                      {formatAmount(Number(transaction.amount))}
+                    </TableCell>
+                    <TableCell className="border border-gray-300 px-3 py-2 text-left text-gray-500 text-sm truncate">
+                      {transaction.memo}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-      {/* 하단 정보 */}
-      <div className="p-4 border-t-2 border-gray-300 bg-gray-50">
-        <div className="flex items-center justify-between">
-          {/* 왼쪽: 선택 합계 및 삭제 버튼 */}
-          <div className="flex items-center gap-3 flex-1">
-          {selectedIds.length > 0 && (
-            <>
-                <div className="text-sm text-gray-600">
-                  선택 합계: <strong>{formatAmount(selectedSum)} {currency}</strong> ({selectedIds.length}개)
-                </div>
-              <Button
-                variant="destructive"
-                size="sm"
-                  onClick={handleDeleteClick}
-                  className="h-8 px-3"
-              >
-                  선택 삭제
-              </Button>
-            </>
-          )}
-        </div>
-          {/* 중앙: 현재 잔액 (항상 표시) */}
-          <div className="flex-1 text-center text-lg font-bold">
-          현재 잔액:{" "}
-          <span className={balance >= 0 ? "text-emerald-600" : "text-red-600"}>
-            {formatAmount(balance)} {currency}
-          </span>
+        {/* 하단 정보 */}
+        <div className="mt-4 p-4 border-t-2 border-gray-300 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between">
+            {/* 왼쪽: 선택 합계 및 삭제 버튼 */}
+            <div className="flex items-center gap-3 flex-1">
+              {selectedIds.length > 0 && (
+                <>
+                  <div className="text-sm text-gray-600">
+                    선택 합계: <strong>{formatAmount(selectedSum)} {currency}</strong> ({selectedIds.length}개)
+                  </div>
+                  {!readOnly && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleDeleteClick}
+                      className="h-8 px-3"
+                    >
+                      선택 삭제
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* 중앙: 현재 잔액 (항상 표시) */}
+            <div className="flex-1 text-center text-lg font-bold">
+              현재 잔액:{" "}
+              <span className={balance >= 0 ? "text-emerald-600" : "text-red-600"}>
+                {formatAmount(balance)} {currency}
+              </span>
+            </div>
+
+            {/* 오른쪽: CSV 버튼들 */}
+            <div className="flex items-center gap-2 flex-1 justify-end">
+              {onCsvExport && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onCsvExport}
+                  className="h-8 px-3 border-green-500 text-green-600 hover:bg-green-50"
+                >
+                  CSV저장
+                </Button>
+              )}
+              {onCsvImport && !readOnly && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onCsvImport}
+                  className="h-8 px-3 border-orange-500 text-orange-600 hover:bg-orange-50"
+                >
+                  CSV불러오기
+                </Button>
+              )}
+            </div>
           </div>
-          {/* 오른쪽: CSV 버튼들 */}
-          <div className="flex items-center gap-2 flex-1 justify-end">
-            {onCsvExport && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={onCsvExport}
-                className="h-8 px-3 border-green-500 text-green-600 hover:bg-green-50"
-              >
-                CSV저장
-              </Button>
-            )}
-            {onCsvImport && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={onCsvImport}
-                className="h-8 px-3 border-orange-500 text-orange-600 hover:bg-orange-50"
-              >
-                CSV불러오기
-              </Button>
-            )}
-          </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
-
