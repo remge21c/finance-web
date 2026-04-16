@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useGroupContext } from "@/lib/contexts/GroupContext";
 import { useSettings } from "@/lib/hooks/useSettings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,15 @@ import { toast } from "sonner";
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { hasWritePermission } = useGroupContext();
   const { settings, loading, updateSettings } = useSettings();
+
+  // 읽기 권한자는 대시보드로 리다이렉트
+  useEffect(() => {
+    if (!hasWritePermission) {
+      router.replace("/dashboard");
+    }
+  }, [hasWritePermission, router]);
 
   // 수입/지출 항목
   const [incomeItems, setIncomeItems] = useState<string[]>(Array(10).fill(""));
@@ -331,9 +340,9 @@ export default function SettingsPage() {
     <div className="space-y-6">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
-        <div className="flex-1 text-center">
-          <h1 className="text-2xl font-bold text-gray-800">설정</h1>
-          <p className="text-gray-500 text-sm">수입/지출 항목 및 예산을 관리합니다</p>
+        <div>
+          <h1 className="text-xl font-bold text-slate-800">설정</h1>
+          <p className="text-slate-400 text-xs mt-0.5">수입/지출 항목 및 예산을 관리합니다</p>
         </div>
         <div className="flex space-x-2">
           <Button variant="outline" onClick={handleReset}>

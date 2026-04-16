@@ -220,8 +220,8 @@ export default function AllListPage() {
 
   return (
     <div className="space-y-4">
-      {/* 헤더와 필터 - 함께 고정 */}
-      <div className="sticky top-[56px] z-40 bg-slate-50 border-b border-slate-200 pt-5 pb-4">
+      {/* 데스크톱: 헤더와 필터 - 함께 고정 */}
+      <div className="hidden sm:block sticky top-[56px] z-40 bg-slate-50 border-b border-slate-200 pt-5 pb-4">
         {/* 첫 번째 카드: 헤더 + 필터 */}
         <Card className="shadow-sm bg-white">
           <CardContent className="p-4">
@@ -364,11 +364,161 @@ export default function AllListPage() {
       </Card>
       </div>
 
+      {/* 모바일: 헤더와 필터 - 일반 스크롤 */}
+      <div className="sm:hidden space-y-4">
+        {/* 모바일 헤더 */}
+        <div className="bg-slate-50 border-b border-slate-200 pt-4 pb-3">
+          <h1 className="text-lg font-bold text-slate-800 px-1">전체 목록</h1>
+        </div>
+
+        {/* 모바일 필터 */}
+        <Card className="shadow-sm bg-white">
+          <CardContent className="p-3">
+            {/* 필터 */}
+            <div className="space-y-3">
+              {/* 날짜와 구분 필터 */}
+              <div className="grid grid-cols-2 gap-2">
+                {/* 시작일 */}
+                <div className="space-y-1">
+                  <Label htmlFor="startDate-mobile" className="text-xs">시작일</Label>
+                  <Input
+                    id="startDate-mobile"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="h-9 w-full text-sm"
+                  />
+                </div>
+
+                {/* 종료일 */}
+                <div className="space-y-1">
+                  <Label htmlFor="endDate-mobile" className="text-xs">종료일</Label>
+                  <Input
+                    id="endDate-mobile"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="h-9 w-full text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* 구분과 항목 필터 */}
+              <div className="grid grid-cols-2 gap-2">
+                {/* 구분 */}
+                <div className="space-y-1">
+                  <Label className="text-xs">구분</Label>
+                  <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setItemFilter("all"); }}>
+                    <SelectTrigger className="h-9 w-full text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">전체</SelectItem>
+                      <SelectItem value="수입">수입</SelectItem>
+                      <SelectItem value="지출">지출</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* 항목 */}
+                <div className="space-y-1">
+                  <Label className="text-xs">항목</Label>
+                  <Select value={itemFilter} onValueChange={setItemFilter}>
+                    <SelectTrigger className="h-9 w-full text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">전체</SelectItem>
+                      {items.map((item) => (
+                        <SelectItem key={item} value={item}>
+                          {item}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* 빠른 선택 버튼 */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {/* 주 단위 네비게이션 */}
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => moveWeek("prev")}
+                    className="h-7 w-6 p-0 text-xs"
+                    title="한 주 앞으로"
+                  >
+                    ◀
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={setThisWeek}
+                    className="h-7 px-2 text-xs"
+                  >
+                    이번주
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => moveWeek("next")}
+                    className="h-7 w-6 p-0 text-xs"
+                    title="한 주 뒤로"
+                  >
+                    ▶
+                  </Button>
+                </div>
+                {/* 월 단위 네비게이션 */}
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => moveMonth("prev")}
+                    className="h-7 w-6 p-0 text-xs"
+                    title="한 달 앞으로"
+                  >
+                    ◀
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={setThisMonth}
+                    className="h-7 px-2 text-xs"
+                  >
+                    이번달
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => moveMonth("next")}
+                    className="h-7 w-6 p-0 text-xs"
+                    title="한 달 뒤로"
+                  >
+                    ▶
+                  </Button>
+                </div>
+                {/* 올해 버튼 */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={setThisYear}
+                  className="h-7 px-2 text-xs"
+                >
+                  올해
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* 결과 테이블 - 엑셀 스타일 */}
       <Card className="shadow-sm">
         <CardContent className="p-2 sm:p-4">
-          <div className="overflow-x-auto rounded-lg border border-gray-300">
-            <Table className="w-full border-collapse text-xs sm:text-sm">
+          <div className="-mx-2 sm:mx-0 overflow-x-auto rounded-lg border border-gray-300">
+            <Table className="w-full border-collapse text-xs sm:text-sm min-w-[600px]">
               <TableHeader>
                 <TableRow className="bg-gray-100 border-b-2 border-gray-300">
                   <TableHead className="min-w-[70px] sm:w-[100px] border border-gray-300 px-2 sm:px-3 py-2 text-center font-semibold text-xs sm:text-sm">날짜</TableHead>

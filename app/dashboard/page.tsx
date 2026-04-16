@@ -152,7 +152,7 @@ export default function DashboardPage() {
     if (!confirm(`${ids.length}개 항목을 삭제하시겠습니까?`)) {
       return;
     }
-    
+
     const result = await deleteMultipleTransactions(ids);
     if (result.error) {
       toast.error("삭제 실패: " + result.error);
@@ -183,7 +183,7 @@ export default function DashboardPage() {
 
     // CSV 헤더
     const headers = ["날짜", "구분", "항목", "내용", "금액", "메모"];
-    
+
     // CSV 데이터 생성
     const csvRows = [
       headers.join(","),
@@ -203,13 +203,13 @@ export default function DashboardPage() {
     const csvContent = "\uFEFF" + csvRows.join("\n"); // BOM 추가 (한글 지원)
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    
+
     // 파일 다운로드
     const link = document.createElement("a");
     link.href = url;
     link.download = `재정출납부_${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
-    
+
     URL.revokeObjectURL(url);
     toast.success("CSV 파일이 저장되었습니다.");
   };
@@ -230,7 +230,7 @@ export default function DashboardPage() {
           .split(/\r?\n/)
           .map((line) => line.trim())
           .filter((line) => line.length > 0);
-        
+
         // 첫 번째 줄은 헤더로 가정
         const dataLines = lines.slice(1);
         const importedData: TransactionInput[] = [];
@@ -346,9 +346,8 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-4">
-      {/* 헤더와 입력 폼 - 함께 고정 */}
-      <div className="sticky top-[56px] z-40 bg-slate-50 border-b border-slate-200 pt-5 pb-4">
-        {/* 첫 번째 카드: 헤더 + 입력 폼 */}
+      {/* 데스크톱: 헤더와 입력 폼 - 고정 */}
+      <div className="hidden sm:block sticky top-[56px] z-40 bg-slate-50 border-b border-slate-200 pt-5 pb-4">
         <Card className="shadow-sm bg-white">
           <CardContent className="p-4">
             {/* 헤더 */}
@@ -382,25 +381,83 @@ export default function DashboardPage() {
             </div>
 
             {/* 입력 폼 */}
-          {!hasWritePermission && (
-            <div className="mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 flex items-center gap-2">
-              <Eye className="h-4 w-4 flex-shrink-0" />
-              <span>읽기 전용 모드 — 이 그룹의 데이터를 조회만 할 수 있습니다.</span>
+            {!hasWritePermission && (
+              <div className="mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 flex items-center gap-2">
+                <Eye className="h-4 w-4 flex-shrink-0" />
+                <span>읽기 전용 모드 — 이 그룹의 데이터를 조회만 할 수 있습니다.</span>
+              </div>
+            )}
+            <TransactionForm
+              settings={settings}
+              selectedTransaction={selectedTransaction}
+              selectedCount={selectedIds.length}
+              transactions={transactions}
+              onSubmit={handleSubmit}
+              onUpdate={handleUpdate}
+              onDelete={handleDeleteSelected}
+              onClear={handleClear}
+              readOnly={!hasWritePermission}
+            />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 모바일: 헤더만 표시, 입력 폼은 일반 스크롤 */}
+      <div className="sm:hidden">
+        {/* 모바일 헤더 */}
+        <div className="bg-slate-50 border-b border-slate-200 pt-4 pb-3 mb-4">
+          <div className="flex flex-col items-start justify-between gap-3">
+            <div className="flex-1">
+              <h1 className="text-lg font-bold text-slate-800">재정출납부</h1>
+              <p className="text-xs text-slate-400 mt-0.5">{currentGroup?.name}</p>
             </div>
-          )}
-          <TransactionForm
-            settings={settings}
-            selectedTransaction={selectedTransaction}
-            selectedCount={selectedIds.length}
-            transactions={transactions}
-            onSubmit={handleSubmit}
-            onUpdate={handleUpdate}
-            onDelete={handleDeleteSelected}
-            onClear={handleClear}
-            readOnly={!hasWritePermission}
-          />
-        </CardContent>
-      </Card>
+            <div className="flex items-center gap-1">
+              <Button
+                variant={viewMode === "weekly" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("weekly")}
+                className={`gap-1 text-xs h-7 px-2 ${viewMode === "weekly" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+              >
+                <CalendarDays className="h-3 w-3" />
+                주간
+              </Button>
+              <Button
+                variant={viewMode === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("all")}
+                className={`gap-1 text-xs h-7 px-2 ${viewMode === "all" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+              >
+                <List className="h-3 w-3" />
+                전체
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* 읽기 권한 경고 */}
+        {!hasWritePermission && (
+          <div className="mb-4 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 flex items-center gap-2">
+            <Eye className="h-4 w-4 flex-shrink-0" />
+            <span>읽기 전용 모드 — 이 그룹의 데이터를 조회만 할 수 있습니다.</span>
+          </div>
+        )}
+
+        {/* 모바일 입력 폼 */}
+        <Card className="shadow-sm bg-white mb-4">
+          <CardContent className="p-3">
+            <TransactionForm
+              settings={settings}
+              selectedTransaction={selectedTransaction}
+              selectedCount={selectedIds.length}
+              transactions={transactions}
+              onSubmit={handleSubmit}
+              onUpdate={handleUpdate}
+              onDelete={handleDeleteSelected}
+              onClear={handleClear}
+              readOnly={!hasWritePermission}
+            />
+          </CardContent>
+        </Card>
       </div>
 
       {/* 거래 테이블 */}
@@ -419,13 +476,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-

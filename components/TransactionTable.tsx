@@ -129,11 +129,11 @@ export default function TransactionTable({
   };
 
   return (
-    <Card className="shadow-sm overflow-hidden">
+    <Card className="shadow-sm">
       <CardContent className="p-2 sm:p-4">
         {/* 테이블 - 엑셀 스타일 */}
-        <div className="overflow-x-auto rounded-lg border border-gray-300">
-          <Table className="w-full border-collapse text-xs sm:text-sm">
+        <div className="-mx-2 sm:mx-0 overflow-x-auto rounded-lg border border-gray-300">
+          <Table className="w-full border-collapse text-xs sm:text-sm min-w-[600px]">
             <TableHeader>
               <TableRow className="bg-gray-100 border-b-2 border-gray-300">
                 <TableHead className="w-8 sm:w-10 border border-gray-300 px-1 sm:px-2 py-2 text-center">
