@@ -52,6 +52,7 @@ interface TransactionFormProps {
   onClear: () => void;
   onCsvExport?: () => void; // CSV 저장
   onCsvImport?: (data: TransactionInput[]) => Promise<void>; // CSV 불러오기
+  readOnly?: boolean; // 읽기 전용 모드 (쓰기 권한 없는 사용자)
 }
 
 export default function TransactionForm({
@@ -65,6 +66,7 @@ export default function TransactionForm({
   onClear,
   onCsvExport,
   onCsvImport,
+  readOnly = false,
 }: TransactionFormProps) {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [type, setType] = useState<"수입" | "지출">("지출");
@@ -401,14 +403,14 @@ export default function TransactionForm({
         <div className="flex space-x-1 flex-wrap gap-1 items-center">
           <Button
             type="submit"
-            disabled={loading || !currentItem || !amount}
+            disabled={loading || !currentItem || !amount || readOnly}
             className="h-9 px-3 bg-emerald-600 hover:bg-emerald-700"
           >
             추가
           </Button>
           <Button
             type="button"
-            disabled={loading || !selectedTransaction || !currentItem || !amount}
+            disabled={loading || !selectedTransaction || !currentItem || !amount || readOnly}
             onClick={handleUpdate}
             className="h-9 px-3 bg-blue-600 hover:bg-blue-700"
           >
@@ -417,7 +419,7 @@ export default function TransactionForm({
           <Button
             type="button"
             variant="destructive"
-            disabled={loading || (selectedCount === 0 && !selectedTransaction)}
+            disabled={loading || (selectedCount === 0 && !selectedTransaction) || readOnly}
             onClick={handleDeleteClick}
             className="h-9 px-3"
           >

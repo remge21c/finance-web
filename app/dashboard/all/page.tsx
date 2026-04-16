@@ -216,7 +216,7 @@ export default function AllListPage() {
       {/* 헤더와 필터 - 함께 고정 */}
       <div className="sticky top-[56px] z-40 bg-white border-b shadow-sm pt-6">
         {/* 헤더 */}
-        <div className="pb-4 pt-2 border-b">
+        <div className="pb-4 pt-2 border-b text-center">
           <h1 className="text-2xl font-bold text-gray-800">전체 목록 보기</h1>
         </div>
 
@@ -359,7 +359,7 @@ export default function AllListPage() {
       </div>
 
       {/* 결과 테이블 - 엑셀 스타일 */}
-      <Card>
+      <Card className="overflow-hidden">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table className="w-full border-collapse">

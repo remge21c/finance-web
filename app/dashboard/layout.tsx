@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Navbar from "@/components/Navbar";
+import { GroupProvider } from "@/lib/contexts/GroupContext";
 import { DataProvider } from "@/lib/contexts/DataContext";
 
 // 매 요청마다 새로 렌더링 (설정 변경 반영)
@@ -18,10 +19,10 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  // 사용자 상태 가져오기 (Super Admin 여부)
+  // 사용자 상태 가져오기 (Super Admin, Finance Admin 여부)
   const { data: userStatus } = await supabase
     .from("finance_user_status")
-    .select("is_super_admin, status")
+    .select("is_super_admin, is_finance_admin, status, can_group_finance")
     .eq("user_id", user.id)
     .single();
 
@@ -30,26 +31,29 @@ export default async function DashboardLayout({
     redirect("/pending");
   }
 
-  // 설정 가져오기 (앱 타이틀)
+  // 설정 가져오기 (앱 타이틀) - 첫 번째 그룹의 설정을 가져옴
   const { data: settings } = await supabase
     .from("finance_settings")
     .select("app_title")
-    .eq("user_id", user.id)
+    .limit(1)
     .single();
 
   const isSuperAdmin = userStatus?.is_super_admin || false;
+  const isFinanceAdmin = userStatus?.is_finance_admin || false;
   const appTitle = settings?.app_title || "재정관리";
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar user={user} isSuperAdmin={isSuperAdmin} appTitle={appTitle} />
-      <DataProvider>
-        <main className="container mx-auto px-4">
-          <div className="pt-6">
-            {children}
-          </div>
-        </main>
-      </DataProvider>
-    </div>
+    <GroupProvider>
+      <div className="min-h-screen bg-gray-50">
+        <Navbar user={user} isSuperAdmin={isSuperAdmin} isFinanceAdmin={isFinanceAdmin} appTitle={appTitle} />
+        <DataProvider>
+          <main className="container mx-auto px-4">
+            <div className="pt-6">
+              {children}
+            </div>
+          </main>
+        </DataProvider>
+      </div>
+    </GroupProvider>
   );
 }

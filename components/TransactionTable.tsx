@@ -118,7 +118,7 @@ export default function TransactionTable({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow">
+    <div className="bg-white rounded-lg shadow overflow-hidden">
       {/* 테이블 - 엑셀 스타일 */}
       <div className="overflow-x-auto">
         <Table className="w-full border-collapse">

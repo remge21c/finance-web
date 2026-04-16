@@ -4,29 +4,29 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import GroupSelector from "@/components/GroupSelector";
+import { useGroupContext } from "@/lib/contexts/GroupContext";
 import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
+import { Shield } from "lucide-react";
 
 interface NavbarProps {
   user: User;
   isSuperAdmin?: boolean;
+  isFinanceAdmin?: boolean;
   appTitle?: string;
 }
 
-export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정관리" }: NavbarProps) {
+export default function Navbar({ user, isSuperAdmin = false, isFinanceAdmin = false, appTitle = "재정관리" }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { groups, currentGroup, setCurrentGroup } = useGroupContext();
 
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
+    // 로그아웃 시 선택한 그룹 ID 삭제
+    localStorage.removeItem("selectedGroupId");
     toast.success("로그아웃 되었습니다.");
     router.push("/");
     router.refresh();
@@ -34,7 +34,7 @@ export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정�
 
   const navLinks = [
     { href: "/dashboard", label: "재정출납부" },
-    { href: "/dashboard/weekly", label: "주간보고서" },
+    { href: "/dashboard/reports", label: "보고서" },
     { href: "/dashboard/all", label: "전체목록" },
     { href: "/dashboard/settings", label: "설정" },
   ];
@@ -69,31 +69,75 @@ export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정�
 
           {/* 사용자 메뉴 */}
           <div className="flex items-center space-x-2">
+            {/* 그룹 선택 */}
+            {groups.length > 0 || currentGroup ? (
+              <GroupSelector
+                groups={groups}
+                currentGroup={currentGroup}
+                onGroupChange={setCurrentGroup}
+              />
+            ) : (
+              <div className="px-3 py-1.5 text-sm text-gray-400">
+                그룹 로딩 중...
+              </div>
+            )}
+
             {isSuperAdmin && (
-              <Link href="/admin/users">
+              <>
                 <Button
                   variant="ghost"
                   className="text-white hover:bg-emerald-600 border border-emerald-400 text-sm"
+                  onClick={() => router.push("/admin/users")}
                 >
                   🔧 사용자 관리
                 </Button>
-              </Link>
-            )}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="text-white hover:bg-emerald-600"
+                  className="text-white hover:bg-emerald-600 border border-emerald-400 text-sm"
+                  onClick={() => router.push("/admin/groups")}
                 >
-                  {user.email}
+                  📁 그룹 관리
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-                  로그아웃
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </>
+            )}
+
+            {/* 재정관리자 그룹 관리 */}
+            {isFinanceAdmin && (
+              <Button
+                variant="ghost"
+                className="text-white hover:bg-emerald-600 border border-teal-400 text-sm"
+                onClick={() => router.push("/dashboard/finance/groups")}
+              >
+                <Shield className="h-4 w-4 mr-1" />
+                그룹 관리
+              </Button>
+            )}
+            <div className="flex items-center space-x-1 ml-2 border-l border-emerald-600 pl-4">
+              <span className="hidden lg:inline text-sm text-emerald-100 mr-2">
+                {user.email}
+              </span>
+
+              <Link href="/dashboard/profile">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white hover:bg-emerald-600 h-9 px-2"
+                  title="정보수정"
+                >
+                  <span className="text-xl">⚙️</span>
+                </Button>
+              </Link>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-emerald-600 h-9 px-2"
+                onClick={handleLogout}
+                title="로그아웃"
+              >
+                <span className="text-xl">🚪</span>
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -119,13 +163,3 @@ export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정�
     </nav>
   );
 }
-
-
-
-
-
-
-
-
-
-

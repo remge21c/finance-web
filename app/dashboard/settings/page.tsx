@@ -26,8 +26,14 @@ export default function SettingsPage() {
   const [appTitle, setAppTitle] = useState("재정관리");
   const [author, setAuthor] = useState("");
   const [manager, setManager] = useState("");
+  const [auditor, setAuditor] = useState("");
   const [currency, setCurrency] = useState("원");
   const [memo, setMemo] = useState("");
+
+  // 계좌현황 이름
+  const [account1Name, setAccount1Name] = useState("현금");
+  const [account2Name, setAccount2Name] = useState("터치앤고");
+  const [account3Name, setAccount3Name] = useState("기타");
 
   // 원본값 저장 (변경사항 비교용)
   const [originalValues, setOriginalValues] = useState({
@@ -38,8 +44,12 @@ export default function SettingsPage() {
     appTitle: "재정관리",
     author: "",
     manager: "",
+    auditor: "",
     currency: "원",
     memo: "",
+    account1Name: "현금",
+    account2Name: "터치앤고",
+    account3Name: "기타",
   });
 
   // 설정 로드
@@ -68,9 +78,13 @@ export default function SettingsPage() {
       setAppTitle(settings.app_title || "재정관리");
       setAuthor(settings.author || "");
       setManager(settings.manager || "");
+      setAuditor(settings.auditor || "");
       setCurrency(settings.currency || "원");
       setMemo(settings.memo || "");
-      
+      setAccount1Name(settings.account1_name || "현금");
+      setAccount2Name(settings.account2_name || "터치앤고");
+      setAccount3Name(settings.account3_name || "기타");
+
       // 원본값 저장
       setOriginalValues({
         incomeItems: [...incomeItemsStr],
@@ -80,8 +94,12 @@ export default function SettingsPage() {
         appTitle: settings.app_title || "재정관리",
         author: settings.author || "",
         manager: settings.manager || "",
+        auditor: settings.auditor || "",
         currency: settings.currency || "원",
         memo: settings.memo || "",
+        account1Name: settings.account1_name || "현금",
+        account2Name: settings.account2_name || "터치앤고",
+        account3Name: settings.account3_name || "기타",
       });
     }
   }, [settings]);
@@ -107,24 +125,32 @@ export default function SettingsPage() {
     [expenseItems, originalValues.expenseItems]
   );
   
-  const hasAuthorInfoChanged = useMemo(() => 
+  const hasAuthorInfoChanged = useMemo(() =>
     appTitle !== originalValues.appTitle ||
-    author !== originalValues.author || 
-    manager !== originalValues.manager || 
-    currency !== originalValues.currency, 
-    [appTitle, author, manager, currency, originalValues]
+    author !== originalValues.author ||
+    manager !== originalValues.manager ||
+    auditor !== originalValues.auditor ||
+    currency !== originalValues.currency,
+    [appTitle, author, manager, auditor, currency, originalValues]
   );
   
-  const hasMemoChanged = useMemo(() => 
-    memo !== originalValues.memo, 
+  const hasMemoChanged = useMemo(() =>
+    memo !== originalValues.memo,
     [memo, originalValues.memo]
   );
-  
-  const hasAnyChanged = useMemo(() => 
-    hasIncomeBudgetsChanged || hasExpenseBudgetsChanged || 
-    hasIncomeItemsChanged || hasExpenseItemsChanged || 
-    hasAuthorInfoChanged || hasMemoChanged,
-    [hasIncomeBudgetsChanged, hasExpenseBudgetsChanged, hasIncomeItemsChanged, hasExpenseItemsChanged, hasAuthorInfoChanged, hasMemoChanged]
+
+  const hasAccountNamesChanged = useMemo(() =>
+    account1Name !== originalValues.account1Name ||
+    account2Name !== originalValues.account2Name ||
+    account3Name !== originalValues.account3Name,
+    [account1Name, account2Name, account3Name, originalValues]
+  );
+
+  const hasAnyChanged = useMemo(() =>
+    hasIncomeBudgetsChanged || hasExpenseBudgetsChanged ||
+    hasIncomeItemsChanged || hasExpenseItemsChanged ||
+    hasAuthorInfoChanged || hasMemoChanged || hasAccountNamesChanged,
+    [hasIncomeBudgetsChanged, hasExpenseBudgetsChanged, hasIncomeItemsChanged, hasExpenseItemsChanged, hasAuthorInfoChanged, hasMemoChanged, hasAccountNamesChanged]
   );
 
   // 전체 저장
@@ -137,8 +163,12 @@ export default function SettingsPage() {
       expense_budgets: expenseBudgets.map((b) => parseFloat(b) || 0),
       author,
       manager,
+      auditor,
       currency,
       memo,
+      account1_name: account1Name,
+      account2_name: account2Name,
+      account3_name: account3Name,
     });
 
     if (result.error) {
@@ -154,8 +184,12 @@ export default function SettingsPage() {
         appTitle,
         author,
         manager,
+        auditor,
         currency,
         memo,
+        account1Name,
+        account2Name,
+        account3Name,
       });
     }
   };
@@ -219,15 +253,31 @@ export default function SettingsPage() {
       app_title: appTitle,
       author,
       manager,
+      auditor,
       currency,
     });
     if (result.error) {
       toast.error("재정출납부 정보 저장 실패: " + result.error);
     } else {
       toast.success("재정출납부 정보가 저장되었습니다.");
-      setOriginalValues(prev => ({ ...prev, appTitle, author, manager, currency }));
+      setOriginalValues(prev => ({ ...prev, appTitle, author, manager, auditor, currency }));
       // 상단 Navbar에 앱 타이틀 반영을 위해 페이지 새로고침
       router.refresh();
+    }
+  };
+
+  // 계좌현황 이름 저장
+  const handleSaveAccountNames = async () => {
+    const result = await updateSettings({
+      account1_name: account1Name,
+      account2_name: account2Name,
+      account3_name: account3Name,
+    });
+    if (result.error) {
+      toast.error("계좌현황 이름 저장 실패: " + result.error);
+    } else {
+      toast.success("계좌현황 이름이 저장되었습니다.");
+      setOriginalValues(prev => ({ ...prev, account1Name, account2Name, account3Name }));
     }
   };
 
@@ -244,16 +294,17 @@ export default function SettingsPage() {
 
   const handleReset = () => {
     if (!confirm("모든 설정을 초기화하시겠습니까?")) return;
-    
+
     setIncomeItems(Array(10).fill(""));
     setExpenseItems(Array(10).fill(""));
     setIncomeBudgets(Array(10).fill(""));
     setExpenseBudgets(Array(10).fill(""));
     setAuthor("");
     setManager("");
+    setAuditor("");
     setCurrency("원");
     setMemo("");
-    
+
     toast.info("설정이 초기화되었습니다. 저장 버튼을 눌러 적용하세요.");
   };
 
@@ -280,7 +331,7 @@ export default function SettingsPage() {
     <div className="space-y-6">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
-        <div>
+        <div className="flex-1 text-center">
           <h1 className="text-2xl font-bold text-gray-800">설정</h1>
           <p className="text-gray-500 text-sm">수입/지출 항목 및 예산을 관리합니다</p>
         </div>
@@ -306,13 +357,13 @@ export default function SettingsPage() {
           {/* 상단: 수입예산 / 지출예산 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* 수입 예산 */}
-            <Card className="border-2 border-blue-200">
-              <CardHeader className="py-3 bg-blue-50 flex flex-row items-center justify-between">
-                <CardTitle className="text-lg text-blue-700">수입예산</CardTitle>
-                <Button 
-                  size="sm" 
-                  onClick={handleSaveIncomeBudgets} 
-                  className={`h-7 px-2 text-xs ${hasIncomeBudgetsChanged ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 hover:bg-gray-500"}`}
+            <Card className="card-section-income">
+              <CardHeader className="card-header-income flex flex-row items-center justify-between">
+                <CardTitle className="text-base font-semibold text-blue-700">수입예산</CardTitle>
+                <Button
+                  size="sm"
+                  onClick={handleSaveIncomeBudgets}
+                  className={`btn-save ${hasIncomeBudgetsChanged ? "btn-save-income" : "btn-save-inactive"}`}
                 >
                   저장
                 </Button>
@@ -331,26 +382,26 @@ export default function SettingsPage() {
                         newBudgets[index] = e.target.value;
                         setIncomeBudgets(newBudgets);
                       }}
-                      className="h-8 flex-1"
+                      className="h-9 flex-1"
                     />
                   </div>
                 ))}
                 <Separator />
-                <div className="flex justify-between font-medium">
-                  <span>총수입 예산:</span>
+                <div className="flex justify-between text-sm font-semibold">
+                  <span className="text-gray-600">총수입 예산</span>
                   <span className="text-blue-600">{formatAmount(incomeBudgetTotal)} {currency}</span>
                 </div>
               </CardContent>
             </Card>
 
             {/* 지출 예산 */}
-            <Card className="border-2 border-red-200">
-              <CardHeader className="py-3 bg-red-50 flex flex-row items-center justify-between">
-                <CardTitle className="text-lg text-red-700">지출예산</CardTitle>
-                <Button 
-                  size="sm" 
-                  onClick={handleSaveExpenseBudgets} 
-                  className={`h-7 px-2 text-xs ${hasExpenseBudgetsChanged ? "bg-red-600 hover:bg-red-700" : "bg-gray-400 hover:bg-gray-500"}`}
+            <Card className="card-section-expense">
+              <CardHeader className="card-header-expense flex flex-row items-center justify-between">
+                <CardTitle className="text-base font-semibold text-red-700">지출예산</CardTitle>
+                <Button
+                  size="sm"
+                  onClick={handleSaveExpenseBudgets}
+                  className={`btn-save ${hasExpenseBudgetsChanged ? "btn-save-expense" : "btn-save-inactive"}`}
                 >
                   저장
                 </Button>
@@ -369,13 +420,13 @@ export default function SettingsPage() {
                         newBudgets[index] = e.target.value;
                         setExpenseBudgets(newBudgets);
                       }}
-                      className="h-8 flex-1"
+                      className="h-9 flex-1"
                     />
                   </div>
                 ))}
                 <Separator />
-                <div className="flex justify-between font-medium">
-                  <span>총지출 예산:</span>
+                <div className="flex justify-between text-sm font-semibold">
+                  <span className="text-gray-600">총지출 예산</span>
                   <span className="text-red-600">{formatAmount(expenseBudgetTotal)} {currency}</span>
                 </div>
               </CardContent>
@@ -385,13 +436,13 @@ export default function SettingsPage() {
           {/* 하단: 수입항목 / 지출항목 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* 수입 항목 */}
-            <Card className="border-2 border-blue-200">
-              <CardHeader className="py-3 bg-blue-50 flex flex-row items-center justify-between">
-                <CardTitle className="text-lg text-blue-700">수입항목</CardTitle>
-                <Button 
-                  size="sm" 
-                  onClick={handleSaveIncomeItems} 
-                  className={`h-7 px-2 text-xs ${hasIncomeItemsChanged ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 hover:bg-gray-500"}`}
+            <Card className="card-section-income">
+              <CardHeader className="card-header-income flex flex-row items-center justify-between">
+                <CardTitle className="text-base font-semibold text-blue-700">수입항목</CardTitle>
+                <Button
+                  size="sm"
+                  onClick={handleSaveIncomeItems}
+                  className={`btn-save ${hasIncomeItemsChanged ? "btn-save-income" : "btn-save-inactive"}`}
                 >
                   저장
                 </Button>
@@ -407,20 +458,20 @@ export default function SettingsPage() {
                       setIncomeItems(newItems);
                     }}
                     placeholder={`항목 ${index + 1}`}
-                    className="h-8"
+                    className="h-9"
                   />
                 ))}
               </CardContent>
             </Card>
 
             {/* 지출 항목 */}
-            <Card className="border-2 border-red-200">
-              <CardHeader className="py-3 bg-red-50 flex flex-row items-center justify-between">
-                <CardTitle className="text-lg text-red-700">지출항목</CardTitle>
-                <Button 
-                  size="sm" 
-                  onClick={handleSaveExpenseItems} 
-                  className={`h-7 px-2 text-xs ${hasExpenseItemsChanged ? "bg-red-600 hover:bg-red-700" : "bg-gray-400 hover:bg-gray-500"}`}
+            <Card className="card-section-expense">
+              <CardHeader className="card-header-expense flex flex-row items-center justify-between">
+                <CardTitle className="text-base font-semibold text-red-700">지출항목</CardTitle>
+                <Button
+                  size="sm"
+                  onClick={handleSaveExpenseItems}
+                  className={`btn-save ${hasExpenseItemsChanged ? "btn-save-expense" : "btn-save-inactive"}`}
                 >
                   저장
                 </Button>
@@ -436,7 +487,7 @@ export default function SettingsPage() {
                       setExpenseItems(newItems);
                     }}
                     placeholder={`항목 ${index + 1}`}
-                    className="h-8"
+                    className="h-9"
                   />
                 ))}
               </CardContent>
@@ -447,13 +498,13 @@ export default function SettingsPage() {
         {/* 오른쪽: 재정출납부 정보 및 메모 */}
         <div className="space-y-4 flex flex-col">
           {/* 재정출납부 정보 */}
-          <Card>
-            <CardHeader className="py-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">재정출납부 정보</CardTitle>
-              <Button 
-                size="sm" 
-                onClick={handleSaveAuthorInfo} 
-                className={`h-7 px-2 text-xs ${hasAuthorInfoChanged ? "bg-emerald-600 hover:bg-emerald-700" : "bg-gray-400 hover:bg-gray-500"}`}
+          <Card className="shadow-sm">
+            <CardHeader className="py-3 border-b border-gray-100 flex flex-row items-center justify-between">
+              <CardTitle className="text-base font-semibold text-gray-700">재정출납부 정보</CardTitle>
+              <Button
+                size="sm"
+                onClick={handleSaveAuthorInfo}
+                className={`btn-save ${hasAuthorInfoChanged ? "btn-save-active" : "btn-save-inactive"}`}
               >
                 저장
               </Button>
@@ -490,6 +541,16 @@ export default function SettingsPage() {
                 />
               </div>
               <div className="space-y-1">
+                <Label htmlFor="auditor" className="text-xs">감사자</Label>
+                <Input
+                  id="auditor"
+                  value={auditor}
+                  onChange={(e) => setAuditor(e.target.value)}
+                  placeholder="감사자 이름"
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1">
                 <Label htmlFor="currency" className="text-xs">금액 단위</Label>
                 <Input
                   id="currency"
@@ -502,14 +563,60 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
+          {/* 계좌현황 이름 */}
+          <Card className="shadow-sm">
+            <CardHeader className="py-3 border-b border-gray-100 flex flex-row items-center justify-between">
+              <CardTitle className="text-base font-semibold text-gray-700">계좌현황 이름</CardTitle>
+              <Button
+                size="sm"
+                onClick={handleSaveAccountNames}
+                className={`btn-save ${hasAccountNamesChanged ? "btn-save-active" : "btn-save-inactive"}`}
+              >
+                저장
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-1">
+                <Label htmlFor="account1Name" className="text-xs">계좌현황1</Label>
+                <Input
+                  id="account1Name"
+                  value={account1Name}
+                  onChange={(e) => setAccount1Name(e.target.value)}
+                  placeholder="현금"
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="account2Name" className="text-xs">계좌현황2</Label>
+                <Input
+                  id="account2Name"
+                  value={account2Name}
+                  onChange={(e) => setAccount2Name(e.target.value)}
+                  placeholder="터치앤고"
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="account3Name" className="text-xs">계좌현황3</Label>
+                <Input
+                  id="account3Name"
+                  value={account3Name}
+                  onChange={(e) => setAccount3Name(e.target.value)}
+                  placeholder="기타"
+                  className="h-9"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           {/* 메모 - 남은 공간 채우기 */}
-          <Card className="flex-1 flex flex-col">
-            <CardHeader className="py-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">설정 메모</CardTitle>
-              <Button 
-                size="sm" 
-                onClick={handleSaveMemo} 
-                className={`h-7 px-2 text-xs ${hasMemoChanged ? "bg-emerald-600 hover:bg-emerald-700" : "bg-gray-400 hover:bg-gray-500"}`}
+          <Card className="flex-1 flex flex-col shadow-sm">
+            <CardHeader className="py-3 border-b border-gray-100 flex flex-row items-center justify-between">
+              <CardTitle className="text-base font-semibold text-gray-700">설정 메모</CardTitle>
+              <Button
+                size="sm"
+                onClick={handleSaveMemo}
+                className={`btn-save ${hasMemoChanged ? "btn-save-active" : "btn-save-inactive"}`}
               >
                 저장
               </Button>

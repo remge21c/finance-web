@@ -11,15 +11,15 @@ export function useUserStatus() {
 
   // 현재 사용자의 상태 조회
   const fetchUserStatus = useCallback(async () => {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
     try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("finance_user_status")
         .select("*")
@@ -27,12 +27,10 @@ export function useUserStatus() {
         .maybeSingle();
 
       if (error) {
-        // 테이블이 없거나 RLS 문제인 경우 - 무시하고 계속 진행
-        console.warn("사용자 상태 조회 실패 (테이블 미존재 또는 권한 문제):", error.message || error.code || "알 수 없는 에러");
+        console.warn("사용자 상태 조회 실패:", error.message || error.code || "알 수 없는 에러");
       } else if (data) {
         setUserStatus(data);
       }
-      // data가 null인 경우 (레코드 없음) - 에러가 아님, 새 사용자로 처리
     } catch (err) {
       console.warn("사용자 상태 조회 중 예외 발생:", err);
     }
@@ -42,7 +40,7 @@ export function useUserStatus() {
   // 모든 사용자 상태 조회 (관리자용)
   const fetchAllUsers = useCallback(async () => {
     const supabase = createClient();
-    
+
     const { data, error } = await supabase
       .from("finance_user_status")
       .select("*")
@@ -60,16 +58,24 @@ export function useUserStatus() {
   }, [fetchUserStatus]);
 
   // 사용자 승인
-  const approveUser = async (userId: string) => {
+  const approveUser = async (userId: string, options: {
+    grantFinanceAdmin?: boolean;
+    canGroupFinance?: boolean;
+  } = {}) => {
+    const { grantFinanceAdmin = false, canGroupFinance = true } = options;
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     const { error } = await supabase
       .from("finance_user_status")
-      .update({ 
+      .update({
         status: "approved",
         approved_by: user?.id,
-        rejected_reason: ""
+        rejected_reason: "",
+        is_finance_admin: grantFinanceAdmin,
+        finance_admin_approved_by: grantFinanceAdmin ? user?.id : null,
+        finance_admin_approved_at: grantFinanceAdmin ? new Date().toISOString() : null,
+        can_group_finance: canGroupFinance,
       })
       .eq("user_id", userId);
 
@@ -87,7 +93,7 @@ export function useUserStatus() {
 
     const { error } = await supabase
       .from("finance_user_status")
-      .update({ 
+      .update({
         status: "rejected",
         rejected_reason: reason
       })
@@ -110,7 +116,7 @@ export function useUserStatus() {
 
     const { error } = await supabase
       .from("finance_user_status")
-      .update({ 
+      .update({
         status: "pending",
         rejected_reason: ""
       })
@@ -124,24 +130,66 @@ export function useUserStatus() {
     return { success: true };
   };
 
+  // 재정관리자 권한 부여
+  const grantFinanceAdmin = async (userId: string) => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { error } = await supabase
+      .from("finance_user_status")
+      .update({
+        is_finance_admin: true,
+        finance_admin_approved_by: user?.id,
+        finance_admin_approved_at: new Date().toISOString(),
+        can_group_finance: true,
+      })
+      .eq("user_id", userId);
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    await fetchAllUsers();
+    return { success: true };
+  };
+
+  // 재정관리자 권한 박탈
+  const revokeFinanceAdmin = async (userId: string) => {
+    const supabase = createClient();
+
+    const { error } = await supabase
+      .from("finance_user_status")
+      .update({
+        is_finance_admin: false,
+        finance_admin_approved_by: null,
+        finance_admin_approved_at: null,
+      })
+      .eq("user_id", userId);
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    await fetchAllUsers();
+    return { success: true };
+  };
+
   return {
     userStatus,
     allUsers,
     loading,
     isSuperAdmin: userStatus?.is_super_admin || false,
+    isFinanceAdmin: userStatus?.is_finance_admin || false,
     isApproved: userStatus?.status === "approved",
     isPending: userStatus?.status === "pending",
     isRejected: userStatus?.status === "rejected",
+    canGroupFinance: userStatus?.can_group_finance ?? true,
     fetchUserStatus,
     fetchAllUsers,
     approveUser,
     rejectUser,
     reapply,
+    grantFinanceAdmin,
+    revokeFinanceAdmin,
   };
 }
-
-
-
-
-
-

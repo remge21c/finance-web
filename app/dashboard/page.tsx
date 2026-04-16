@@ -1,23 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useTransactions } from "@/lib/hooks/useTransactions";
 import { useSettings } from "@/lib/hooks/useSettings";
+import { useGroupContext } from "@/lib/contexts/GroupContext";
+import { useUserStatus } from "@/lib/hooks/useUserStatus";
 import TransactionForm from "@/components/TransactionForm";
 import TransactionTable from "@/components/TransactionTable";
+import NoGroupAvailable from "@/components/NoGroupAvailable";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { Transaction, TransactionInput } from "@/types/database";
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const { groups, currentGroup, loading: groupsLoading, hasWritePermission } = useGroupContext();
+  const { isFinanceAdmin, loading: userStatusLoading } = useUserStatus();
   const { transactions, loading: txLoading, addTransaction, updateTransaction, deleteMultipleTransactions } = useTransactions();
   const { settings, loading: settingsLoading } = useSettings();
-  
+
+  // 재정관리자가 그룹이 없으면 자동 리다이렉트
+  useEffect(() => {
+    if (!groupsLoading && !userStatusLoading && groups.length === 0 && isFinanceAdmin) {
+      router.replace('/dashboard/finance/groups');
+    }
+  }, [groupsLoading, userStatusLoading, groups.length, isFinanceAdmin, router]);
+
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"weekly" | "all">("weekly");
 
-  const loading = txLoading || settingsLoading;
+  const loading = groupsLoading || userStatusLoading || txLoading || settingsLoading;
 
   const handleSubmit = async (data: TransactionInput) => {
     const result = await addTransaction(data);
@@ -312,6 +326,19 @@ export default function DashboardPage() {
     );
   }
 
+  // 그룹이 없는 경우
+  if (groups.length === 0 || !currentGroup) {
+    // 재정관리자는 useEffect에서 리다이렉트 처리됨
+    if (isFinanceAdmin) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">그룹 관리 페이지로 이동 중...</div>
+        </div>
+      );
+    }
+    return <NoGroupAvailable isFinanceAdmin={isFinanceAdmin} />;
+  }
+
   return (
     <div className="space-y-4">
       {/* 헤더와 입력 폼 - 함께 고정 */}
@@ -319,7 +346,9 @@ export default function DashboardPage() {
         {/* 헤더 */}
         <div className="pb-4 pt-2 border-b">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-800">재정출납부</h1>
+            <div className="flex-1 text-center">
+              <h1 className="text-2xl font-bold text-gray-800">재정출납부</h1>
+            </div>
             <div className="flex items-center space-x-2">
               <Button
                 variant={viewMode === "weekly" ? "default" : "outline"}
@@ -343,6 +372,12 @@ export default function DashboardPage() {
 
         {/* 입력 폼 */}
         <div className="pb-4 pt-4">
+          {!hasWritePermission && (
+            <div className="mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-md text-sm text-amber-700 flex items-center space-x-2">
+              <span>👁️</span>
+              <span>읽기 전용 모드 — 이 그룹의 데이터를 조회만 할 수 있습니다.</span>
+            </div>
+          )}
           <TransactionForm
             settings={settings}
             selectedTransaction={selectedTransaction}
@@ -352,6 +387,7 @@ export default function DashboardPage() {
             onUpdate={handleUpdate}
             onDelete={handleDeleteSelected}
             onClear={handleClear}
+            readOnly={!hasWritePermission}
           />
         </div>
       </div>

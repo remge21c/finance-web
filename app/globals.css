@@ -121,7 +121,75 @@
   }
 }
 
-/* A4 용지 출력 스타일 */
+/* ===== 디자인 시스템 유틸리티 ===== */
+@layer components {
+  /* 배지 */
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ring-1;
+  }
+  .badge-income {
+    @apply bg-blue-50 text-blue-700 ring-blue-200;
+  }
+  .badge-expense {
+    @apply bg-red-50 text-red-700 ring-red-200;
+  }
+  .badge-approved {
+    @apply bg-emerald-50 text-emerald-700 ring-emerald-200;
+  }
+  .badge-pending {
+    @apply bg-amber-50 text-amber-700 ring-amber-200;
+  }
+  .badge-rejected {
+    @apply bg-red-50 text-red-700 ring-red-200;
+  }
+  .badge-admin {
+    @apply bg-purple-50 text-purple-700 ring-purple-200;
+  }
+  .badge-finance {
+    @apply bg-teal-50 text-teal-700 ring-teal-200;
+  }
+
+  /* 카드 섹션 헤더 (수입/지출) */
+  .card-section-income {
+    @apply border border-blue-200 shadow-sm;
+  }
+  .card-section-expense {
+    @apply border border-red-200 shadow-sm;
+  }
+  .card-header-income {
+    @apply bg-blue-50 border-b border-blue-100 py-3;
+  }
+  .card-header-expense {
+    @apply bg-red-50 border-b border-red-100 py-3;
+  }
+
+  /* 저장 버튼 상태 */
+  .btn-save {
+    @apply h-8 px-3 text-xs font-medium rounded-md transition-colors;
+  }
+  .btn-save-active {
+    @apply bg-emerald-600 hover:bg-emerald-700 text-white;
+  }
+  .btn-save-income {
+    @apply bg-blue-600 hover:bg-blue-700 text-white;
+  }
+  .btn-save-expense {
+    @apply bg-red-600 hover:bg-red-700 text-white;
+  }
+  .btn-save-inactive {
+    @apply bg-gray-200 text-gray-400 cursor-not-allowed pointer-events-none;
+  }
+
+  /* 페이지 타이틀 */
+  .page-title {
+    @apply text-2xl font-bold text-gray-800;
+  }
+  .page-subtitle {
+    @apply text-sm text-gray-500 mt-0.5;
+  }
+}
+
+/* ===== A4 용지 출력 스타일 ===== */
 @media print {
   @page {
     size: A4 portrait;
