@@ -109,6 +109,13 @@ export default function AllListPage() {
     });
   };
 
+  const formatDate = (dateString: string) => {
+    const date = parseISO(dateString);
+    const year = format(date, "yyyy");
+    const monthDay = format(date, "MM-dd");
+    return { year, monthDay };
+  };
+
   // 빠른 날짜 선택
   const setThisWeek = () => {
     const start = startOfWeek(today, { weekStartsOn: 1 });
@@ -359,23 +366,23 @@ export default function AllListPage() {
 
       {/* 결과 테이블 - 엑셀 스타일 */}
       <Card className="shadow-sm">
-        <CardContent className="p-4">
+        <CardContent className="p-2 sm:p-4">
           <div className="overflow-x-auto rounded-lg border border-gray-300">
-            <Table className="w-full border-collapse">
+            <Table className="w-full border-collapse text-xs sm:text-sm">
               <TableHeader>
                 <TableRow className="bg-gray-100 border-b-2 border-gray-300">
-                  <TableHead className="w-[100px] border border-gray-300 px-3 py-2 text-center font-semibold">날짜</TableHead>
-                  <TableHead className="w-[60px] border border-gray-300 px-3 py-2 text-center font-semibold">구분</TableHead>
-                  <TableHead className="w-[100px] border border-gray-300 px-3 py-2 text-center font-semibold">항목</TableHead>
-                  <TableHead className="w-[180px] border border-gray-300 px-3 py-2 text-center font-semibold">내용</TableHead>
-                  <TableHead className="w-[100px] border border-gray-300 px-3 py-2 text-right font-semibold">금액 ({currency})</TableHead>
-                  <TableHead className="w-[118px] border border-gray-300 px-3 py-2 text-center font-semibold">메모</TableHead>
+                  <TableHead className="min-w-[70px] sm:w-[100px] border border-gray-300 px-2 sm:px-3 py-2 text-center font-semibold text-xs sm:text-sm">날짜</TableHead>
+                  <TableHead className="min-w-[50px] sm:w-[60px] border border-gray-300 px-2 sm:px-3 py-2 text-center font-semibold text-xs sm:text-sm">구분</TableHead>
+                  <TableHead className="min-w-[80px] sm:w-[100px] border border-gray-300 px-2 sm:px-3 py-2 text-center font-semibold text-xs sm:text-sm">항목</TableHead>
+                  <TableHead className="min-w-[100px] sm:w-[180px] border border-gray-300 px-2 sm:px-3 py-2 text-center font-semibold text-xs sm:text-sm">내용</TableHead>
+                  <TableHead className="min-w-[80px] sm:w-[100px] border border-gray-300 px-2 sm:px-3 py-2 text-right font-semibold text-xs sm:text-sm">금액 ({currency})</TableHead>
+                  <TableHead className="hidden sm:table-cell w-[118px] border border-gray-300 px-3 py-2 text-center font-semibold">메모</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredTransactions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-gray-500 border border-gray-300">
+                    <TableCell colSpan={6} className="text-center py-8 text-gray-500 border border-gray-300 text-xs sm:text-sm">
                       조회 결과가 없습니다.
                     </TableCell>
                   </TableRow>
@@ -387,10 +394,13 @@ export default function AllListPage() {
                         index % 2 === 0 ? "bg-white" : "bg-gray-50"
                       } hover:bg-blue-50`}
                     >
-                      <TableCell className="border border-gray-300 px-3 py-2 truncate">{t.date}</TableCell>
-                      <TableCell className="border border-gray-300 px-3 py-2">
+                      <TableCell className="border border-gray-300 px-2 sm:px-3 py-2 text-center text-xs sm:text-sm">
+                        <span className="sm:hidden">{formatDate(t.date).monthDay}</span>
+                        <span className="hidden sm:inline">{t.date}</span>
+                      </TableCell>
+                      <TableCell className="border border-gray-300 px-2 sm:px-3 py-2">
                         <span
-                          className={`px-2 py-1 rounded text-xs font-medium ${
+                          className={`px-1.5 sm:px-2 py-1 rounded text-xs font-medium ${
                             t.type === "수입"
                               ? "bg-blue-100 text-blue-700"
                               : "bg-red-100 text-red-700"
@@ -399,12 +409,12 @@ export default function AllListPage() {
                           {t.type}
                         </span>
                       </TableCell>
-                      <TableCell className="border border-gray-300 px-3 py-2 truncate">{t.item}</TableCell>
-                      <TableCell className="border border-gray-300 px-3 py-2 truncate">{t.description}</TableCell>
-                      <TableCell className="border border-gray-300 px-3 py-2 text-right font-medium">
+                      <TableCell className="border border-gray-300 px-2 sm:px-3 py-2 truncate text-xs sm:text-sm">{t.item}</TableCell>
+                      <TableCell className="border border-gray-300 px-2 sm:px-3 py-2 truncate text-xs sm:text-sm">{t.description}</TableCell>
+                      <TableCell className="border border-gray-300 px-2 sm:px-3 py-2 text-right font-medium text-xs sm:text-sm">
                         {formatAmount(Number(t.amount))}
                       </TableCell>
-                      <TableCell className="border border-gray-300 px-3 py-2 text-gray-500 text-sm truncate">
+                      <TableCell className="hidden sm:table-cell border border-gray-300 px-3 py-2 text-gray-500 text-sm truncate">
                         {t.memo}
                       </TableCell>
                     </TableRow>
@@ -415,13 +425,13 @@ export default function AllListPage() {
           </div>
 
           {/* 총액 표시 */}
-          <div className="mt-4 flex justify-end p-4 border-t-2 border-gray-300 bg-emerald-50 rounded-lg">
-            <div className="text-lg">
-              <span className="text-gray-600">조회된 총액: </span>
-              <span className="font-bold text-emerald-700">
+          <div className="mt-4 p-3 sm:p-4 border-t-2 border-gray-300 bg-emerald-50 rounded-lg">
+            <div className="text-sm sm:text-lg flex flex-col sm:flex-row items-center justify-center sm:justify-end gap-1 sm:gap-2">
+              <span className="text-gray-600 text-xs sm:text-sm">조회된 총액:</span>
+              <span className="font-bold text-emerald-700 text-sm sm:text-base">
                 {formatAmount(totalAmount)} {currency}
               </span>
-              <span className="text-gray-500 text-sm ml-2">
+              <span className="text-gray-500 text-xs">
                 ({filteredTransactions.length}건)
               </span>
             </div>
