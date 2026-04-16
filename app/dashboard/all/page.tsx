@@ -426,11 +426,13 @@ export default function AllListPage() {
 
           {/* 총액 표시 */}
           <div className="mt-4 p-3 sm:p-4 border-t-2 border-gray-300 bg-emerald-50 rounded-lg">
-            <div className="text-sm sm:text-lg flex flex-col sm:flex-row items-center justify-center sm:justify-end gap-1 sm:gap-2">
-              <span className="text-gray-600 text-xs sm:text-sm">조회된 총액:</span>
-              <span className="font-bold text-emerald-700 text-sm sm:text-base">
-                {formatAmount(totalAmount)} {currency}
-              </span>
+            <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-end gap-1 sm:gap-2 text-center sm:text-right">
+              <div className="text-xs sm:text-sm text-gray-600">
+                조회된 총액:{" "}
+                <span className="font-bold text-emerald-700 text-sm sm:text-base">
+                  {formatAmount(totalAmount)} {currency}
+                </span>
+              </div>
               <span className="text-gray-500 text-xs">
                 ({filteredTransactions.length}건)
               </span>

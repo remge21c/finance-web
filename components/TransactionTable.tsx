@@ -210,13 +210,14 @@ export default function TransactionTable({
 
         {/* 하단 정보 */}
         <div className="mt-4 p-3 sm:p-4 border-t-2 border-gray-300 bg-gray-50 rounded-lg">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
-            {/* 왼쪽: 선택 합계 및 삭제 버튼 */}
-            <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3 flex-1">
+          {/* 모바일: 세로 중앙 정렬, 데스크톱: 가로 정렬 */}
+          <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-3 sm:gap-4 text-center sm:text-left">
+            {/* 선택 합계 및 삭제 버튼 (모바일: 가로 중앙, 데스크톱: 좌측) */}
+            <div className="flex items-center justify-center gap-2 sm:gap-3 order-2 sm:order-1">
               {selectedIds.length > 0 && (
                 <>
-                  <div className="text-xs sm:text-sm text-gray-600 truncate">
-                    선택 합계: <strong className="text-sm sm:text-base">{formatAmount(selectedSum)} {currency}</strong> <span className="text-xs">({selectedIds.length}개)</span>
+                  <div className="text-xs sm:text-sm text-gray-600">
+                    선택 합계: <strong className="text-sm sm:text-base">{formatAmount(selectedSum)} {currency}</strong>
                   </div>
                   {!readOnly && (
                     <Button
@@ -232,16 +233,16 @@ export default function TransactionTable({
               )}
             </div>
 
-            {/* 중앙: 현재 잔액 (항상 표시) */}
-            <div className="flex-1 text-center text-base sm:text-lg font-bold py-1">
+            {/* 현재 잔액 (항상 표시, 모바일: 최상단, 데스크톱: 중앙) */}
+            <div className="text-base sm:text-lg font-bold py-1 order-1 sm:order-2 border-b sm:border-b-0 border-gray-200 pb-2 sm:pb-0 w-full sm:w-auto">
               현재 잔액:{" "}
               <span className={balance >= 0 ? "text-emerald-600" : "text-red-600"}>
                 {formatAmount(balance)} {currency}
               </span>
             </div>
 
-            {/* 오른쪽: CSV 버튼들 */}
-            <div className="flex items-center justify-end gap-2 flex-1">
+            {/* CSV 버튼들 (모바일: 가로 중앙, 데스크톱: 우측) */}
+            <div className="flex items-center justify-center gap-2 order-3">
               {onCsvExport && (
                 <Button
                   type="button"
