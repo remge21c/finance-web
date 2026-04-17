@@ -35,21 +35,27 @@ export async function proxy(request: NextRequest) {
 
     const pathname = request.nextUrl.pathname
 
-    // 공개 페이지 (인증 불필요)
-    const publicPages = ['/', '/login', '/register']
-    const isPublicPage = publicPages.includes(pathname)
-    
+    // 공개 페이지 (인증 불필요) - 루트 페이지 제외
+    const publicPages = ['/login', '/register', '/forgot-password', '/reset-password', '/auth/callback']
+    const isPublicPage = publicPages.includes(pathname) || pathname.startsWith('/auth/')
+
     // 승인 대기/거절 페이지
     const isPendingPage = pathname === '/pending'
-    
+
     // 관리자 페이지
     const isAdminPage = pathname.startsWith('/admin')
-    
+
     // 대시보드 페이지
     const isDashboardPage = pathname.startsWith('/dashboard')
 
     // 로그인되지 않은 사용자
     if (!user) {
+      // 루트 페이지 - 로그인 페이지로 리다이렉트
+      if (pathname === '/') {
+        const url = request.nextUrl.clone()
+        url.pathname = '/login'
+        return NextResponse.redirect(url)
+      }
       // 공개 페이지는 접근 허용
       if (isPublicPage) {
         return supabaseResponse
@@ -79,6 +85,17 @@ export async function proxy(request: NextRequest) {
       console.error('Middleware status check error:', e)
     }
 
+    // 루트 페이지 - 상태에 따라 리다이렉트
+    if (pathname === '/') {
+      const url = request.nextUrl.clone()
+      if (status === 'approved') {
+        url.pathname = '/dashboard'
+      } else {
+        url.pathname = '/pending'
+      }
+      return NextResponse.redirect(url)
+    }
+
     // 로그인된 사용자가 로그인/회원가입 페이지 접근 시
     if (pathname === '/login' || pathname === '/register') {
       const url = request.nextUrl.clone()
@@ -92,8 +109,8 @@ export async function proxy(request: NextRequest) {
 
     // 승인되지 않은 사용자 (pending 또는 rejected)
     if (status !== 'approved') {
-      // /pending 페이지만 접근 허용
-      if (isPendingPage || pathname === '/') {
+      // /pending, 비밀번호 재설정 관련 페이지는 허용
+      if (isPendingPage || isPublicPage) {
         return supabaseResponse
       }
       // 대시보드나 관리자 페이지 접근 시 /pending으로 리다이렉트
