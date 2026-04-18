@@ -326,14 +326,6 @@ export default function DashboardPage() {
 
   // 그룹이 없는 경우
   if (groups.length === 0 || !currentGroup) {
-    // 재정관리자는 useEffect에서 리다이렉트 처리됨
-    if (isFinanceAdmin) {
-      return (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">그룹 관리 페이지로 이동 중...</div>
-        </div>
-      );
-    }
     return <NoGroupAvailable />;
   }
 
