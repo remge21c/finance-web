@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import WeeklyReport from "@/app/dashboard/reports/weekly/WeeklyReport";
 import MonthlyReport from "@/app/dashboard/reports/monthly/MonthlyReport";
+import CustomRangeReport from "@/app/dashboard/reports/custom/CustomRangeReport";
 
 export default function ReportsPage() {
-  const [activeTab, setActiveTab] = useState<"weekly" | "monthly">("weekly");
+  const [activeTab, setActiveTab] = useState<"weekly" | "monthly" | "custom">("weekly");
 
   return (
     <div className="space-y-4">
@@ -34,12 +35,26 @@ export default function ReportsPage() {
           >
             월간보고서
           </Button>
+          <Button
+            variant={activeTab === "custom" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setActiveTab("custom")}
+            className={`text-xs h-8 ${activeTab === "custom" ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm" : "text-slate-600 hover:bg-white hover:text-slate-800"}`}
+          >
+            일정선택
+          </Button>
         </div>
       </div>
 
       {/* 탭 내용 */}
       <Card className="p-6">
-        {activeTab === "weekly" ? <WeeklyReport /> : <MonthlyReport />}
+        {activeTab === "weekly" ? (
+          <WeeklyReport />
+        ) : activeTab === "monthly" ? (
+          <MonthlyReport />
+        ) : (
+          <CustomRangeReport />
+        )}
       </Card>
     </div>
   );

@@ -27,12 +27,11 @@ export async function getUserGroups(): Promise<Group[]> {
 
     console.log("[getUserGroups] User isSuperAdmin:", isSuperAdmin, "isFinanceAdmin:", isFinanceAdmin);
 
-    // 슈퍼관리자는 모든 department 그룹 조회
+    // 슈퍼관리자는 모든 그룹 조회 (타입 무관)
     if (isSuperAdmin) {
       const { data: allGroups, error: allGroupsError } = await supabase
         .from("finance_groups")
         .select("*")
-        .eq("group_type", "department")
         .order("created_at", { ascending: false });
 
       if (allGroupsError) {

@@ -40,6 +40,7 @@ export function GroupProvider({ children }: GroupProviderProps) {
   const [initialized, setInitialized] = useState(false);
   const [canCreateGroup, setCanCreateGroup] = useState(false);
   const [isAdminUser, setIsAdminUser] = useState(false); // super admin 또는 finance admin
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   // 사용자 ID 및 권한 가져오기
   useEffect(() => {
@@ -59,6 +60,7 @@ export function GroupProvider({ children }: GroupProviderProps) {
           const canCreate = userStatus?.is_super_admin || userStatus?.is_finance_admin || false;
           setCanCreateGroup(canCreate);
           setIsAdminUser(canCreate);
+          setIsSuperAdmin(userStatus?.is_super_admin || false);
         }
       } catch (err) {
         console.error("[GroupContext] getUser error:", err);
@@ -97,8 +99,10 @@ export function GroupProvider({ children }: GroupProviderProps) {
     }
   }, [userId, initialized]);
 
-  // department 타입의 그룹만 필터링
-  const groups = allGroups.filter(g => g.group_type === "department");
+  // 슈퍼관리자는 모든 그룹, 그 외는 department 타입만
+  const groups = isSuperAdmin
+    ? allGroups
+    : allGroups.filter(g => g.group_type === "department");
 
   // 현재 그룹에 대한 쓰기 권한 계산
   // - 관리자(super/finance admin)는 항상 쓰기 가능
@@ -181,13 +185,22 @@ export function GroupProvider({ children }: GroupProviderProps) {
     return { success: false, error: result.error };
   };
 
+  const handleSetCurrentGroup = (group: Group | null) => {
+    setCurrentGroup(group);
+    if (group) {
+      localStorage.setItem("selectedGroupId", group.id);
+    } else {
+      localStorage.removeItem("selectedGroupId");
+    }
+  };
+
   return (
     <GroupContext.Provider
       value={{
         groups,
         loading,
         currentGroup,
-        setCurrentGroup,
+        setCurrentGroup: handleSetCurrentGroup,
         canCreateGroup,
         financeMode: "group",
         hasWritePermission,

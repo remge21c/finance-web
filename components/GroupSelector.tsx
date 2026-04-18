@@ -21,15 +21,6 @@ interface GroupSelectorProps {
 export default function GroupSelector({ groups, currentGroup, onGroupChange }: GroupSelectorProps) {
   const isLoading = !currentGroup && groups.length === 0;
 
-  // 그룹이 1개인 경우 드롭다운 없이 텍스트만 표시
-  if (!isLoading && groups.length === 1 && currentGroup) {
-    return (
-      <div className="px-3 py-1.5 bg-emerald-600/50 text-white rounded-md border border-emerald-500/60 text-sm font-medium max-w-[160px] truncate">
-        {currentGroup.name}
-      </div>
-    );
-  }
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

@@ -45,9 +45,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const { currentGroup } = useGroupContext();
 
-  // 사용자 ID 가져오기
+  // 사용자 ID 및 권한 가져오기
   useEffect(() => {
     async function getUser() {
       try {
@@ -55,6 +56,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           setUserId(user.id);
+          const { data: userStatus } = await supabase
+            .from("finance_user_status")
+            .select("is_super_admin")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          setIsSuperAdmin(userStatus?.is_super_admin || false);
         }
       } catch (err) {
         console.error("[DataContext] getUser error:", err);
@@ -68,10 +75,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (currentGroup && userId) {
       fetchData();
     } else {
-      // 그룹이 없으면 로딩 완료
       setLoading(false);
     }
-  }, [currentGroup, userId]);
+  }, [currentGroup, userId, isSuperAdmin]);
 
   // 전체 데이터 가져오기
   const fetchData = async () => {
@@ -134,15 +140,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
 
     if (!data) {
-      // 설정이 없으면 현재 그룹에서 owner/admin인지 확인 후 생성
-      const { data: memberRole } = await supabase
-        .from("finance_group_members")
-        .select("role")
-        .eq("user_id", userId)
-        .eq("group_id", currentGroup.id)
-        .maybeSingle();
-
-      const canCreateSettings = memberRole?.role === "owner" || memberRole?.role === "admin";
+      // 슈퍼관리자 또는 그룹의 owner/admin이면 설정 생성 가능
+      let canCreateSettings = isSuperAdmin;
+      if (!canCreateSettings) {
+        const { data: memberRole } = await supabase
+          .from("finance_group_members")
+          .select("role")
+          .eq("user_id", userId)
+          .eq("group_id", currentGroup.id)
+          .maybeSingle();
+        canCreateSettings = memberRole?.role === "owner" || memberRole?.role === "admin";
+      }
 
       if (canCreateSettings) {
         const { data: newSettings, error: insertError } = await supabase
@@ -178,7 +186,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } else {
       setSettings(data);
     }
-  }, [userId, currentGroup]);
+  }, [userId, currentGroup, isSuperAdmin]);
 
   // 거래 추가
   const addTransaction = async (input: TransactionInput) => {
@@ -259,24 +267,36 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return { success: true };
   };
 
-  // 설정 업데이트
+  // 설정 업데이트 (없으면 생성, 있으면 수정)
   const updateSettings = async (input: Partial<SettingsInput>) => {
-    if (!userId || !settings || !currentGroup) return { error: "설정을 찾을 수 없습니다." };
+    if (!userId || !currentGroup) return { error: "설정을 찾을 수 없습니다." };
 
     const supabase = createClient();
-    const { data, error } = await supabase
-      .from("finance_settings")
-      .update(input)
-      .eq("group_id", currentGroup.id)
-      .select()
-      .single();
 
-    if (error) {
-      return { error: error.message };
+    // 기존 설정이 DB에 실제 row로 있는지 확인
+    const hasRealRow = settings && settings.id !== "";
+
+    if (hasRealRow) {
+      const { data, error } = await supabase
+        .from("finance_settings")
+        .update(input)
+        .eq("group_id", currentGroup.id)
+        .select()
+        .single();
+      if (error) return { error: error.message };
+      setSettings(data);
+      return { data };
+    } else {
+      // row가 없으면 insert
+      const { data, error } = await supabase
+        .from("finance_settings")
+        .insert({ user_id: userId, group_id: currentGroup.id, ...defaultSettings, ...input })
+        .select()
+        .single();
+      if (error) return { error: error.message };
+      setSettings(data);
+      return { data };
     }
-
-    setSettings(data);
-    return { data };
   };
 
   return (
