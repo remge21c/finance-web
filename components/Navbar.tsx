@@ -100,9 +100,19 @@ export default function Navbar({ user, isSuperAdmin = false, isFinanceAdmin = fa
                   currentGroup={currentGroup}
                   onGroupChange={setCurrentGroup}
                 />
+              ) : isFinanceAdmin ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-teal-200 hover:bg-emerald-600 hover:text-white text-xs gap-1.5"
+                  onClick={() => router.push("/dashboard/finance/groups")}
+                >
+                  <Shield className="h-3.5 w-3.5" />
+                  그룹 생성하기
+                </Button>
               ) : (
                 <div className="px-3 py-1.5 text-xs text-emerald-300">
-                  그룹 로딩 중...
+                  그룹 없음
                 </div>
               )}
             </div>
@@ -201,9 +211,22 @@ export default function Navbar({ user, isSuperAdmin = false, isFinanceAdmin = fa
                   currentGroup={currentGroup}
                   onGroupChange={setCurrentGroup}
                 />
+              ) : isFinanceAdmin ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-teal-200 hover:bg-emerald-600 hover:text-white text-xs gap-1.5 justify-start"
+                  onClick={() => {
+                    router.push("/dashboard/finance/groups");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Shield className="h-3.5 w-3.5" />
+                  그룹 생성하기
+                </Button>
               ) : (
                 <div className="px-3 py-1.5 text-xs text-emerald-300">
-                  그룹 로딩 중...
+                  그룹 없음
                 </div>
               )}
             </div>
