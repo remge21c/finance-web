@@ -145,9 +145,25 @@ export interface UserStatus {
   finance_admin_approved_by: string | null;  // 재정관리자 승인자
   finance_admin_approved_at: string | null;  // 재정관리자 승인일시
   requested_group_id: string | null;  // 요청한 그룹 ID
-  can_group_finance: boolean;         // 그룹재정 사용 권한
+  requested_role: 'finance_admin' | 'user';  // 가입 시 요청 역할
   approved_by: string | null;
   rejected_reason: string;
   created_at: string;
   updated_at: string;
+}
+
+export type GroupJoinRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export interface GroupJoinRequest {
+  id: string;
+  user_id: string;
+  group_id: string;
+  status: GroupJoinRequestStatus;
+  requested_at: string;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  // join용
+  group_name?: string;
+  user_name?: string;
+  user_email?: string;
 }

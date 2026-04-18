@@ -9,6 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import GroupSearchInput from "@/components/GroupSearchInput";
 import { toast } from "sonner";
+import type { GroupJoinRequest } from "@/types/database";
+
+interface GroupInfo {
+  id: string;
+  name: string;
+}
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -17,121 +23,159 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  useEffect(() => {
-    async function loadUserProfile() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+  const [myGroups, setMyGroups] = useState<GroupInfo[]>([]);
+  const [joinRequests, setJoinRequests] = useState<(GroupJoinRequest & { group_name: string })[]>([]);
+  const [requestGroupId, setRequestGroupId] = useState("");
+  const [requestingGroup, setRequestingGroup] = useState(false);
 
-      if (!user) {
-        router.push("/login");
-        return;
-      }
+  const loadData = async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { router.push("/login"); return; }
 
-      setEmail(user.email || "");
+    setEmail(user.email || "");
 
-      const { data: statusData } = await supabase
-        .from("finance_user_status")
-        .select("name, requested_group_id")
-        .eq("user_id", user.id)
-        .maybeSingle();
+    const { data: statusData } = await supabase
+      .from("finance_user_status")
+      .select("name")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (statusData) setName(statusData.name || "");
 
-      if (statusData) {
-        setName(statusData.name || "");
-        setSelectedGroupId(statusData.requested_group_id || "");
-      }
-
-      setLoading(false);
+    // 현재 소속 그룹
+    const { data: memberData } = await supabase
+      .from("finance_group_members")
+      .select("group_id")
+      .eq("user_id", user.id);
+    if (memberData?.length) {
+      const ids = memberData.map((m: any) => m.group_id);
+      const { data: groupsData } = await supabase
+        .from("finance_groups")
+        .select("id, name")
+        .in("id", ids)
+        .eq("group_type", "department");
+      setMyGroups((groupsData || []) as GroupInfo[]);
+    } else {
+      setMyGroups([]);
     }
 
-    loadUserProfile();
-  }, [router]);
+    // 그룹 참여 요청 목록
+    const { data: requestData } = await supabase
+      .from("finance_group_join_requests")
+      .select("*, finance_groups(name)")
+      .eq("user_id", user.id)
+      .order("requested_at", { ascending: false });
+
+    if (requestData) {
+      setJoinRequests(requestData.map((r: any) => ({
+        ...r,
+        group_name: r.finance_groups?.name || r.group_id,
+      })));
+    }
+
+    setLoading(false);
+  };
+
+  useEffect(() => { loadData(); }, []);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!name.trim()) {
-      toast.error("이름을 입력해주세요.");
-      return;
-    }
-
+    if (!name.trim()) { toast.error("이름을 입력해주세요."); return; }
     setSaving(true);
-
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("사용자를 찾을 수 없습니다.");
+      if (!user) throw new Error();
 
-      // 1. 이름 및 요청 그룹 업데이트
-      const { error: statusError } = await supabase
+      const { error } = await supabase
         .from("finance_user_status")
-        .update({
-          name: name,
-          requested_group_id: selectedGroupId || null,
-        })
+        .update({ name })
         .eq("user_id", user.id);
-
-      if (statusError) throw statusError;
-
-      // 2. Auth 메타데이터 업데이트
+      if (error) throw error;
       await supabase.auth.updateUser({ data: { name } });
 
-      // 3. 비밀번호 변경 (입력한 경우에만)
-      if (newPassword && newPassword.trim()) {
-        // 새 비밀번호를 입력했으면 확인 필수
-        if (!confirmPassword || !confirmPassword.trim()) {
-          toast.error("새 비밀번호 확인을 입력해주세요.");
-          setSaving(false);
-          return;
-        }
-
-        if (newPassword !== confirmPassword) {
-          toast.error("비밀번호가 일치하지 않습니다.");
-          setSaving(false);
-          return;
-        }
-
-        if (newPassword.length < 6) {
-          toast.error("비밀번호는 6자 이상이어야 합니다.");
-          setSaving(false);
-          return;
-        }
-
-        const { error: passwordError } = await supabase.auth.updateUser({ password: newPassword });
-        if (passwordError) throw passwordError;
+      if (newPassword.trim()) {
+        if (!confirmPassword.trim()) { toast.error("비밀번호 확인을 입력해주세요."); setSaving(false); return; }
+        if (newPassword !== confirmPassword) { toast.error("비밀번호가 일치하지 않습니다."); setSaving(false); return; }
+        if (newPassword.length < 6) { toast.error("비밀번호는 6자 이상이어야 합니다."); setSaving(false); return; }
+        const { error: pwError } = await supabase.auth.updateUser({ password: newPassword });
+        if (pwError) throw pwError;
       }
 
-      // 4. 입력 필드 초기화
-      setNewPassword("");
-      setConfirmPassword("");
-
+      setNewPassword(""); setConfirmPassword("");
       toast.success("정보가 업데이트되었습니다.");
       router.push("/dashboard");
-    } catch (error: any) {
-      console.error("Profile update error:", error);
-      toast.error("업데이트 실패: " + (error.message || "알 수 없는 오류"));
+    } catch {
+      toast.error("업데이트에 실패했습니다.");
     } finally {
       setSaving(false);
     }
   };
 
+  const handleRequestGroup = async () => {
+    if (!requestGroupId) return;
+    if (myGroups.some(g => g.id === requestGroupId)) {
+      toast.warning("이미 소속된 그룹입니다."); return;
+    }
+    if (joinRequests.some(r => r.group_id === requestGroupId && r.status === "pending")) {
+      toast.warning("이미 요청 중인 그룹입니다."); return;
+    }
+    setRequestingGroup(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error();
+
+      const { error } = await supabase
+        .from("finance_group_join_requests")
+        .upsert({ user_id: user.id, group_id: requestGroupId, status: "pending", requested_at: new Date().toISOString() }, { onConflict: "user_id,group_id" });
+
+      if (error) throw error;
+      toast.success("그룹 참여 요청이 전송되었습니다. 관리자 승인 후 반영됩니다.");
+      setRequestGroupId("");
+      await loadData();
+    } catch {
+      toast.error("그룹 요청에 실패했습니다.");
+    } finally {
+      setRequestingGroup(false);
+    }
+  };
+
+  const handleCancelRequest = async (requestId: string) => {
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("finance_group_join_requests")
+        .delete()
+        .eq("id", requestId);
+      if (error) throw error;
+      toast.success("요청이 취소되었습니다.");
+      await loadData();
+    } catch {
+      toast.error("요청 취소에 실패했습니다.");
+    }
+  };
+
+  const statusLabel = (status: string) => {
+    if (status === "pending") return <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">대기 중</span>;
+    if (status === "approved") return <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">승인됨</span>;
+    return <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">거절됨</span>;
+  };
+
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">정보를 불러오는 중...</div>
-      </div>
-    );
+    return <div className="flex items-center justify-center h-64"><div className="text-gray-500">정보를 불러오는 중...</div></div>;
   }
 
   return (
-    <div className="max-w-md mx-auto py-8">
+    <div className="max-w-md mx-auto py-8 space-y-4">
+      {/* 기본 정보 수정 */}
       <Card>
         <CardHeader>
-          <CardTitle>정보 수정 ⚙️</CardTitle>
-          <CardDescription>가입 정보를 수정하고 비밀번호를 변경할 수 있습니다.</CardDescription>
+          <CardTitle>정보 수정</CardTitle>
+          <CardDescription>이름과 비밀번호를 변경할 수 있습니다.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleUpdateProfile} className="space-y-6">
@@ -140,79 +184,103 @@ export default function ProfilePage() {
               <Input value={email} disabled className="bg-gray-50" />
               <p className="text-xs text-gray-400">이메일은 변경할 수 없습니다.</p>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="name">이름</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="이름을 입력하세요"
-                required
-              />
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="이름을 입력하세요" required />
             </div>
-
-            <div className="space-y-2">
-              <Label>소속 그룹 요청</Label>
-              <GroupSearchInput
-                value={selectedGroupId}
-                onChange={setSelectedGroupId}
-                placeholder="그룹 이름을 검색하세요"
-              />
-              <p className="text-xs text-gray-500">
-                가입을 요청할 그룹을 변경할 수 있습니다. 관리자 승인 후 반영됩니다.
-              </p>
-            </div>
-
             <div className="pt-4 border-t border-gray-100">
               <h3 className="text-sm font-semibold text-gray-700 mb-4">비밀번호 변경 (선택사항)</h3>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="newPassword">새 비밀번호</Label>
-                  <Input
-                    id="newPassword"
-                    name="newPassword"
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="6자 이상 입력"
-                    autoComplete="new-password"
-                  />
+                  <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="6자 이상 입력" autoComplete="new-password" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">새 비밀번호 확인</Label>
-                  <Input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="비밀번호 재입력"
-                    autoComplete="new-password"
-                  />
+                  <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="비밀번호 재입력" autoComplete="new-password" />
                 </div>
               </div>
             </div>
-
             <div className="flex space-x-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => router.back()}
-                disabled={saving}
-              >
-                취소
-              </Button>
-              <Button
-                type="submit"
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700"
-                disabled={saving}
-              >
-                {saving ? "저장 중..." : "저장하기"}
-              </Button>
+              <Button type="button" variant="outline" className="flex-1" onClick={() => router.back()} disabled={saving}>취소</Button>
+              <Button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={saving}>{saving ? "저장 중..." : "저장하기"}</Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* 소속 그룹 & 요청 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>소속 그룹</CardTitle>
+          <CardDescription>현재 소속 그룹을 확인하고 새 그룹 참여를 요청할 수 있습니다.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* 현재 소속 그룹 */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-700">현재 소속</Label>
+            {myGroups.length === 0 ? (
+              joinRequests.some(r => r.status === "pending") ? (
+                <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
+                  <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  승인 대기 중인 요청이 있습니다. 아래 내역을 확인하세요.
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400">소속된 그룹이 없습니다.</p>
+              )
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {myGroups.map(g => (
+                  <span key={g.id} className="inline-flex items-center bg-blue-50 text-blue-700 text-sm px-3 py-1 rounded-full border border-blue-200">{g.name}</span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 요청 내역 */}
+          {joinRequests.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">참여 요청 내역</Label>
+              <div className="space-y-2">
+                {joinRequests.map(req => (
+                  <div key={req.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 border">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-800">{req.group_name}</span>
+                      {statusLabel(req.status)}
+                    </div>
+                    {req.status === "pending" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 text-xs h-6 px-2"
+                        onClick={() => handleCancelRequest(req.id)}
+                      >
+                        취소
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 새 그룹 참여 요청 */}
+          <div className="space-y-2 pt-2 border-t border-gray-100">
+            <Label className="text-sm font-medium text-gray-700">새 그룹 참여 요청</Label>
+            <GroupSearchInput
+              value={requestGroupId}
+              onChange={setRequestGroupId}
+              placeholder="참여할 그룹을 검색하세요"
+            />
+            <Button
+              className="w-full bg-emerald-600 hover:bg-emerald-700"
+              onClick={handleRequestGroup}
+              disabled={!requestGroupId || requestingGroup}
+            >
+              {requestingGroup ? "요청 중..." : "참여 요청"}
+            </Button>
+            <p className="text-xs text-gray-400">그룹 재정관리자 또는 관리자 승인 후 추가됩니다.</p>
+          </div>
         </CardContent>
       </Card>
     </div>

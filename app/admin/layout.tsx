@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { GroupProvider } from "@/lib/contexts/GroupContext";
+import { Shield, Users, FolderOpen, ArrowLeft } from "lucide-react";
 
 export default async function AdminLayout({
   children,
@@ -15,7 +16,6 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
-  // Super Admin 확인
   const { data: userStatus } = await supabase
     .from("finance_user_status")
     .select("is_super_admin")
@@ -28,34 +28,40 @@ export default async function AdminLayout({
 
   return (
     <GroupProvider>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-slate-50">
         {/* 관리자 네비게이션 */}
-        <nav className="sticky top-0 z-50 bg-slate-800 text-white shadow-lg">
+        <nav className="sticky top-0 z-50 bg-slate-800 text-white shadow-lg border-b border-slate-700">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between h-14">
-              <div className="flex items-center space-x-4">
-                <Link href="/admin/users" className="font-bold text-lg text-white">
-                  🔧 관리자
-                </Link>
-                <span className="text-slate-500">|</span>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 font-bold text-lg">
+                  <div className="bg-slate-700 rounded-lg p-1.5 border border-slate-600">
+                    <Shield className="h-4 w-4 text-slate-200" />
+                  </div>
+                  <span className="text-slate-100">관리자</span>
+                </div>
+                <div className="w-px h-5 bg-slate-600" />
                 <Link
                   href="/admin/users"
-                  className="px-3 py-2 rounded-md text-sm font-medium text-slate-200 hover:bg-slate-700 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
                 >
+                  <Users className="h-3.5 w-3.5" />
                   사용자 관리
                 </Link>
                 <Link
                   href="/admin/groups"
-                  className="px-3 py-2 rounded-md text-sm font-medium text-slate-200 hover:bg-slate-700 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
                 >
+                  <FolderOpen className="h-3.5 w-3.5" />
                   그룹 관리
                 </Link>
               </div>
               <Link
                 href="/dashboard"
-                className="px-3 py-2 rounded-md text-sm font-medium bg-emerald-600 hover:bg-emerald-700 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium bg-emerald-600 hover:bg-emerald-700 transition-colors"
               >
-                ← 대시보드
+                <ArrowLeft className="h-3.5 w-3.5" />
+                대시보드
               </Link>
             </div>
           </div>

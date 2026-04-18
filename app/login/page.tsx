@@ -6,93 +6,18 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Users } from "lucide-react";
-
-interface UserPermissions {
-  name: string;
-  user_groups: Array<{ id: string; name: string }>;
-  user_id: string;
-}
+import { Wallet, Mail, Lock, LogIn } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [checkingEmail, setCheckingEmail] = useState(false);
-  const [userPermissions, setUserPermissions] = useState<UserPermissions | null>(null);
-  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
 
-  // 컴포넌트 마운트 시 이전 세션 데이터 정리
+  // 컴포넌트 마운트 시 이전 그룹 선택 초기화
   useEffect(() => {
     localStorage.removeItem("selectedGroupId");
   }, []);
-
-  // 이메일 입력 시 사용자 권한 및 소속 그룹 확인
-  useEffect(() => {
-    const checkUserPermissions = async () => {
-      if (!email || !email.includes("@")) {
-        setUserPermissions(null);
-        setSelectedGroupId("");
-        return;
-      }
-
-      setCheckingEmail(true);
-      try {
-        const supabase = createClient();
-        const { data } = await supabase
-          .from("finance_user_status")
-          .select("can_group_finance, status, name, user_id")
-          .eq("email", email)
-          .maybeSingle();
-
-        if (data && data.status === "approved" && (data.can_group_finance ?? true)) {
-          // 소속된 그룹 목록 조회
-          let userGroups: Array<{ id: string; name: string }> = [];
-          const { data: memberData } = await supabase
-            .from("finance_group_members")
-            .select("group_id")
-            .eq("user_id", data.user_id);
-
-          if (memberData && memberData.length > 0) {
-            const groupIds = memberData.map(m => m.group_id);
-            const { data: groupsData } = await supabase
-              .from("finance_groups")
-              .select("id, name")
-              .in("id", groupIds);
-
-            if (groupsData) {
-              userGroups = groupsData;
-            }
-          }
-
-          setUserPermissions({
-            name: data.name || "",
-            user_groups: userGroups,
-            user_id: data.user_id,
-          });
-
-          // 기본값 설정: 첫 번째 소속 그룹
-          if (userGroups.length > 0) {
-            setSelectedGroupId(userGroups[0].id);
-          }
-        } else {
-          setUserPermissions(null);
-          setSelectedGroupId("");
-        }
-      } catch {
-        setUserPermissions(null);
-        setSelectedGroupId("");
-      } finally {
-        setCheckingEmail(false);
-      }
-    };
-
-    const debounceTimer = setTimeout(checkUserPermissions, 500);
-    return () => clearTimeout(debounceTimer);
-  }, [email]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,11 +36,6 @@ export default function LoginPage() {
         return;
       }
 
-      // 선택한 그룹 저장
-      if (selectedGroupId) {
-        localStorage.setItem("selectedGroupId", selectedGroupId);
-      }
-
       toast.success("로그인 성공!");
       window.location.href = "/dashboard";
     } catch {
@@ -124,103 +44,101 @@ export default function LoginPage() {
     }
   };
 
-  const availableGroups = userPermissions?.user_groups || [];
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-100">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl text-emerald-800">로그인</CardTitle>
-          <CardDescription>재정 관리 프로그램에 로그인하세요</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">이메일</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="email@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={loading}
-              />
-              {checkingEmail && (
-                <p className="text-xs text-gray-500">권한 확인 중...</p>
-              )}
-              {userPermissions && (
-                <p className="text-xs text-emerald-600">✓ 사용자 권한 확인 완료</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">비밀번호</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="•••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-emerald-50 to-teal-100">
+      {/* 배경 장식 */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-emerald-200/30 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-teal-200/30 blur-3xl" />
+      </div>
 
-            {/* 그룹 선택 */}
-            {userPermissions && (
-              <div className="border rounded-lg p-4 space-y-3 bg-gray-50">
-                <p className="text-sm font-medium text-gray-700">
-                  그룹 선택
-                  <span className="ml-2 text-xs text-emerald-600">(권한 확인됨)</span>
-                </p>
+      <div className="relative w-full max-w-sm mx-4">
+        {/* 로고 영역 */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-600 rounded-2xl shadow-lg mb-4">
+            <Wallet className="h-8 w-8 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900">재정관리 시스템</h1>
+          <p className="text-sm text-gray-500 mt-1">계정에 로그인하세요</p>
+        </div>
 
-                {/* 소속 그룹 목록 */}
-                {availableGroups.length > 0 ? (
-                  <div className="ml-6 space-y-1">
-                    <p className="text-xs text-gray-500">접속할 그룹을 선택하세요:</p>
-                    {availableGroups.map((group) => (
-                      <div key={group.id} className="flex items-center space-x-2 ml-1">
-                        <Checkbox
-                          id={`group-${group.id}`}
-                          checked={selectedGroupId === group.id}
-                          onCheckedChange={() => setSelectedGroupId(group.id)}
-                        />
-                        <Label
-                          htmlFor={`group-${group.id}`}
-                          className="text-sm text-gray-700 cursor-pointer"
-                        >
-                          {group.name}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="ml-6 text-xs text-orange-600">⚠ 소속된 그룹이 없습니다. 관리자에게 문의하세요.</p>
-                )}
+        {/* 로그인 카드 */}
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700">이메일</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="email@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={loading}
+                  className="pl-9 h-10 border-gray-200 focus:border-emerald-500 focus:ring-emerald-500"
+                />
               </div>
-            )}
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-sm font-medium text-gray-700">비밀번호</Label>
+                <Link href="/forgot-password" className="text-xs text-emerald-600 hover:text-emerald-700 hover:underline font-medium">
+                  비밀번호를 잊으셨나요?
+                </Link>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                  className="pl-9 h-10 border-gray-200 focus:border-emerald-500 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
 
             <Button
               type="submit"
-              className="w-full bg-emerald-600 hover:bg-emerald-700"
-              disabled={loading || (!!userPermissions && availableGroups.length === 0)}
+              className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 text-white font-medium gap-2 mt-2"
+              disabled={loading}
             >
-              {loading ? "로그인 중..." : "로그인"}
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  로그인 중...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <LogIn className="h-4 w-4" />
+                  로그인
+                </span>
+              )}
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm">
-            계정이 없으신가요?{" "}
-            <Link href="/register" className="text-emerald-600 hover:underline">
-              회원가입
-            </Link>
+
+          <div className="mt-6 pt-5 border-t border-gray-100 text-center">
+            <p className="text-sm text-gray-500">
+              계정이 없으신가요?{" "}
+              <Link href="/register" className="text-emerald-600 hover:text-emerald-700 font-medium hover:underline">
+                회원가입
+              </Link>
+            </p>
           </div>
-          <div className="mt-2 text-center">
-            <Link href="/" className="text-sm text-gray-500 hover:underline">
-              홈으로 돌아가기
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        <div className="mt-4 text-center">
+          <Link href="/" className="text-xs text-gray-400 hover:text-gray-600 hover:underline">
+            홈으로 돌아가기
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

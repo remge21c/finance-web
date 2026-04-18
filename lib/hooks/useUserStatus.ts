@@ -60,9 +60,8 @@ export function useUserStatus() {
   // 사용자 승인
   const approveUser = async (userId: string, options: {
     grantFinanceAdmin?: boolean;
-    canGroupFinance?: boolean;
   } = {}) => {
-    const { grantFinanceAdmin = false, canGroupFinance = true } = options;
+    const { grantFinanceAdmin = false } = options;
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -75,7 +74,6 @@ export function useUserStatus() {
         is_finance_admin: grantFinanceAdmin,
         finance_admin_approved_by: grantFinanceAdmin ? user?.id : null,
         finance_admin_approved_at: grantFinanceAdmin ? new Date().toISOString() : null,
-        can_group_finance: canGroupFinance,
       })
       .eq("user_id", userId);
 
@@ -141,7 +139,6 @@ export function useUserStatus() {
         is_finance_admin: true,
         finance_admin_approved_by: user?.id,
         finance_admin_approved_at: new Date().toISOString(),
-        can_group_finance: true,
       })
       .eq("user_id", userId);
 
@@ -183,7 +180,6 @@ export function useUserStatus() {
     isApproved: userStatus?.status === "approved",
     isPending: userStatus?.status === "pending",
     isRejected: userStatus?.status === "rejected",
-    canGroupFinance: userStatus?.can_group_finance ?? true,
     fetchUserStatus,
     fetchAllUsers,
     approveUser,

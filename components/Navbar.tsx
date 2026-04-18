@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import GroupSelector from "@/components/GroupSelector";
 import { useGroupContext } from "@/lib/contexts/GroupContext";
+import { useDataContext } from "@/lib/contexts/DataContext";
 import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
 import {
@@ -28,13 +29,17 @@ interface NavbarProps {
   isSuperAdmin?: boolean;
   isFinanceAdmin?: boolean;
   appTitle?: string;
+  pendingRequestCount?: number;
 }
 
-export default function Navbar({ user, isSuperAdmin = false, isFinanceAdmin = false, appTitle = "재정관리" }: NavbarProps) {
+export default function Navbar({ user, isSuperAdmin = false, isFinanceAdmin = false, appTitle = "재정관리", pendingRequestCount = 0 }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { groups, currentGroup, setCurrentGroup, hasWritePermission } = useGroupContext();
+  const { settings } = useDataContext();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const displayTitle = settings?.app_title || appTitle;
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -63,7 +68,7 @@ export default function Navbar({ user, isSuperAdmin = false, isFinanceAdmin = fa
               <div className="bg-emerald-600 rounded-lg p-1.5 border border-emerald-500">
                 <Wallet className="h-4 w-4" />
               </div>
-              <span className="hidden sm:inline">{appTitle}</span>
+              <span className="hidden sm:inline">{displayTitle}</span>
             </Link>
           </div>
 
@@ -146,14 +151,19 @@ export default function Navbar({ user, isSuperAdmin = false, isFinanceAdmin = fa
                 {user.email}
               </span>
 
-              <Link href="/dashboard/profile">
+              <Link href={pendingRequestCount > 0 ? "/dashboard/finance/groups" : "/dashboard/profile"} className="relative">
                 <Button
                   variant="ghost"
                   size="sm"
                   className="text-emerald-100 hover:bg-emerald-600 hover:text-white h-8 w-8 p-0"
-                  title="프로필 설정"
+                  title={pendingRequestCount > 0 ? `그룹 참여 요청 ${pendingRequestCount}건` : "프로필 설정"}
                 >
                   <UserCircle className="h-4 w-4" />
+                  {pendingRequestCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 leading-none">
+                      {pendingRequestCount > 9 ? "9+" : pendingRequestCount}
+                    </span>
+                  )}
                 </Button>
               </Link>
 

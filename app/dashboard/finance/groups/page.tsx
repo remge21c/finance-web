@@ -27,15 +27,14 @@ import {
 import { toast } from "sonner";
 import { Plus, Users, Shield, ArrowLeft, Check, X } from "lucide-react";
 import type { Group, GroupMember, UserStatus, GroupPermissions } from "@/types/database";
-import UserSearchInput from "@/components/UserSearchInput";
 
 interface GroupWithMembers extends Group {
-  members: (GroupMember & { user_email: string })[];
+  members: (GroupMember & { user_email: string; user_name: string })[];
 }
 
 export default function FinanceAdminGroupsPage() {
   const router = useRouter();
-  const { isFinanceAdmin, allUsers, loading: userStatusLoading } = useUserStatus();
+  const { isFinanceAdmin, isSuperAdmin, allUsers, loading: userStatusLoading } = useUserStatus();
   const [groups, setGroups] = useState<GroupWithMembers[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -44,10 +43,14 @@ export default function FinanceAdminGroupsPage() {
   const [editingGroup, setEditingGroup] = useState<GroupWithMembers | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: "", description: "" });
-  const [selectedUserId, setSelectedUserId] = useState<string>("");
-  const [selectedRole, setSelectedRole] = useState<"write" | "read">("write");
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [selectedRole, setSelectedRole] = useState<"write" | "read">("read");
   const [requestedGroupUsers, setRequestedGroupUsers] = useState<UserStatus[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // 그룹 참여 요청 관련
+  interface JoinRequest { id: string; user_id: string; group_id: string; status: string; requested_at: string; user_name: string; user_email: string; group_name: string; }
+  const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
 
   // 승인된 사용자만 필터링
   const approvedUsers = allUsers.filter(u => u.status === "approved" && !u.is_super_admin);
@@ -69,10 +72,55 @@ export default function FinanceAdminGroupsPage() {
       if (user) {
         setCurrentUserId(user.id);
         fetchGroups(user.id);
+        fetchJoinRequests(user.id);
       }
     };
     getCurrentUser();
   }, [isFinanceAdmin, userStatusLoading]);
+
+  const fetchJoinRequests = async (userId?: string) => {
+    const uid = userId ?? currentUserId;
+    if (!uid) return;
+    const supabase = createClient();
+
+    // 내가 생성한 그룹들
+    const { data: myGroups } = await supabase
+      .from("finance_groups")
+      .select("id")
+      .eq("created_by", uid);
+    if (!myGroups?.length) return;
+
+    const groupIds = myGroups.map((g: any) => g.id);
+    const { data } = await supabase
+      .from("finance_group_join_requests")
+      .select("id, user_id, group_id, status, requested_at")
+      .in("group_id", groupIds)
+      .eq("status", "pending")
+      .order("requested_at", { ascending: true });
+
+    if (!data?.length) { setJoinRequests([]); return; }
+
+    // 사용자/그룹 이름 보강
+    const enriched = await Promise.all(data.map(async (req: any) => {
+      const { data: uData } = await supabase
+        .from("finance_user_status")
+        .select("name, email")
+        .eq("user_id", req.user_id)
+        .maybeSingle();
+      const { data: gData } = await supabase
+        .from("finance_groups")
+        .select("name")
+        .eq("id", req.group_id)
+        .maybeSingle();
+      return {
+        ...req,
+        user_name: uData?.name || uData?.email || req.user_id,
+        user_email: uData?.email || "",
+        group_name: gData?.name || req.group_id,
+      };
+    }));
+    setJoinRequests(enriched);
+  };
 
   const fetchGroups = async (userId?: string) => {
     const uid = userId ?? currentUserId;
@@ -100,18 +148,19 @@ export default function FinanceAdminGroupsPage() {
           .select("*")
           .eq("group_id", group.id);
 
-        // 멤버들의 이메일 가져오기
+        // 멤버들의 이름/이메일 가져오기
         const membersWithEmails = await Promise.all(
           (membersData || []).map(async (member: GroupMember) => {
             const { data: userData } = await supabase
               .from("finance_user_status")
-              .select("email")
+              .select("email, name")
               .eq("user_id", member.user_id)
               .maybeSingle();
 
             return {
               ...member,
               user_email: userData?.email || "",
+              user_name: userData?.name || "",
             };
           })
         );
@@ -220,8 +269,8 @@ export default function FinanceAdminGroupsPage() {
 
   const handleOpenMemberDialog = async (groupId: string) => {
     setSelectedGroupId(groupId);
-    setSelectedUserId("");
-    setSelectedRole("write");
+    setSelectedUserIds([]);
+    setSelectedRole("read");
 
     // 해당 그룹을 요청한 사용자들 조회
     setLoadingUsers(true);
@@ -250,82 +299,61 @@ export default function FinanceAdminGroupsPage() {
   };
 
   const handleAddMember = async () => {
-    if (!selectedGroupId || !selectedUserId) {
+    const userIdsToAdd = [...selectedUserIds];
+
+    if (!selectedGroupId || userIdsToAdd.length === 0) {
       toast.error("사용자를 선택해주세요.");
       return;
     }
 
     const supabase = createClient();
-
-    // 기존 멤버인지 확인
     const group = groups.find(g => g.id === selectedGroupId);
-    const existingMember = group?.members.find(m => m.user_id === selectedUserId);
 
-    if (existingMember) {
-      toast.error("이미 추가된 사용자입니다.");
+    // 이미 멤버인 사용자 제외
+    const existingMemberIds = new Set(group?.members.map(m => m.user_id) || []);
+    const newUserIds = userIdsToAdd.filter(id => !existingMemberIds.has(id));
+
+    if (newUserIds.length === 0) {
+      toast.error("선택한 사용자가 이미 모두 멤버입니다.");
       return;
     }
 
     try {
-      console.log("멤버 추가 시도:", { groupId: selectedGroupId, userId: selectedUserId, role: selectedRole });
-
-      // 그룹 멤버 추가
-      const { data: memberData, error: memberError } = await supabase
+      // 그룹 멤버 일괄 추가
+      const { error: memberError } = await supabase
         .from("finance_group_members")
-        .insert({
+        .insert(newUserIds.map(userId => ({
           group_id: selectedGroupId,
-          user_id: selectedUserId,
+          user_id: userId,
           role: "member",
-        })
-        .select()
-        .single();
+        })));
 
-      if (memberError) {
-        console.error("멤버 추가 에러 상세:", {
-          message: memberError.message,
-          details: memberError.details,
-          hint: memberError.hint,
-          code: memberError.code,
-          fullError: JSON.stringify(memberError)
-        });
-        throw memberError;
-      }
+      if (memberError) throw memberError;
 
-      console.log("멤버 추가 성공:", memberData);
-
-      // 멤버 추가 후 해당 사용자의 requested_group_id 초기화
+      // 신청자의 requested_group_id 초기화
       await supabase
         .from("finance_user_status")
         .update({ requested_group_id: null })
-        .eq("user_id", selectedUserId);
+        .in("user_id", newUserIds);
 
-      // 권한 설정
+      // 권한 설정 (일괄)
       const currentPermissions = group?.permissions || { can_write: [], can_read: [] };
       const newPermissions: GroupPermissions = {
-        can_write: selectedRole === "write" ? [...currentPermissions.can_write, selectedUserId] : currentPermissions.can_write,
-        can_read: selectedRole === "read" ? [...currentPermissions.can_read, selectedUserId] : currentPermissions.can_read,
+        can_write: selectedRole === "write"
+          ? [...currentPermissions.can_write, ...newUserIds]
+          : currentPermissions.can_write,
+        can_read: selectedRole === "read"
+          ? [...currentPermissions.can_read, ...newUserIds]
+          : currentPermissions.can_read,
       };
 
-      console.log("권한 설정 시도:", newPermissions);
-
       const { error: permError } = await updateGroupPermissions(selectedGroupId, newPermissions);
-      if (permError) {
-        console.error("권한 설정 에러:", permError);
-        throw permError;
-      }
+      if (permError) throw permError;
 
-      toast.success("멤버가 추가되었습니다.");
+      toast.success(`${newUserIds.length}명이 추가되었습니다.`);
       setMemberDialogOpen(false);
       await fetchGroups();
     } catch (error: any) {
-      console.error("멤버 추가 전체 에러 상세:", {
-        message: error?.message,
-        name: error?.name,
-        code: error?.code,
-        details: error?.details,
-        hint: error?.hint,
-        fullError: JSON.stringify(error)
-      });
       toast.error("멤버 추가 실패: " + (error?.message || "알 수 없는 에러"));
     }
   };
@@ -361,27 +389,30 @@ export default function FinanceAdminGroupsPage() {
     }
   };
 
-  const handleTogglePermission = async (groupId: string, userId: string, permissionType: "write" | "read") => {
+  const handleTogglePermission = async (groupId: string, userId: string, permissionType: "write" | "read" | "none") => {
     const group = groups.find(g => g.id === groupId);
     if (!group) return;
 
     const currentPermissions = group.permissions || { can_write: [], can_read: [] };
 
-    // 현재 권한 상태 확인
     const hasWrite = currentPermissions.can_write.includes(userId);
     const hasRead = currentPermissions.can_read.includes(userId);
 
     let newPermissions: GroupPermissions;
 
-    if (permissionType === "write") {
+    if (permissionType === "none") {
+      // 모든 권한 제거
+      newPermissions = {
+        can_write: currentPermissions.can_write.filter((id: string) => id !== userId),
+        can_read: currentPermissions.can_read.filter((id: string) => id !== userId),
+      };
+    } else if (permissionType === "write") {
       if (hasWrite) {
-        // 쓰기 권한 제거
         newPermissions = {
           can_write: currentPermissions.can_write.filter((id: string) => id !== userId),
           can_read: currentPermissions.can_read,
         };
       } else {
-        // 쓰기 권한 추가 (읽기 권한 제거)
         newPermissions = {
           can_write: [...currentPermissions.can_write, userId],
           can_read: currentPermissions.can_read.filter((id: string) => id !== userId),
@@ -389,13 +420,11 @@ export default function FinanceAdminGroupsPage() {
       }
     } else {
       if (hasRead) {
-        // 읽기 권한 제거
         newPermissions = {
           can_write: currentPermissions.can_write,
           can_read: currentPermissions.can_read.filter((id: string) => id !== userId),
         };
       } else {
-        // 읽기 권한 추가 (쓰기 권한 제거)
         newPermissions = {
           can_write: currentPermissions.can_write.filter((id: string) => id !== userId),
           can_read: [...currentPermissions.can_read, userId],
@@ -449,11 +478,82 @@ export default function FinanceAdminGroupsPage() {
             <p className="text-gray-500 mt-1">부서별 그룹을 생성하고 회원 권한을 관리합니다</p>
           </div>
         </div>
-        <Button onClick={handleCreateGroup} className="bg-teal-600 hover:bg-teal-700">
-          <Plus className="h-4 w-4 mr-2" />
-          그룹 생성
-        </Button>
+        {isSuperAdmin && (
+          <Button onClick={handleCreateGroup} className="bg-teal-600 hover:bg-teal-700">
+            <Plus className="h-4 w-4 mr-2" />
+            그룹 생성
+          </Button>
+        )}
       </div>
+
+      {/* 그룹 참여 요청 */}
+      {joinRequests.length > 0 && (
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base text-yellow-800 flex items-center gap-2">
+              <span className="inline-flex items-center justify-center w-5 h-5 bg-yellow-500 text-white text-xs font-bold rounded-full">{joinRequests.length}</span>
+              그룹 참여 요청 대기 중
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {joinRequests.map(req => (
+              <div key={req.id} className="flex items-center justify-between bg-white rounded-lg px-4 py-3 border border-yellow-200">
+                <div>
+                  <p className="text-sm font-medium text-gray-800">{req.user_name}</p>
+                  <p className="text-xs text-gray-500">{req.user_email} → <span className="text-blue-600 font-medium">{req.group_name}</span></p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    className="bg-emerald-600 hover:bg-emerald-700 h-7 text-xs"
+                    onClick={async () => {
+                      const supabase = createClient();
+                      // 이미 멤버인지 확인
+                      const { data: existing } = await supabase
+                        .from("finance_group_members")
+                        .select("id")
+                        .eq("user_id", req.user_id)
+                        .eq("group_id", req.group_id)
+                        .maybeSingle();
+                      if (!existing) {
+                        const { error } = await supabase
+                          .from("finance_group_members")
+                          .insert({ group_id: req.group_id, user_id: req.user_id, role: "member" });
+                        if (error) { toast.error("그룹 추가 실패: " + error.message); return; }
+                      }
+                      await supabase
+                        .from("finance_group_join_requests")
+                        .update({ status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: currentUserId })
+                        .eq("id", req.id);
+                      toast.success(`${req.user_name}님이 ${req.group_name}에 추가되었습니다.`);
+                      fetchJoinRequests();
+                      fetchGroups();
+                    }}
+                  >
+                    <Check className="h-3 w-3 mr-1" /> 승인
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-red-300 text-red-600 hover:bg-red-50 h-7 text-xs"
+                    onClick={async () => {
+                      const supabase = createClient();
+                      await supabase
+                        .from("finance_group_join_requests")
+                        .update({ status: "rejected", reviewed_at: new Date().toISOString(), reviewed_by: currentUserId })
+                        .eq("id", req.id);
+                      toast.success("요청이 거절되었습니다.");
+                      fetchJoinRequests();
+                    }}
+                  >
+                    <X className="h-3 w-3 mr-1" /> 거절
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* 그룹 목록 */}
       <div className="space-y-6">
@@ -472,14 +572,16 @@ export default function FinanceAdminGroupsPage() {
                 >
                   수정
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDeleteGroup(group.id)}
-                  className="text-red-600 border-red-600 hover:bg-red-50"
-                >
-                  삭제
-                </Button>
+                {isSuperAdmin && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeleteGroup(group.id)}
+                    className="text-red-600 border-red-600 hover:bg-red-50"
+                  >
+                    삭제
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent className="p-6">
@@ -505,64 +607,73 @@ export default function FinanceAdminGroupsPage() {
                 <p className="text-gray-500 text-center py-8">등록된 멤버가 없습니다.</p>
               ) : (
                 <div className="space-y-3">
-                  {group.members.map((member) => (
+                  {group.members.map((member) => {
+                    const isSelf = member.user_id === currentUserId;
+                    return (
                     <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
                       <div className="flex-1">
-                        <p className="font-medium">{member.user_email}</p>
-                        <p className="text-sm text-gray-500">
+                        <p className="font-medium">
+                          {member.user_name || member.user_email}
+                          {isSelf && <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">나</span>}
+                        </p>
+                        <p className="text-sm text-gray-400">{member.user_email}</p>
+                        <p className="text-xs text-gray-500">
                           역할: {member.role === 'owner' ? '소유자' : member.role === 'admin' ? '관리자' : '멤버'}
                         </p>
                       </div>
-                      <div className="flex items-center space-x-4">
-                        {/* 권한 토글 버튼 */}
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm text-gray-500">권한:</span>
-                          <button
-                            onClick={() => handleTogglePermission(group.id, member.user_id, "write")}
-                            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                              getUserPermission(group, member.user_id) === "write"
-                                ? "bg-blue-600 text-white"
-                                : "bg-gray-200 text-gray-600 hover:bg-gray-300"
-                            }`}
-                          >
-                            쓰기
-                          </button>
-                          <button
-                            onClick={() => handleTogglePermission(group.id, member.user_id, "read")}
-                            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                              getUserPermission(group, member.user_id) === "read"
-                                ? "bg-green-600 text-white"
-                                : "bg-gray-200 text-gray-600 hover:bg-gray-300"
-                            }`}
-                          >
-                            읽기
-                          </button>
-                          <button
-                            onClick={() => handleTogglePermission(group.id, member.user_id, "write")}
-                            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                              getUserPermission(group, member.user_id) === "none"
-                                ? "bg-gray-400 text-white"
-                                : "bg-gray-200 text-gray-600 hover:bg-gray-300"
-                            }`}
-                            title="권한 없음"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
+                      {!isSelf && (
+                        <div className="flex items-center space-x-4">
+                          {/* 권한 토글 버튼 */}
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm text-gray-500">권한:</span>
+                            <button
+                              onClick={() => handleTogglePermission(group.id, member.user_id, "write")}
+                              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                                getUserPermission(group, member.user_id) === "write"
+                                  ? "bg-blue-600 text-white"
+                                  : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+                              }`}
+                            >
+                              쓰기
+                            </button>
+                            <button
+                              onClick={() => handleTogglePermission(group.id, member.user_id, "read")}
+                              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                                getUserPermission(group, member.user_id) === "read"
+                                  ? "bg-green-600 text-white"
+                                  : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+                              }`}
+                            >
+                              읽기
+                            </button>
+                            <button
+                              onClick={() => handleTogglePermission(group.id, member.user_id, "none")}
+                              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                                getUserPermission(group, member.user_id) === "none"
+                                  ? "bg-gray-400 text-white"
+                                  : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+                              }`}
+                              title="권한 없음"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                          {/* 제거 버튼 */}
+                          {member.role !== "owner" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveMember(group.id, member.id, member.user_id)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              제거
+                            </Button>
+                          )}
                         </div>
-                        {/* 제거 버튼 */}
-                        {member.role !== "owner" && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveMember(group.id, member.id, member.user_id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            제거
-                          </Button>
-                        )}
-                      </div>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
@@ -576,7 +687,7 @@ export default function FinanceAdminGroupsPage() {
           <DialogHeader>
             <DialogTitle>{editingGroup ? "그룹 수정" : "그룹 생성"}</DialogTitle>
             <DialogDescription>
-              부서별 그룹을 {editingGroup ? "수정" : "생성"}합니다.
+              {editingGroup ? "그룹 이름과 설명을 수정합니다." : "새 부서 그룹을 생성합니다."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -612,48 +723,106 @@ export default function FinanceAdminGroupsPage() {
 
       {/* 멤버 추가 다이얼로그 */}
       <Dialog open={memberDialogOpen} onOpenChange={setMemberDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>멤버 추가</DialogTitle>
             <DialogDescription>
-              승인된 회원을 그룹에 추가하고 권한을 설정합니다.
+              그룹 신청자를 선택하거나 사용자를 직접 검색하여 추가합니다.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-5 py-4">
+
+            {/* 그룹 신청자 목록 */}
             <div className="space-y-2">
-              <Label htmlFor="user">사용자 *</Label>
+              <Label className="text-sm font-semibold text-gray-700">
+                그룹 신청자
+                {!loadingUsers && requestedGroupUsers.length > 0 && (
+                  <span className="ml-2 text-xs font-normal text-teal-600">
+                    ({requestedGroupUsers.filter(u => !groups.find(g => g.id === selectedGroupId)?.members.find(m => m.user_id === u.user_id)).length}명)
+                  </span>
+                )}
+              </Label>
               {loadingUsers ? (
-                <p className="text-sm text-gray-500">사용자 목록을 불러오는 중...</p>
-              ) : requestedGroupUsers.length === 0 ? (
-                <p className="text-sm text-gray-500">이 그룹을 요청한 사용자가 없습니다.</p>
-              ) : (
-                <UserSearchInput
-                  users={requestedGroupUsers.map(u => ({ ...u, id: u.user_id }))}
-                  value={selectedUserId}
-                  onChange={setSelectedUserId}
-                  placeholder="사용자 이름 또는 이메일 검색 (예: 홍길동, user@example.com)"
-                />
-              )}
+                <p className="text-sm text-gray-400 py-2">불러오는 중...</p>
+              ) : (() => {
+                const currentGroup = groups.find(g => g.id === selectedGroupId);
+                const existingIds = new Set(currentGroup?.members.map(m => m.user_id) || []);
+                const pendingUsers = requestedGroupUsers.filter(u => !existingIds.has(u.user_id));
+
+                return pendingUsers.length === 0 ? (
+                  <p className="text-sm text-gray-400 py-2 text-center border rounded-lg bg-gray-50">
+                    이 그룹을 신청한 사용자가 없습니다.
+                  </p>
+                ) : (
+                  <div className="border rounded-lg divide-y max-h-48 overflow-y-auto">
+                    {pendingUsers.map((user) => {
+                      const isChecked = selectedUserIds.includes(user.user_id);
+                      return (
+                        <label
+                          key={user.user_id}
+                          className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors ${isChecked ? "bg-teal-50" : ""}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              setSelectedUserIds(prev =>
+                                e.target.checked
+                                  ? [...prev, user.user_id]
+                                  : prev.filter(id => id !== user.user_id)
+                              );
+                            }}
+                            className="w-4 h-4 rounded accent-teal-600"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800 truncate">
+                              {user.name || user.email}
+                            </p>
+                            {user.name && (
+                              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                            )}
+                          </div>
+                          {isChecked && <Check className="h-4 w-4 text-teal-600 shrink-0" />}
+                        </label>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
+
+            {/* 권한 */}
             <div className="space-y-2">
-              <Label htmlFor="role">권한 *</Label>
+              <Label className="text-sm font-semibold text-gray-700">기본 권한 *</Label>
               <Select value={selectedRole} onValueChange={(value: "write" | "read") => setSelectedRole(value)}>
-                <SelectTrigger id="role">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="write">쓰기 권한 (데이터 추가/수정)</SelectItem>
                   <SelectItem value="read">읽기 권한 (조회만)</SelectItem>
+                  <SelectItem value="write">쓰기 권한 (데이터 추가/수정)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {/* 선택 요약 */}
+            {selectedUserIds.length > 0 && (
+              <p className="text-xs text-teal-700 bg-teal-50 rounded px-3 py-2">
+                {selectedUserIds.length}명 선택됨 —{" "}
+                <span className="font-medium">{selectedRole === "read" ? "읽기" : "쓰기"}</span> 권한으로 추가됩니다.
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setMemberDialogOpen(false)}>
               취소
             </Button>
-            <Button onClick={handleAddMember} className="bg-teal-600 hover:bg-teal-700" disabled={!selectedUserId || loadingUsers}>
-              추가
+            <Button
+              onClick={handleAddMember}
+              className="bg-teal-600 hover:bg-teal-700"
+              disabled={loadingUsers || selectedUserIds.length === 0}
+            >
+              추가 {selectedUserIds.length > 0 && `(${selectedUserIds.length}명)`}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, CheckCircle2 } from "lucide-react";
 import type { Group } from "@/types/database";
 
 interface GroupSelectorProps {
@@ -19,14 +19,13 @@ interface GroupSelectorProps {
 }
 
 export default function GroupSelector({ groups, currentGroup, onGroupChange }: GroupSelectorProps) {
-  // 로딩 상태 확인
   const isLoading = !currentGroup && groups.length === 0;
 
   // 그룹이 1개인 경우 드롭다운 없이 텍스트만 표시
   if (!isLoading && groups.length === 1 && currentGroup) {
     return (
-      <div className="px-3 py-1.5 bg-white text-gray-800 rounded-md border border-gray-200 min-w-[200px]">
-        <span className="truncate font-medium">{currentGroup.name}</span>
+      <div className="px-3 py-1.5 bg-emerald-600/50 text-white rounded-md border border-emerald-500/60 text-sm font-medium max-w-[160px] truncate">
+        {currentGroup.name}
       </div>
     );
   }
@@ -34,22 +33,26 @@ export default function GroupSelector({ groups, currentGroup, onGroupChange }: G
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="justify-between min-w-[200px]">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="justify-between gap-1.5 text-emerald-100 hover:bg-emerald-600 hover:text-white border border-emerald-500/60 h-8 text-sm max-w-[160px]"
+        >
           <span className="truncate">
-            {isLoading ? "그룹 로딩 중..." : (currentGroup?.name || "그룹 선택")}
+            {isLoading ? "로딩 중..." : (currentGroup?.name || "그룹 선택")}
           </span>
-          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-70" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-[200px]">
-        <DropdownMenuLabel>그룹 선택</DropdownMenuLabel>
+      <DropdownMenuContent align="end" className="min-w-[180px]">
+        <DropdownMenuLabel className="text-xs text-gray-500 font-medium">그룹 선택</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {isLoading ? (
-          <div className="px-2 py-4 text-center text-sm text-gray-500">
-            그룹을 불러오는 중...
+          <div className="px-2 py-3 text-center text-sm text-gray-400">
+            불러오는 중...
           </div>
         ) : groups.length === 0 ? (
-          <div className="px-2 py-4 text-center text-sm text-gray-500">
+          <div className="px-2 py-3 text-center text-sm text-gray-400">
             소속된 그룹이 없습니다
           </div>
         ) : (
@@ -57,9 +60,14 @@ export default function GroupSelector({ groups, currentGroup, onGroupChange }: G
             <DropdownMenuItem
               key={group.id}
               onClick={() => onGroupChange(group)}
-              className={currentGroup?.id === group.id ? "bg-accent" : ""}
+              className={`flex items-center justify-between cursor-pointer ${
+                currentGroup?.id === group.id ? "bg-emerald-50 text-emerald-700" : ""
+              }`}
             >
               <span className="truncate">{group.name}</span>
+              {currentGroup?.id === group.id && (
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 flex-shrink-0 ml-2" />
+              )}
             </DropdownMenuItem>
           ))
         )}

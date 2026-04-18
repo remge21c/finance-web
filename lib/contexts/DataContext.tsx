@@ -134,47 +134,46 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
 
     if (!data) {
-      // 설정이 없으면 기본 설정 생성 시도
-      const { data: newSettings, error: insertError } = await supabase
-        .from("finance_settings")
-        .insert({
-          user_id: userId,
-          group_id: currentGroup.id,
-          ...defaultSettings,
-        })
-        .select()
-        .single();
+      // 설정이 없으면 현재 그룹에서 owner/admin인지 확인 후 생성
+      const { data: memberRole } = await supabase
+        .from("finance_group_members")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("group_id", currentGroup.id)
+        .maybeSingle();
 
-      if (insertError) {
-        // 중복 키 오류인 경우 (이미 설정이 존재), 다시 조회 후 조용히 처리
-        if (insertError.code === "23505") {
-          const { data: retryData } = await supabase
-            .from("finance_settings")
-            .select("*")
-            .eq("group_id", currentGroup.id)
-            .maybeSingle();
+      const canCreateSettings = memberRole?.role === "owner" || memberRole?.role === "admin";
 
-          setSettings(retryData ?? {
-            id: "",
+      if (canCreateSettings) {
+        const { data: newSettings, error: insertError } = await supabase
+          .from("finance_settings")
+          .insert({
             user_id: userId,
             group_id: currentGroup.id,
             ...defaultSettings,
-            updated_at: new Date().toISOString(),
-          } as Settings);
-          return;
-        }
+          })
+          .select()
+          .single();
 
-        console.error("설정 생성 실패:", insertError.message || insertError.code);
-        // 설정 생성 실패 시에도 기본 설정 사용
-        setSettings({
-          id: "",
-          user_id: userId,
-          group_id: currentGroup.id,
-          ...defaultSettings,
-          updated_at: new Date().toISOString(),
-        } as Settings);
+        if (insertError) {
+          if (insertError.code === "23505") {
+            // 중복 키 - 다시 조회
+            const { data: retryData } = await supabase
+              .from("finance_settings")
+              .select("*")
+              .eq("group_id", currentGroup.id)
+              .maybeSingle();
+            setSettings(retryData ?? { id: "", user_id: userId, group_id: currentGroup.id, ...defaultSettings, updated_at: new Date().toISOString() } as Settings);
+            return;
+          }
+          // 생성 실패 시 기본값 사용
+          setSettings({ id: "", user_id: userId, group_id: currentGroup.id, ...defaultSettings, updated_at: new Date().toISOString() } as Settings);
+        } else {
+          setSettings(newSettings);
+        }
       } else {
-        setSettings(newSettings);
+        // 일반 멤버: 설정 생성 권한 없으므로 기본값으로 표시
+        setSettings({ id: "", user_id: userId, group_id: currentGroup.id, ...defaultSettings, updated_at: new Date().toISOString() } as Settings);
       }
     } else {
       setSettings(data);
