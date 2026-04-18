@@ -44,22 +44,50 @@ export async function getUserGroups(): Promise<Group[]> {
       return (allGroups || []) as Group[];
     }
 
-    // 재정관리자: 자신이 생성한 department 그룹만 조회
+    // 재정관리자: 자신이 생성한 department 그룹 + 멤버로 속한 그룹 모두 조회
     if (isFinanceAdmin) {
+      // 1. 자신이 생성한 그룹
       const { data: ownedGroups, error: ownedError } = await supabase
         .from("finance_groups")
         .select("*")
         .eq("created_by", user.id)
-        .eq("group_type", "department")
-        .order("created_at", { ascending: false });
+        .eq("group_type", "department");
 
       if (ownedError) {
         console.error("[getUserGroups] Owned groups query error:", ownedError);
-        return [];
       }
 
-      console.log("[getUserGroups] Owned groups (finance admin):", ownedGroups?.length || 0);
-      return (ownedGroups || []) as Group[];
+      // 2. 멤버로 속한 그룹 (자신이 생성하지 않은 그룹)
+      const { data: memberData, error: memberError } = await supabase
+        .from("finance_group_members")
+        .select("group_id")
+        .eq("user_id", user.id);
+
+      let memberGroups: any[] = [];
+      if (memberData && memberData.length > 0) {
+        const groupIds = memberData.map((m: any) => m.group_id);
+        const { data: memberGroupsData, error: memberGroupsError } = await supabase
+          .from("finance_groups")
+          .select("*")
+          .in("id", groupIds)
+          .eq("group_type", "department");
+
+        if (!memberGroupsError) {
+          memberGroups = memberGroupsData || [];
+        }
+      }
+
+      // 3. 두 목록 합치기 (중복 제거를 위해 Set 사용)
+      const allGroupsMap = new Map();
+      (ownedGroups || []).forEach((g: any) => allGroupsMap.set(g.id, g));
+      memberGroups.forEach((g: any) => allGroupsMap.set(g.id, g));
+
+      const allGroups = Array.from(allGroupsMap.values()).sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      console.log("[getUserGroups] Finance admin groups:", allGroups.length, "(owned:", (ownedGroups || []).length, "+ member:", memberGroups.length, ")");
+      return allGroups as Group[];
     }
 
     // 일반 사용자: 멤버로 속한 department 그룹만 조회
