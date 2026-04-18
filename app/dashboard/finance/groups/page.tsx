@@ -127,18 +127,44 @@ export default function FinanceAdminGroupsPage() {
     if (!uid) return;
     const supabase = createClient();
 
-    // 본인이 생성한 그룹만 가져오기
-    const { data: groupsData, error: groupsError } = await supabase
+    // 본인이 생성한 그룹
+    const { data: ownedGroups, error: groupsError } = await supabase
       .from("finance_groups")
       .select("*")
-      .eq("created_by", uid)
-      .order("created_at", { ascending: false });
+      .eq("created_by", uid);
 
     if (groupsError) {
       toast.error("그룹 목록을 가져오지 못했습니다.");
       setLoading(false);
       return;
     }
+
+    // 멤버로 속한 그룹 (자신이 생성하지 않은 그룹)
+    let memberGroups: any[] = [];
+    const { data: memberData } = await supabase
+      .from("finance_group_members")
+      .select("group_id")
+      .eq("user_id", uid);
+
+    if (memberData && memberData.length > 0) {
+      const ownedIds = new Set((ownedGroups || []).map((g: any) => g.id));
+      const memberGroupIds = memberData.map((m: any) => m.group_id).filter((id: string) => !ownedIds.has(id));
+      if (memberGroupIds.length > 0) {
+        const { data: memberGroupsData } = await supabase
+          .from("finance_groups")
+          .select("*")
+          .in("id", memberGroupIds);
+        memberGroups = memberGroupsData || [];
+      }
+    }
+
+    // 합치기 및 정렬
+    const allGroupsMap = new Map();
+    (ownedGroups || []).forEach((g: any) => allGroupsMap.set(g.id, g));
+    memberGroups.forEach((g: any) => allGroupsMap.set(g.id, g));
+    const groupsData = Array.from(allGroupsMap.values()).sort((a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
 
     // 각 그룹의 멤버 정보 가져오기
     const groupsWithMembers = await Promise.all(

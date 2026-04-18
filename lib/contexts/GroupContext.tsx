@@ -99,8 +99,8 @@ export function GroupProvider({ children }: GroupProviderProps) {
     }
   }, [userId, initialized]);
 
-  // 슈퍼관리자는 모든 그룹, 그 외는 department 타입만
-  const groups = isSuperAdmin
+  // 관리자(슈퍼/재정)는 모든 그룹, 일반 사용자는 department 타입만
+  const groups = isAdminUser
     ? allGroups
     : allGroups.filter(g => g.group_type === "department");
 

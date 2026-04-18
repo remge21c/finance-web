@@ -43,14 +43,13 @@ export async function getUserGroups(): Promise<Group[]> {
       return (allGroups || []) as Group[];
     }
 
-    // 재정관리자: 자신이 생성한 department 그룹 + 멤버로 속한 그룹 모두 조회
+    // 재정관리자: 자신이 생성한 그룹(타입 무관) + 멤버로 속한 그룹 모두 조회
     if (isFinanceAdmin) {
-      // 1. 자신이 생성한 그룹
+      // 1. 자신이 생성한 그룹 (group_type 무관)
       const { data: ownedGroups, error: ownedError } = await supabase
         .from("finance_groups")
         .select("*")
-        .eq("created_by", user.id)
-        .eq("group_type", "department");
+        .eq("created_by", user.id);
 
       if (ownedError) {
         console.error("[getUserGroups] Owned groups query error:", ownedError);
@@ -68,8 +67,7 @@ export async function getUserGroups(): Promise<Group[]> {
         const { data: memberGroupsData, error: memberGroupsError } = await supabase
           .from("finance_groups")
           .select("*")
-          .in("id", groupIds)
-          .eq("group_type", "department");
+          .in("id", groupIds);
 
         if (!memberGroupsError) {
           memberGroups = memberGroupsData || [];
