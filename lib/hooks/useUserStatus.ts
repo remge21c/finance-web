@@ -81,6 +81,45 @@ export function useUserStatus() {
       return { error: error.message };
     }
 
+    // 재정관리자로 지정된 경우, 속한 그룹에 쓰기 권한 부여
+    if (grantFinanceAdmin) {
+      const { data: memberships } = await supabase
+        .from("finance_group_members")
+        .select("group_id")
+        .eq("user_id", userId);
+
+      if (memberships && memberships.length > 0) {
+        for (const membership of memberships) {
+          const { data: group } = await supabase
+            .from("finance_groups")
+            .select("permissions")
+            .eq("id", membership.group_id)
+            .single();
+
+          if (group) {
+            const permissions = (group.permissions as any) || { can_write: [], can_read: [] };
+
+            // 기존 권한에서 사용자 제거
+            const newCanWrite = (permissions.can_write || []).filter((id: string) => id !== userId);
+            const newCanRead = (permissions.can_read || []).filter((id: string) => id !== userId);
+
+            // 쓰기 권한 추가
+            newCanWrite.push(userId);
+
+            await supabase
+              .from("finance_groups")
+              .update({
+                permissions: {
+                  can_write: newCanWrite,
+                  can_read: newCanRead,
+                }
+              })
+              .eq("id", membership.group_id);
+          }
+        }
+      }
+    }
+
     await fetchAllUsers();
     return { success: true };
   };
@@ -144,6 +183,44 @@ export function useUserStatus() {
 
     if (error) {
       return { error: error.message };
+    }
+
+    // 사용자가 속한 그룹 조회
+    const { data: memberships } = await supabase
+      .from("finance_group_members")
+      .select("group_id")
+      .eq("user_id", userId);
+
+    if (memberships && memberships.length > 0) {
+      // 각 그룹에 쓰기 권한 부여
+      for (const membership of memberships) {
+        const { data: group } = await supabase
+          .from("finance_groups")
+          .select("permissions")
+          .eq("id", membership.group_id)
+          .single();
+
+        if (group) {
+          const permissions = (group.permissions as any) || { can_write: [], can_read: [] };
+
+          // 기존 권한에서 사용자 제거
+          const newCanWrite = (permissions.can_write || []).filter((id: string) => id !== userId);
+          const newCanRead = (permissions.can_read || []).filter((id: string) => id !== userId);
+
+          // 쓰기 권한 추가
+          newCanWrite.push(userId);
+
+          await supabase
+            .from("finance_groups")
+            .update({
+              permissions: {
+                can_write: newCanWrite,
+                can_read: newCanRead,
+              }
+            })
+            .eq("id", membership.group_id);
+        }
+      }
     }
 
     await fetchAllUsers();

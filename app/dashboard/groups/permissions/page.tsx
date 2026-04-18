@@ -142,10 +142,10 @@ export default function GroupPermissionsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* 헤더 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Button
             variant="ghost"
             size="sm"
@@ -153,22 +153,22 @@ export default function GroupPermissionsPage() {
             className="flex items-center space-x-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span>뒤로</span>
+            <span className="text-xs sm:text-sm">뒤로</span>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-800 flex items-center space-x-2">
-              <Shield className="h-6 w-6 text-emerald-600" />
-              <span>그룹 권한 설정</span>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center space-x-2">
+              <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
+              <span className="text-base sm:text-xl">그룹 권한 설정</span>
             </h1>
-            <p className="text-gray-500 mt-1">{groupWithMembers.name}</p>
+            <p className="text-gray-500 text-xs sm:text-sm mt-0.5 sm:mt-1">{groupWithMembers.name}</p>
           </div>
         </div>
       </div>
 
       {/* 권한 안내 */}
       <Card className="bg-blue-50 border-blue-200">
-        <CardContent className="pt-6">
-          <div className="text-sm text-blue-800">
+        <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
+          <div className="text-xs sm:text-sm text-blue-800">
             <p className="font-medium mb-2">권한 안내</p>
             <ul className="space-y-1 ml-4 list-disc">
               <li><strong>쓰기 권한:</strong> 그룹 내 데이터를 추가하고 수정할 수 있습니다.</li>
@@ -184,17 +184,17 @@ export default function GroupPermissionsPage() {
 
       {/* 멤버별 권한 설정 */}
       <Card>
-        <CardHeader>
-          <CardTitle>멤버 권한 설정</CardTitle>
+        <CardHeader className="py-3 sm:py-4 px-3 sm:px-6">
+          <CardTitle className="text-base sm:text-lg">멤버 권한 설정</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        <CardContent className="px-3 sm:px-6">
+          <div className="space-y-3 sm:space-y-4">
             {groupWithMembers.members.map((member) => (
-              <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">{member.user_email || member.user_id}</p>
-                  <div className="flex items-center space-x-2 mt-1">
-                    <span className="text-sm text-gray-500">역할:</span>
+              <div key={member.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 p-3 sm:p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 text-sm sm:text-base truncate">{member.user_email || member.user_id}</p>
+                  <div className="flex items-center flex-wrap gap-2 mt-1">
+                    <span className="text-xs sm:text-sm text-gray-500">역할:</span>
                     <span className={`badge ${
                       member.role === 'owner' ? 'badge-admin' :
                       member.role === 'admin' ? 'badge-approved' :
@@ -208,13 +208,13 @@ export default function GroupPermissionsPage() {
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-2 self-end sm:self-auto">
                   <Select
                     value={getPermissionType(member.user_id)}
                     onValueChange={(value) => updatePermission(member.user_id, value as 'none' | 'write' | 'read')}
                     disabled={updating === member.user_id || member.role === 'owner' || member.role === 'admin'}
                   >
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger className="w-28 sm:w-32 text-xs sm:text-sm h-8 sm:h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

@@ -29,12 +29,21 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { createClient } from "@/lib/supabase/client";
-import type { UserStatus } from "@/types/database";
+import type { UserStatus, GroupPermissions, GroupMember } from "@/types/database";
 
 interface PendingRequest {
   id: string;
   group_id: string;
   group_name: string;
+}
+
+type PermissionType = 'write' | 'read' | 'waiting';
+type GroupRole = 'owner' | 'admin' | 'finance_admin' | 'member';
+
+interface GroupPermission {
+  group_id: string;
+  permission: PermissionType;
+  role: GroupRole;
 }
 
 export default function AdminUsersPage() {
@@ -66,22 +75,33 @@ export default function AdminUsersPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // 그룹별 권한 관리
+  const [userGroupPermissions, setUserGroupPermissions] = useState<Record<string, GroupPermission[]>>({});
+  // 사용자별 그룹 역할 정보
+  const [userGroupRoles, setUserGroupRoles] = useState<Record<string, Record<string, GroupRole>>>({});
+
   const fetchUserGroupMap = async () => {
     const supabase = createClient();
     const { data } = await supabase
       .from("finance_group_members")
-      .select("user_id, group_id, finance_groups(id, name)");
+      .select("user_id, group_id, role, finance_groups(id, name)");
     if (data) {
       const memberMap: Record<string, string[]> = {};
       const nameMap: Record<string, string> = {};
-      for (const item of data as any[]) {
-        if (!memberMap[item.user_id]) memberMap[item.user_id] = [];
-        memberMap[item.user_id].push(item.group_id);
-        if (item.finance_groups) {
-          nameMap[item.group_id] = item.finance_groups.name;
+      const roleMap: Record<string, Record<string, GroupRole>> = {};
+
+      for (const item of data as GroupMember[]) {
+        if (!memberMap[item.user_id]) {
+          memberMap[item.user_id] = [];
+          roleMap[item.user_id] = {};
         }
+        memberMap[item.user_id].push(item.group_id);
+        roleMap[item.user_id][item.group_id] = item.role;
+
+        // Note: finance_groups data comes from JOIN, need to handle separately if needed
       }
       setUserGroupMap(memberMap);
+      setUserGroupRoles(roleMap);
       setGroupNameMap(prev => ({ ...prev, ...nameMap }));
     }
   };
@@ -127,6 +147,146 @@ export default function AdminUsersPage() {
     }
   };
 
+  /**
+   * 사용자의 그룹별 권한 조회
+   */
+  const fetchUserGroupPermissions = async (userId: string, groupIds: string[]): Promise<GroupPermission[]> => {
+    if (groupIds.length === 0) return [];
+
+    const supabase = createClient();
+    const { data: groups } = await supabase
+      .from("finance_groups")
+      .select("id, permissions")
+      .in("id", groupIds);
+
+    if (!groups) return [];
+
+    const permissions: GroupPermission[] = [];
+    const roles = userGroupRoles[userId] || {};
+
+    for (const group of groups as any[]) {
+      const groupPerms = (group.permissions as GroupPermissions) || { can_write: [], can_read: [] };
+      const role = roles[group.id] || 'member';
+
+      // 역할에 따른 기본 권한 결정
+      // 재정관리: 자동 쓰기 권한
+      // 일반: 명시적으로 부여된 권한만 있음 (없으면 대기 상태)
+      let permission: PermissionType = 'waiting';
+
+      if (role === 'finance_admin') {
+        permission = 'write';
+      } else if (groupPerms.can_write?.includes(userId)) {
+        permission = 'write';
+      } else if (groupPerms.can_read?.includes(userId)) {
+        permission = 'read';
+      }
+
+      permissions.push({
+        group_id: group.id,
+        permission,
+        role
+      });
+    }
+
+    return permissions;
+  };
+
+  /**
+   * 사용자의 그룹 권한 업데이트
+   */
+  const handleUpdateGroupPermission = async (groupId: string, permission: PermissionType) => {
+    if (!selectedUser) return;
+
+    const supabase = createClient();
+
+    // 현재 그룹 권한 가져오기
+    const { data: group } = await supabase
+      .from("finance_groups")
+      .select("permissions")
+      .eq("id", groupId)
+      .single();
+
+    if (!group) {
+      toast.error("그룹을 찾을 수 없습니다.");
+      return;
+    }
+
+    const currentPermissions = (group.permissions as GroupPermissions) || { can_write: [], can_read: [] };
+    const userId = selectedUser.user_id;
+
+    // 기존 권한 제거
+    const newPermissions: GroupPermissions = {
+      can_write: currentPermissions.can_write?.filter((id: string) => id !== userId) || [],
+      can_read: currentPermissions.can_read?.filter((id: string) => id !== userId) || [],
+    };
+
+    // 새 권한 추가
+    if (permission === 'write') {
+      newPermissions.can_write.push(userId);
+    } else if (permission === 'read') {
+      newPermissions.can_read.push(userId);
+    }
+    // permission === 'waiting'인 경우 아무것도 추가하지 않음 (권한 대기 상태)
+
+    // 권한 업데이트
+    const { error } = await supabase
+      .from("finance_groups")
+      .update({ permissions: newPermissions })
+      .eq("id", groupId);
+
+    if (error) {
+      toast.error("권한 업데이트 실패: " + error.message);
+      return;
+    }
+
+    toast.success("권한이 업데이트되었습니다.");
+
+    // 로컬 상태 업데이트
+    setUserGroupPermissions(prev => ({
+      ...prev,
+      [selectedUser.user_id]: (prev[selectedUser.user_id] || []).map(p =>
+        p.group_id === groupId ? { ...p, permission } : p
+      ),
+    }));
+  };
+
+  /**
+   * 사용자의 그룹 역할 업데이트
+   */
+  const handleUpdateGroupRole = async (groupId: string, role: GroupRole) => {
+    if (!selectedUser) return;
+
+    const supabase = createClient();
+
+    // 역할 업데이트
+    const { error } = await supabase
+      .from("finance_group_members")
+      .update({ role })
+      .eq("user_id", selectedUser.user_id)
+      .eq("group_id", groupId);
+
+    if (error) {
+      toast.error("역할 업데이트 실패: " + error.message);
+      return;
+    }
+
+    // 로컬 상태 업데이트
+    setUserGroupRoles(prev => ({
+      ...prev,
+      [selectedUser.user_id]: {
+        ...(prev[selectedUser.user_id] || {}),
+        [groupId]: role,
+      },
+    }));
+
+    // 재정관리자로 변경 시 자동으로 쓰기 권한 부여
+    if (role === 'finance_admin') {
+      await handleUpdateGroupPermission(groupId, 'write');
+    }
+
+    toast.success("역할이 업데이트되었습니다.");
+  };
+
   useEffect(() => {
     setAllUsersLoading(true);
     Promise.all([fetchAllUsers(), fetchUserGroupMap(), fetchJoinRequestMap()]).finally(() => setAllUsersLoading(false));
@@ -153,6 +313,36 @@ export default function AdminUsersPage() {
     const ids = userGroupMap[userId] || [];
     if (ids.length === 0) return "-";
     return ids.map(gid => getGroupName(gid)).join(", ");
+  };
+
+  const getGroupNamesWithRoles = (userId: string) => {
+    const ids = userGroupMap[userId] || [];
+    const roles = userGroupRoles[userId] || {};
+
+    if (ids.length === 0) return "-";
+
+    return (
+      <div className="flex flex-wrap gap-1">
+        {ids.map(gid => {
+          const groupName = getGroupName(gid);
+          const role = roles[gid] || 'member';
+          const isFinanceAdmin = role === 'finance_admin';
+
+          return (
+            <span key={gid} className="inline-flex items-center gap-1">
+              <span className="text-xs text-gray-600">{groupName}</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                isFinanceAdmin
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-gray-100 text-gray-600'
+              }`}>
+                {isFinanceAdmin ? '재정' : '일반'}
+              </span>
+            </span>
+          );
+        })}
+      </div>
+    );
   };
 
   // 그룹 참여 요청 인라인 승인
@@ -200,7 +390,7 @@ export default function AdminUsersPage() {
   };
 
   // 사용자 클릭 → 상세 다이얼로그 열기
-  const handleUserClick = (user: UserStatus) => {
+  const handleUserClick = async (user: UserStatus) => {
     setSelectedUser(user);
     setApproveGroupId(user.requested_group_id || "");
     // 재정관리자 신청으로 가입한 경우 자동 체크
@@ -209,6 +399,14 @@ export default function AdminUsersPage() {
     setRejectReason("");
     setAddGroupMode(false);
     setNewGroupId("");
+
+    // 사용자의 그룹별 권한 조회
+    const groupIds = userGroupMap[user.user_id] || [];
+    if (groupIds.length > 0) {
+      const permissions = await fetchUserGroupPermissions(user.user_id, groupIds);
+      setUserGroupPermissions(prev => ({ ...prev, [user.user_id]: permissions }));
+    }
+
     setDetailOpen(true);
   };
 
@@ -302,6 +500,12 @@ export default function AdminUsersPage() {
     } else {
       toast.success("그룹에 추가되었습니다.");
       await fetchUserGroupMap();
+
+      // 권한 정보도 다시 로드
+      const groupIds = [...(userGroupMap[selectedUser.user_id] || []), newGroupId];
+      const permissions = await fetchUserGroupPermissions(selectedUser.user_id, groupIds);
+      setUserGroupPermissions(prev => ({ ...prev, [selectedUser.user_id]: permissions }));
+
       setAddGroupMode(false);
       setNewGroupId("");
     }
@@ -350,14 +554,10 @@ export default function AdminUsersPage() {
     }
   };
 
-  const getStatusBadge = (status: string, isSA: boolean, isFA: boolean, requestedRole?: string) => {
-    if (isSA) return <span className="badge badge-admin">전체관리자</span>;
-    if (isFA) return <span className="badge badge-finance">재정관리자</span>;
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
-        return requestedRole === "finance_admin"
-          ? <span className="badge badge-pending bg-purple-100 text-purple-700">재정관리자 신청</span>
-          : <span className="badge badge-pending">대기</span>;
+        return <span className="badge badge-pending">대기</span>;
       case "approved": return <span className="badge badge-approved">승인</span>;
       case "rejected": return <span className="badge badge-rejected">거절</span>;
       default: return null;
@@ -494,10 +694,10 @@ export default function AdminUsersPage() {
                     >
                       <TableCell className="font-medium">{user.name || user.email}</TableCell>
                       <TableCell className="text-gray-600 text-sm">{user.email}</TableCell>
-                      <TableCell>{getStatusBadge(user.status, user.is_super_admin, user.is_finance_admin, user.requested_role)}</TableCell>
+                      <TableCell>{getStatusBadge(user.status)}</TableCell>
                       <TableCell className="text-gray-500 text-sm">
                         {user.status === "approved"
-                          ? getGroupNames(user.user_id)
+                          ? getGroupNamesWithRoles(user.user_id)
                           : getGroupName(user.requested_group_id)}
                       </TableCell>
                       <TableCell>
@@ -558,7 +758,9 @@ export default function AdminUsersPage() {
                   </div>
                 </DialogTitle>
                 <DialogDescription className="flex items-center gap-2 pt-1">
-                  {getStatusBadge(selectedUser.status, selectedUser.is_super_admin, selectedUser.is_finance_admin)}
+                  {getStatusBadge(selectedUser.status)}
+                  {selectedUser.is_super_admin && <span className="badge badge-admin">전체관리자</span>}
+                  {selectedUser.is_finance_admin && <span className="badge badge-finance">재정관리자</span>}
                   <span className="text-xs text-gray-400">
                     가입일 {format(new Date(selectedUser.created_at), "yyyy년 MM월 dd일", { locale: ko })}
                   </span>
@@ -642,13 +844,110 @@ export default function AdminUsersPage() {
                       {(userGroupMap[selectedUser.user_id] || []).length === 0 ? (
                         <p className="text-xs text-gray-400">소속 그룹 없음</p>
                       ) : (
-                        <div className="flex flex-wrap gap-1">
-                          {(userGroupMap[selectedUser.user_id] || []).map(gid => (
-                            <span key={gid} className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded-full">
-                              {getGroupName(gid)}
-                              <button className="text-blue-400 hover:text-red-500 ml-1 font-bold leading-none" onClick={() => handleRemoveGroup(gid)}>×</button>
-                            </span>
-                          ))}
+                        <div className="space-y-2">
+                          {(userGroupMap[selectedUser.user_id] || []).map(gid => {
+                            const groupName = getGroupName(gid);
+                            const permission = userGroupPermissions[selectedUser.user_id]?.find(p => p.group_id === gid)?.permission || 'waiting';
+                            const role = userGroupRoles[selectedUser.user_id]?.[gid] || 'member';
+
+                            const roleLabels: Record<string, string> = {
+                              finance_admin: '재정관리',
+                              member: '일반'
+                            };
+
+                            const roleBadgeColors: Record<string, string> = {
+                              finance_admin: 'bg-green-100 text-green-700',
+                              member: 'bg-gray-100 text-gray-700'
+                            };
+
+                            return (
+                              <div key={gid} className="bg-gray-50 rounded-md p-3 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-gray-700">{groupName}</span>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full ${roleBadgeColors[role] || 'bg-gray-100 text-gray-700'}`}>
+                                      {roleLabels[role] || '일반'}
+                                    </span>
+                                  </div>
+                                  <button
+                                    className="text-red-400 hover:text-red-600 text-xs font-medium"
+                                    onClick={() => handleRemoveGroup(gid)}
+                                  >
+                                    제거
+                                  </button>
+                                </div>
+
+                                {/* 역할 설정 */}
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-gray-500 w-12">역할:</span>
+                                  <div className="flex gap-1">
+                                    <button
+                                      className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
+                                        role === 'member'
+                                          ? 'bg-gray-600 text-white'
+                                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                      }`}
+                                      onClick={() => handleUpdateGroupRole(gid, 'member')}
+                                    >
+                                      일반
+                                    </button>
+                                    <button
+                                      className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
+                                        role === 'finance_admin'
+                                          ? 'bg-green-600 text-white'
+                                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                      }`}
+                                      onClick={() => handleUpdateGroupRole(gid, 'finance_admin')}
+                                    >
+                                      재정관리
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* 권한 설정 (역할이 일반인 경우에만 표시) */}
+                                {role === 'member' && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500 w-12">권한:</span>
+                                    <div className="flex gap-1">
+                                      <button
+                                        className={`text-xs px-2 py-1 rounded-md transition-colors ${
+                                          permission === 'write'
+                                            ? 'bg-green-600 text-white'
+                                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                        }`}
+                                        onClick={() => handleUpdateGroupPermission(gid, 'write')}
+                                      >
+                                        쓰기
+                                      </button>
+                                      <button
+                                        className={`text-xs px-2 py-1 rounded-md transition-colors ${
+                                          permission === 'read'
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                        }`}
+                                        onClick={() => handleUpdateGroupPermission(gid, 'read')}
+                                      >
+                                        읽기
+                                      </button>
+                                      <button
+                                        className={`text-xs px-2 py-1 rounded-md transition-colors ${
+                                          permission === 'waiting'
+                                            ? 'bg-yellow-500 text-white'
+                                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                        }`}
+                                        onClick={() => handleUpdateGroupPermission(gid, 'waiting')}
+                                      >
+                                        대기
+                                      </button>
+                                    </div>
+                                    {permission === 'waiting' && (
+                                      <span className="text-xs text-yellow-600 ml-1">권한 대기 중</span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
 

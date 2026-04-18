@@ -25,7 +25,7 @@ export interface GroupMember {
   id: string;
   group_id: string;
   user_id: string;
-  role: 'owner' | 'admin' | 'member';
+  role: 'owner' | 'admin' | 'finance_admin' | 'member';
   joined_at: string;
   user_email?: string; // JOIN 시 가져온 이메일
 }
@@ -43,7 +43,7 @@ export interface GroupInput {
 export interface GroupMemberInput {
   group_id: string;
   user_id: string;
-  role: 'owner' | 'admin' | 'member';
+  role: 'owner' | 'admin' | 'finance_admin' | 'member';
 }
 
 // ================================================

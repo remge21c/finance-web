@@ -483,10 +483,10 @@ export default function FinanceAdminGroupsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* 헤더 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Button
             variant="ghost"
             size="sm"
@@ -494,19 +494,19 @@ export default function FinanceAdminGroupsPage() {
             className="flex items-center space-x-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span>뒤로</span>
+            <span className="text-xs sm:text-sm">뒤로</span>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-800 flex items-center space-x-2">
-              <Shield className="h-6 w-6 text-teal-600" />
-              <span>재정관리자 그룹 관리</span>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center space-x-2">
+              <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-teal-600" />
+              <span className="text-base sm:text-xl">재정관리자 그룹 관리</span>
             </h1>
-            <p className="text-gray-500 mt-1">부서별 그룹을 생성하고 회원 권한을 관리합니다</p>
+            <p className="text-gray-500 text-xs sm:text-sm mt-0.5 sm:mt-1">부서별 그룹을 생성하고 회원 권한을 관리합니다</p>
           </div>
         </div>
         {isSuperAdmin && (
-          <Button onClick={handleCreateGroup} className="bg-teal-600 hover:bg-teal-700">
-            <Plus className="h-4 w-4 mr-2" />
+          <Button onClick={handleCreateGroup} className="bg-teal-600 hover:bg-teal-700 text-xs sm:text-sm h-8 sm:h-9">
+            <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             그룹 생성
           </Button>
         )}
@@ -515,20 +515,20 @@ export default function FinanceAdminGroupsPage() {
       {/* 그룹 참여 요청 */}
       {joinRequests.length > 0 && (
         <Card className="border-yellow-200 bg-yellow-50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base text-yellow-800 flex items-center gap-2">
+          <CardHeader className="pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-sm sm:text-base text-yellow-800 flex items-center gap-2">
               <span className="inline-flex items-center justify-center w-5 h-5 bg-yellow-500 text-white text-xs font-bold rounded-full">{joinRequests.length}</span>
               그룹 참여 요청 대기 중
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-2 px-3 sm:px-6 pb-4 sm:pb-6">
             {joinRequests.map(req => (
-              <div key={req.id} className="flex items-center justify-between bg-white rounded-lg px-4 py-3 border border-yellow-200">
-                <div>
-                  <p className="text-sm font-medium text-gray-800">{req.user_name}</p>
-                  <p className="text-xs text-gray-500">{req.user_email} → <span className="text-blue-600 font-medium">{req.group_name}</span></p>
+              <div key={req.id} className="flex items-center justify-between bg-white rounded-lg px-3 sm:px-4 py-2 sm:py-3 border border-yellow-200">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm font-medium text-gray-800 truncate">{req.user_name}</p>
+                  <p className="text-xs text-gray-500 truncate">{req.user_email} → <span className="text-blue-600 font-medium">{req.group_name}</span></p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5 sm:gap-2">
                   <Button
                     size="sm"
                     className="bg-emerald-600 hover:bg-emerald-700 h-7 text-xs"
@@ -582,79 +582,81 @@ export default function FinanceAdminGroupsPage() {
       )}
 
       {/* 그룹 목록 */}
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {groups.map((group) => (
           <Card key={group.id} className="overflow-hidden">
-            <CardHeader className="bg-gray-50 border-b flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-lg">{group.name}</CardTitle>
-                <p className="text-sm text-gray-500 mt-1">{group.description || "설명 없음"}</p>
+            <CardHeader className="bg-gray-50 border-b flex flex-row items-center justify-between py-2 sm:py-3 px-3 sm:px-6">
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-base sm:text-lg truncate pr-2">{group.name}</CardTitle>
+                <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1 truncate">{group.description || "설명 없음"}</p>
               </div>
-              <div className="flex space-x-2">
+              <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleEditGroup(group)}
+                  className="text-xs sm:text-sm h-8 sm:h-9"
                 >
                   수정
                 </Button>
-                {isSuperAdmin && (
+                {/* 그룹 소유자(owner) 또는 슈퍼관리자만 삭제 가능 */}
+                {(isSuperAdmin || group.members.some((m) => m.user_id === currentUserId && m.role === 'owner')) && (
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleDeleteGroup(group.id)}
-                    className="text-red-600 border-red-600 hover:bg-red-50"
+                    className="text-red-600 border-red-600 hover:bg-red-50 text-xs sm:text-sm h-8 sm:h-9"
                   >
                     삭제
                   </Button>
                 )}
               </div>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-6">
               {/* 멤버 추가 버튼 */}
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-medium text-gray-700 flex items-center">
-                  <Users className="h-4 w-4 mr-2" />
+              <div className="flex justify-between items-center mb-3 sm:mb-4">
+                <h3 className="text-xs sm:text-sm font-medium text-gray-700 flex items-center">
+                  <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                   그룹 멤버 ({group.members.length})
                 </h3>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleOpenMemberDialog(group.id)}
-                  className="text-teal-600 border-teal-600 hover:bg-teal-50"
+                  className="text-teal-600 border-teal-600 hover:bg-teal-50 text-xs sm:text-sm h-7 sm:h-8 px-2 sm:px-3"
                 >
-                  <Plus className="h-4 w-4 mr-1" />
+                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
                   멤버 추가
                 </Button>
               </div>
 
               {/* 멤버 목록 */}
               {group.members.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">등록된 멤버가 없습니다.</p>
+                <p className="text-gray-500 text-center py-6 sm:py-8 text-xs sm:text-sm">등록된 멤버가 없습니다.</p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {group.members.map((member) => {
                     const isSelf = member.user_id === currentUserId;
                     return (
-                    <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                      <div className="flex-1">
-                        <p className="font-medium">
+                    <div key={member.id} className="flex items-center justify-between p-3 sm:p-4 border rounded-lg hover:bg-gray-50">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs sm:text-sm font-medium truncate">
                           {member.user_name || member.user_email}
                           {isSelf && <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">나</span>}
                         </p>
-                        <p className="text-sm text-gray-400">{member.user_email}</p>
+                        <p className="text-xs text-gray-400 truncate">{member.user_email}</p>
                         <p className="text-xs text-gray-500">
                           역할: {member.role === 'owner' ? '소유자' : member.role === 'admin' ? '관리자' : '멤버'}
                         </p>
                       </div>
                       {!isSelf && (
-                        <div className="flex items-center space-x-4">
+                        <div className="flex items-center gap-2 sm:gap-4">
                           {/* 권한 토글 버튼 */}
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm text-gray-500">권한:</span>
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <span className="text-xs text-gray-500 hidden sm:inline">권한:</span>
                             <button
                               onClick={() => handleTogglePermission(group.id, member.user_id, "write")}
-                              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                              className={`px-2 sm:px-3 py-1 rounded text-xs font-medium transition-colors ${
                                 getUserPermission(group, member.user_id) === "write"
                                   ? "bg-blue-600 text-white"
                                   : "bg-gray-200 text-gray-600 hover:bg-gray-300"
@@ -664,7 +666,7 @@ export default function FinanceAdminGroupsPage() {
                             </button>
                             <button
                               onClick={() => handleTogglePermission(group.id, member.user_id, "read")}
-                              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                              className={`px-2 sm:px-3 py-1 rounded text-xs font-medium transition-colors ${
                                 getUserPermission(group, member.user_id) === "read"
                                   ? "bg-green-600 text-white"
                                   : "bg-gray-200 text-gray-600 hover:bg-gray-300"
@@ -674,14 +676,14 @@ export default function FinanceAdminGroupsPage() {
                             </button>
                             <button
                               onClick={() => handleTogglePermission(group.id, member.user_id, "none")}
-                              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                              className={`px-1.5 sm:px-3 py-1 rounded text-xs font-medium transition-colors ${
                                 getUserPermission(group, member.user_id) === "none"
                                   ? "bg-gray-400 text-white"
                                   : "bg-gray-200 text-gray-600 hover:bg-gray-300"
                               }`}
                               title="권한 없음"
                             >
-                              <X className="h-4 w-4" />
+                              <X className="h-3 w-3 sm:h-4 sm:w-4" />
                             </button>
                           </div>
                           {/* 제거 버튼 */}
@@ -690,7 +692,7 @@ export default function FinanceAdminGroupsPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleRemoveMember(group.id, member.id, member.user_id)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs h-7 sm:h-8 px-2"
                             >
                               제거
                             </Button>
@@ -709,38 +711,40 @@ export default function FinanceAdminGroupsPage() {
 
       {/* 그룹 생성/수정 다이얼로그 */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingGroup ? "그룹 수정" : "그룹 생성"}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base sm:text-lg">{editingGroup ? "그룹 수정" : "그룹 생성"}</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               {editingGroup ? "그룹 이름과 설명을 수정합니다." : "새 부서 그룹을 생성합니다."}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-3 sm:space-y-4 py-3 sm:py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">그룹 이름 *</Label>
+              <Label htmlFor="name" className="text-xs sm:text-sm">그룹 이름 *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="예: 재정부, 교육부"
+                className="h-9 sm:h-10 text-xs sm:text-sm"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">설명</Label>
+              <Label htmlFor="description" className="text-xs sm:text-sm">설명</Label>
               <Input
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="그룹에 대한 설명"
+                className="h-9 sm:h-10 text-xs sm:text-sm"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="text-xs sm:text-sm h-8 sm:h-9">
               취소
             </Button>
-            <Button onClick={handleSaveGroup} className="bg-teal-600 hover:bg-teal-700">
+            <Button onClick={handleSaveGroup} className="bg-teal-600 hover:bg-teal-700 text-xs sm:text-sm h-8 sm:h-9">
               {editingGroup ? "수정" : "생성"}
             </Button>
           </DialogFooter>
@@ -751,16 +755,16 @@ export default function FinanceAdminGroupsPage() {
       <Dialog open={memberDialogOpen} onOpenChange={setMemberDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>멤버 추가</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base sm:text-lg">멤버 추가</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               그룹 신청자를 선택하거나 사용자를 직접 검색하여 추가합니다.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-5 py-4">
+          <div className="space-y-4 sm:space-y-5 py-3 sm:py-4">
 
             {/* 그룹 신청자 목록 */}
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-gray-700">
+              <Label className="text-xs sm:text-sm font-semibold text-gray-700">
                 그룹 신청자
                 {!loadingUsers && requestedGroupUsers.length > 0 && (
                   <span className="ml-2 text-xs font-normal text-teal-600">
@@ -769,14 +773,14 @@ export default function FinanceAdminGroupsPage() {
                 )}
               </Label>
               {loadingUsers ? (
-                <p className="text-sm text-gray-400 py-2">불러오는 중...</p>
+                <p className="text-xs sm:text-sm text-gray-400 py-2">불러오는 중...</p>
               ) : (() => {
                 const currentGroup = groups.find(g => g.id === selectedGroupId);
                 const existingIds = new Set(currentGroup?.members.map(m => m.user_id) || []);
                 const pendingUsers = requestedGroupUsers.filter(u => !existingIds.has(u.user_id));
 
                 return pendingUsers.length === 0 ? (
-                  <p className="text-sm text-gray-400 py-2 text-center border rounded-lg bg-gray-50">
+                  <p className="text-xs sm:text-sm text-gray-400 py-2 text-center border rounded-lg bg-gray-50">
                     이 그룹을 신청한 사용자가 없습니다.
                   </p>
                 ) : (
@@ -786,7 +790,7 @@ export default function FinanceAdminGroupsPage() {
                       return (
                         <label
                           key={user.user_id}
-                          className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors ${isChecked ? "bg-teal-50" : ""}`}
+                          className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 cursor-pointer hover:bg-gray-50 transition-colors ${isChecked ? "bg-teal-50" : ""}`}
                         >
                           <input
                             type="checkbox"
@@ -801,7 +805,7 @@ export default function FinanceAdminGroupsPage() {
                             className="w-4 h-4 rounded accent-teal-600"
                           />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-800 truncate">
+                            <p className="text-xs sm:text-sm font-medium text-gray-800 truncate">
                               {user.name || user.email}
                             </p>
                             {user.name && (
@@ -819,9 +823,9 @@ export default function FinanceAdminGroupsPage() {
 
             {/* 권한 */}
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-gray-700">기본 권한 *</Label>
+              <Label className="text-xs sm:text-sm font-semibold text-gray-700">기본 권한 *</Label>
               <Select value={selectedRole} onValueChange={(value: "write" | "read") => setSelectedRole(value)}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9 sm:h-10 text-xs sm:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -840,12 +844,12 @@ export default function FinanceAdminGroupsPage() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setMemberDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setMemberDialogOpen(false)} className="text-xs sm:text-sm h-8 sm:h-9">
               취소
             </Button>
             <Button
               onClick={handleAddMember}
-              className="bg-teal-600 hover:bg-teal-700"
+              className="bg-teal-600 hover:bg-teal-700 text-xs sm:text-sm h-8 sm:h-9"
               disabled={loadingUsers || selectedUserIds.length === 0}
             >
               추가 {selectedUserIds.length > 0 && `(${selectedUserIds.length}명)`}

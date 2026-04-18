@@ -170,40 +170,40 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-md mx-auto py-8 space-y-4">
+    <div className="max-w-md mx-auto py-6 sm:py-8 space-y-3 sm:space-y-4 px-3">
       {/* 기본 정보 수정 */}
       <Card>
-        <CardHeader>
-          <CardTitle>정보 수정</CardTitle>
-          <CardDescription>이름과 비밀번호를 변경할 수 있습니다.</CardDescription>
+        <CardHeader className="py-3 sm:py-4 px-3 sm:px-6">
+          <CardTitle className="text-lg sm:text-xl">정보 수정</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">이름과 비밀번호를 변경할 수 있습니다.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleUpdateProfile} className="space-y-6">
+        <CardContent className="px-3 sm:px-6">
+          <form onSubmit={handleUpdateProfile} className="space-y-4 sm:space-y-6">
             <div className="space-y-2">
-              <Label>이메일</Label>
-              <Input value={email} disabled className="bg-gray-50" />
+              <Label className="text-xs sm:text-sm">이메일</Label>
+              <Input value={email} disabled className="bg-gray-50 text-xs sm:text-sm h-9 sm:h-10" />
               <p className="text-xs text-gray-400">이메일은 변경할 수 없습니다.</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="name">이름</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="이름을 입력하세요" required />
+              <Label htmlFor="name" className="text-xs sm:text-sm">이름</Label>
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="이름을 입력하세요" required className="h-9 sm:h-10 text-xs sm:text-sm" />
             </div>
-            <div className="pt-4 border-t border-gray-100">
-              <h3 className="text-sm font-semibold text-gray-700 mb-4">비밀번호 변경 (선택사항)</h3>
-              <div className="space-y-4">
+            <div className="pt-3 sm:pt-4 border-t border-gray-100">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-700 mb-3 sm:mb-4">비밀번호 변경 (선택사항)</h3>
+              <div className="space-y-3 sm:space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="newPassword">새 비밀번호</Label>
-                  <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="6자 이상 입력" autoComplete="new-password" />
+                  <Label htmlFor="newPassword" className="text-xs sm:text-sm">새 비밀번호</Label>
+                  <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="6자 이상 입력" autoComplete="new-password" className="h-9 sm:h-10 text-xs sm:text-sm" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">새 비밀번호 확인</Label>
-                  <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="비밀번호 재입력" autoComplete="new-password" />
+                  <Label htmlFor="confirmPassword" className="text-xs sm:text-sm">새 비밀번호 확인</Label>
+                  <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="비밀번호 재입력" autoComplete="new-password" className="h-9 sm:h-10 text-xs sm:text-sm" />
                 </div>
               </div>
             </div>
-            <div className="flex space-x-2 pt-4">
-              <Button type="button" variant="outline" className="flex-1" onClick={() => router.back()} disabled={saving}>취소</Button>
-              <Button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={saving}>{saving ? "저장 중..." : "저장하기"}</Button>
+            <div className="flex gap-2 pt-3 sm:pt-4">
+              <Button type="button" variant="outline" className="flex-1 text-xs sm:text-sm" onClick={() => router.back()} disabled={saving}>취소</Button>
+              <Button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm" disabled={saving}>{saving ? "저장 중..." : "저장하기"}</Button>
             </div>
           </form>
         </CardContent>
@@ -211,27 +211,27 @@ export default function ProfilePage() {
 
       {/* 소속 그룹 & 요청 */}
       <Card>
-        <CardHeader>
-          <CardTitle>소속 그룹</CardTitle>
-          <CardDescription>현재 소속 그룹을 확인하고 새 그룹 참여를 요청할 수 있습니다.</CardDescription>
+        <CardHeader className="py-3 sm:py-4 px-3 sm:px-6">
+          <CardTitle className="text-lg sm:text-xl">소속 그룹</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">현재 소속 그룹을 확인하고 새 그룹 참여를 요청할 수 있습니다.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 sm:space-y-4 px-3 sm:px-6">
           {/* 현재 소속 그룹 */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-gray-700">현재 소속</Label>
+            <Label className="text-xs sm:text-sm font-medium text-gray-700">현재 소속</Label>
             {myGroups.length === 0 ? (
               joinRequests.some(r => r.status === "pending") ? (
-                <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-orange-600 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
                   <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   승인 대기 중인 요청이 있습니다. 아래 내역을 확인하세요.
                 </div>
               ) : (
-                <p className="text-sm text-gray-400">소속된 그룹이 없습니다.</p>
+                <p className="text-xs sm:text-sm text-gray-400">소속된 그룹이 없습니다.</p>
               )
             ) : (
               <div className="flex flex-wrap gap-2">
                 {myGroups.map(g => (
-                  <span key={g.id} className="inline-flex items-center bg-blue-50 text-blue-700 text-sm px-3 py-1 rounded-full border border-blue-200">{g.name}</span>
+                  <span key={g.id} className="inline-flex items-center bg-blue-50 text-blue-700 text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-full border border-blue-200">{g.name}</span>
                 ))}
               </div>
             )}
@@ -240,12 +240,12 @@ export default function ProfilePage() {
           {/* 요청 내역 */}
           {joinRequests.length > 0 && (
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">참여 요청 내역</Label>
+              <Label className="text-xs sm:text-sm font-medium text-gray-700">참여 요청 내역</Label>
               <div className="space-y-2">
                 {joinRequests.map(req => (
                   <div key={req.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 border">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-800">{req.group_name}</span>
+                      <span className="text-xs sm:text-sm font-medium text-gray-800 truncate">{req.group_name}</span>
                       {statusLabel(req.status)}
                     </div>
                     {req.status === "pending" && (
@@ -266,14 +266,14 @@ export default function ProfilePage() {
 
           {/* 새 그룹 참여 요청 */}
           <div className="space-y-2 pt-2 border-t border-gray-100">
-            <Label className="text-sm font-medium text-gray-700">새 그룹 참여 요청</Label>
+            <Label className="text-xs sm:text-sm font-medium text-gray-700">새 그룹 참여 요청</Label>
             <GroupSearchInput
               value={requestGroupId}
               onChange={setRequestGroupId}
               placeholder="참여할 그룹을 검색하세요"
             />
             <Button
-              className="w-full bg-emerald-600 hover:bg-emerald-700"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm h-8 sm:h-9"
               onClick={handleRequestGroup}
               disabled={!requestGroupId || requestingGroup}
             >

@@ -68,7 +68,7 @@ export default function Navbar({ user, isSuperAdmin = false, isFinanceAdmin = fa
               <div className="bg-emerald-600 rounded-lg p-1.5 border border-emerald-500">
                 <Wallet className="h-4 w-4" />
               </div>
-              <span className="hidden sm:inline">{displayTitle}</span>
+              <span className="text-sm sm:text-base">{displayTitle}</span>
             </Link>
           </div>
 

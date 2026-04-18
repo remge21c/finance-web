@@ -168,54 +168,183 @@ export default function MonthlyReport() {
     const account2Name = settings?.account2_name || '터치앤고';
     const account3Name = settings?.account3_name || '기타';
 
+    const appTitle = settings?.app_title || '재정출납부';
+    const reportTitle = `${appTitle} 월간보고서`;
+
     const htmlContent = `<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>월간보고서</title>
+    <title>${reportTitle}</title>
     <style>
-        @page { size: A4; margin: 15mm; }
-        @media screen {
-            body { font-family: 'Malgun Gothic', Arial, sans-serif; margin: 0; padding: 20px; background-color: #f0f0f0; display: flex; justify-content: center; min-height: 100vh; }
-            .report-container { width: 210mm; min-height: 297mm; background-color: white; padding: 10mm; box-sizing: border-box; display: flex; flex-direction: column; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 5px; }
+        * { box-sizing: border-box; }
+        @page { size: A4; margin: 10mm; }
+        body {
+            font-family: 'Malgun Gothic', '맑은 고딕', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: white;
+            font-size: 12px;
+            line-height: 1.4;
         }
-        @media print {
-            body { font-family: 'Malgun Gothic', Arial, sans-serif; margin: 0; padding: 0; background-color: white; }
-            .report-container { width: 100%; min-height: 100vh; background-color: white; padding: 0; box-sizing: border-box; display: flex; flex-direction: column; }
+        .report-container {
+            width: 100%;
+            max-width: 190mm;
+            margin: 0 auto;
+            padding: 5mm;
         }
-        .header { text-align: center; margin-bottom: 8mm; border-bottom: 2px solid #2E7D32; padding-bottom: 5mm; }
-        .header h1 { color: #2E7D32; margin: 0; font-size: 28px; }
-        .header p { color: #666; margin: 5px 0 0 0; font-size: 14px; }
-        .content { display: flex; gap: 8mm; flex: 1; margin-bottom: 8mm; }
-        .section { flex: 1; }
-        .section h3 { background-color: #2E7D32; color: white; padding: 8px; margin: 0 0 10px 0; border-radius: 5px; text-align: center; }
-        .data-table { width: 100%; border-collapse: collapse; margin-bottom: 5mm; font-size: 11px; }
-        .data-table th, .data-table td { border: 1px solid #ddd; padding: 6px; text-align: left; font-size: 11px; line-height: 1.3; }
-        .data-table th:last-child, .data-table td:last-child { text-align: right; }
-        .data-table th { background-color: #f2f2f2; font-weight: bold; }
-        .data-table tr:nth-child(even) { background-color: #f9f9f9; }
-        @media print { .data-table { font-size: 10px; } .data-table th, .data-table td { padding: 3px; font-size: 10px; line-height: 1.2; } }
-        .summary-section { display: flex; gap: 5mm; margin-bottom: 3mm; }
-        .summary { flex: 1; background-color: #f8f9fa; padding: 5px; border-radius: 3px; }
-        .account-info { flex: 1; background-color: #f8f9fa; padding: 5px; border-radius: 3px; }
-        .summary h4, .account-info h4 { color: #2E7D32; margin-top: 0; }
-        .summary-row, .account-row { display: flex; justify-content: space-between; margin: 3px 0; padding: 2px 0; border-bottom: 1px solid #eee; }
-        .summary-row:last-child, .account-row:last-child { border-bottom: none; font-weight: bold; font-size: 16px; color: #2E7D32; }
-        .amount { text-align: right; font-weight: bold; }
+        .header {
+            text-align: center;
+            margin-bottom: 8mm;
+            border-bottom: 2px solid #2E7D32;
+            padding-bottom: 5mm;
+        }
+        .header h1 {
+            color: #2E7D32;
+            margin: 0 0 5px 0;
+            font-size: 20px;
+        }
+        .header p {
+            color: #666;
+            margin: 2px 0 0 0;
+            font-size: 11px;
+        }
+        .content {
+            display: flex;
+            gap: 5mm;
+            margin-bottom: 5mm;
+        }
+        .section {
+            flex: 1;
+            min-width: 0;
+        }
+        .section h3 {
+            background-color: #2E7D32;
+            color: white;
+            padding: 6px 10px;
+            margin: 0 0 5px 0;
+            border-radius: 3px;
+            text-align: center;
+            font-size: 13px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 3mm;
+            font-size: 10px;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #ddd;
+            padding: 4px 6px;
+            text-align: left;
+            font-size: 10px;
+            line-height: 1.3;
+        }
+        .data-table th:last-child, .data-table td:last-child {
+            text-align: right;
+        }
+        .data-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .data-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .summary-section {
+            display: flex;
+            gap: 5mm;
+            margin-bottom: 3mm;
+        }
+        .summary, .account-info {
+            flex: 1;
+            background-color: #f8f9fa;
+            padding: 8px;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+        }
+        .summary h4, .account-info h4 {
+            color: #2E7D32;
+            margin: 0 0 8px 0;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .summary-row, .account-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 3px 0;
+            padding: 2px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 10px;
+        }
+        .summary-row:last-child, .account-row:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 11px;
+            color: #2E7D32;
+            margin-top: 5px;
+        }
+        .amount {
+            text-align: right;
+            font-weight: bold;
+        }
         .income { color: #1976D2; }
         .expense { color: #D32F2F; }
-        .signature-section { margin-top: 5px; padding-top: 5px; }
-        .signature-label { font-weight: bold; color: #2E7D32; font-size: 12px; text-align: center; margin-bottom: 3px; }
-        .signature-row { display: flex; justify-content: space-between; gap: 50px; }
-        .signature-box { flex: 1; text-align: center; border: 2px solid #2E7D32; border-radius: 8px; padding: 5px; background-color: #f9f9f9; min-height: 40px; }
-        .signature-line { border: 1px solid #333; width: 100%; height: 40px; background-color: white; border-radius: 4px; }
+        .signature-section {
+            margin-top: auto;
+            padding-top: 5mm;
+        }
+        .signature-label {
+            font-weight: bold;
+            color: #2E7D32;
+            font-size: 11px;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        .signature-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        .signature-box {
+            flex: 1;
+            text-align: center;
+            border: 1px solid #2E7D32;
+            border-radius: 5px;
+            padding: 8px;
+            background-color: #f9f9f9;
+            min-height: 50px;
+        }
+        .signature-line {
+            border: 1px solid #ccc;
+            width: 100%;
+            height: 35px;
+            background-color: white;
+            border-radius: 3px;
+            margin-top: 5px;
+        }
+
+        @media print {
+            @page { margin: 10mm; }
+            body { font-size: 11px; }
+            .header h1 { font-size: 18px; }
+            .header p { font-size: 10px; }
+            .section h3 { font-size: 12px; padding: 5px 8px; }
+            .data-table { font-size: 9px; }
+            .data-table th, .data-table td { padding: 3px 4px; font-size: 9px; }
+            .summary h4, .account-info h4 { font-size: 11px; }
+            .summary-row, .account-row { font-size: 9px; }
+            .summary-row:last-child, .account-row:last-child { font-size: 10px; }
+            .signature-label { font-size: 10px; }
+            .signature-box { min-height: 45px; padding: 6px; }
+            .signature-line { height: 30px; }
+        }
     </style>
 </head>
 <body>
     <div class="report-container">
         <div class="header">
-            <h1>월간보고서</h1>
+            <h1>${reportTitle}</h1>
             <p>보고 기간: ${reportPeriod}</p>
             <p>생성일: ${createdDate}</p>
         </div>
@@ -277,23 +406,23 @@ export default function MonthlyReport() {
   return (
     <div className="space-y-4">
       {/* 헤더 */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
         <div className="flex-1 text-center">
-          <h2 className="text-xl font-bold text-gray-800">월간 보고서</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800">월간 보고서</h2>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={() => setMonthOffset(monthOffset - 1)}>
+        <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2">
+          <Button variant="outline" size="sm" onClick={() => setMonthOffset(monthOffset - 1)} className="text-xs">
             ◀ 이전달
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setMonthOffset(0)}>
+          <Button variant="outline" size="sm" onClick={() => setMonthOffset(0)} className="text-xs">
             이번달
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setMonthOffset(monthOffset + 1)}>
+          <Button variant="outline" size="sm" onClick={() => setMonthOffset(monthOffset + 1)} className="text-xs">
             다음달 ▶
           </Button>
           <Button
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="bg-emerald-600 hover:bg-emerald-700 text-xs"
             onClick={handlePrint}
           >
             출력
@@ -302,42 +431,42 @@ export default function MonthlyReport() {
       </div>
 
       {/* 월간 범위 표시 */}
-      <div className="text-center text-gray-600">
+      <div className="text-center text-gray-600 text-xs sm:text-sm">
         {format(monthRange.start, "yyyy년 MM월", { locale: ko })}
       </div>
 
       {/* 화면 표시 영역 */}
       <div className="print:hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
           {/* 수입 테이블 */}
           <Card>
-            <CardHeader className="bg-blue-50 py-3">
-              <CardTitle className="text-lg text-blue-700">수입</CardTitle>
+            <CardHeader className="bg-blue-50 py-2 sm:py-3 px-3">
+              <CardTitle className="text-base sm:text-lg text-blue-700">수입</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-20">날짜</TableHead>
-                    <TableHead className="w-24">항목</TableHead>
-                    <TableHead>내용</TableHead>
-                    <TableHead className="text-right w-24">금액</TableHead>
+                    <TableHead className="w-16 sm:w-20 text-xs sm:text-sm">날짜</TableHead>
+                    <TableHead className="w-20 sm:w-24 text-xs sm:text-sm">항목</TableHead>
+                    <TableHead className="text-xs sm:text-sm">내용</TableHead>
+                    <TableHead className="text-right w-20 sm:w-24 text-xs sm:text-sm">금액</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {incomeTransactions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-4 text-gray-400">
+                      <TableCell colSpan={4} className="text-center py-3 sm:py-4 text-gray-400 text-xs sm:text-sm">
                         수입 내역 없음
                       </TableCell>
                     </TableRow>
                   ) : (
                     incomeTransactions.map((t, i) => (
                       <TableRow key={t.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                        <TableCell>{format(parseISO(t.date), "MM-dd")}</TableCell>
-                        <TableCell>{t.item}</TableCell>
-                        <TableCell>{t.description}</TableCell>
-                        <TableCell className="text-right">{formatAmount(Number(t.amount))}</TableCell>
+                        <TableCell className="text-xs sm:text-sm">{format(parseISO(t.date), "MM-dd")}</TableCell>
+                        <TableCell className="text-xs sm:text-sm">{t.item}</TableCell>
+                        <TableCell className="text-xs sm:text-sm">{t.description}</TableCell>
+                        <TableCell className="text-right text-xs sm:text-sm">{formatAmount(Number(t.amount))}</TableCell>
                       </TableRow>
                     ))
                   )}
@@ -348,33 +477,33 @@ export default function MonthlyReport() {
 
           {/* 지출 테이블 */}
           <Card>
-            <CardHeader className="bg-red-50 py-3">
-              <CardTitle className="text-lg text-red-700">지출</CardTitle>
+            <CardHeader className="bg-red-50 py-2 sm:py-3 px-3">
+              <CardTitle className="text-base sm:text-lg text-red-700">지출</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-20">날짜</TableHead>
-                    <TableHead className="w-24">항목</TableHead>
-                    <TableHead>내용</TableHead>
-                    <TableHead className="text-right w-24">금액</TableHead>
+                    <TableHead className="w-16 sm:w-20 text-xs sm:text-sm">날짜</TableHead>
+                    <TableHead className="w-20 sm:w-24 text-xs sm:text-sm">항목</TableHead>
+                    <TableHead className="text-xs sm:text-sm">내용</TableHead>
+                    <TableHead className="text-right w-20 sm:w-24 text-xs sm:text-sm">금액</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {expenseTransactions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-4 text-gray-400">
+                      <TableCell colSpan={4} className="text-center py-3 sm:py-4 text-gray-400 text-xs sm:text-sm">
                         지출 내역 없음
                       </TableCell>
                     </TableRow>
                   ) : (
                     expenseTransactions.map((t, i) => (
                       <TableRow key={t.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                        <TableCell>{format(parseISO(t.date), "MM-dd")}</TableCell>
-                        <TableCell>{t.item}</TableCell>
-                        <TableCell>{t.description}</TableCell>
-                        <TableCell className="text-right">{formatAmount(Number(t.amount))}</TableCell>
+                        <TableCell className="text-xs sm:text-sm">{format(parseISO(t.date), "MM-dd")}</TableCell>
+                        <TableCell className="text-xs sm:text-sm">{t.item}</TableCell>
+                        <TableCell className="text-xs sm:text-sm">{t.description}</TableCell>
+                        <TableCell className="text-right text-xs sm:text-sm">{formatAmount(Number(t.amount))}</TableCell>
                       </TableRow>
                     ))
                   )}
@@ -385,28 +514,28 @@ export default function MonthlyReport() {
         </div>
 
         {/* 요약 정보 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mt-3 sm:mt-4">
           {/* 월간 요약 */}
           <Card>
-            <CardHeader className="py-3">
-              <CardTitle className="text-lg">월간 요약</CardTitle>
+            <CardHeader className="py-2 sm:py-3 px-3">
+              <CardTitle className="text-base sm:text-lg">월간 요약</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex justify-between">
+            <CardContent className="space-y-1.5 sm:space-y-2 px-3">
+              <div className="flex justify-between text-xs sm:text-sm">
                 <span>지난달 이월금:</span>
                 <span className="font-medium">{formatAmount(lastMonthBalance)} {currency}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between text-xs sm:text-sm">
                 <span>이번달 총 수입:</span>
                 <span className="font-medium text-blue-600">{formatAmount(incomeTotal)} {currency}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between text-xs sm:text-sm">
                 <span>이번달 총 지출:</span>
                 <span className="font-medium text-red-600">{formatAmount(expenseTotal)} {currency}</span>
               </div>
-              <div className="flex justify-between border-t pt-2">
+              <div className="flex justify-between border-t pt-2 text-xs sm:text-sm">
                 <span className="font-bold">이번달 잔액:</span>
-                <span className={`font-bold text-lg ${currentBalance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                <span className={`font-bold sm:text-lg ${currentBalance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                   {formatAmount(currentBalance)} {currency}
                 </span>
               </div>
@@ -415,10 +544,10 @@ export default function MonthlyReport() {
 
           {/* 계좌 현황 */}
           <Card>
-            <CardHeader className="py-3">
-              <CardTitle className="text-lg">계좌 현황</CardTitle>
+            <CardHeader className="py-2 sm:py-3 px-3">
+              <CardTitle className="text-base sm:text-lg">계좌 현황</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2 sm:space-y-3 px-3">
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <Label htmlFor="cash-m" className="text-xs">{settings?.account1_name || "현금"}</Label>
@@ -451,9 +580,9 @@ export default function MonthlyReport() {
                   />
                 </div>
               </div>
-              <div className="flex justify-between items-center border-t pt-2">
+              <div className="flex justify-between items-center border-t pt-2 text-xs sm:text-sm">
                 <span className="font-bold">총액:</span>
-                <span className="font-bold text-lg text-emerald-600">
+                <span className="font-bold sm:text-lg text-emerald-600">
                   {formatAmount(totalAccount)} {currency}
                 </span>
               </div>

@@ -337,21 +337,21 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* 헤더 */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h1 className="text-xl font-bold text-slate-800">설정</h1>
+          <h1 className="text-lg sm:text-xl font-bold text-slate-800">설정</h1>
           <p className="text-slate-400 text-xs mt-0.5">수입/지출 항목 및 예산을 관리합니다</p>
         </div>
-        <div className="flex space-x-2">
-          <Button variant="outline" onClick={handleReset}>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleReset} className="text-xs sm:text-sm">
             초기화
           </Button>
-          <Button 
-            onClick={handleSave} 
-            className={hasAnyChanged 
-              ? "bg-emerald-600 hover:bg-emerald-700" 
+          <Button
+            onClick={handleSave}
+            className={hasAnyChanged
+              ? "bg-emerald-600 hover:bg-emerald-700"
               : "bg-gray-400 hover:bg-gray-500"
             }
           >
@@ -360,27 +360,27 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* 왼쪽 영역: 2x2 그리드 (예산 위, 항목 아래) */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-3 sm:space-y-4">
           {/* 상단: 수입예산 / 지출예산 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             {/* 수입 예산 */}
             <Card className="card-section-income">
-              <CardHeader className="card-header-income flex flex-row items-center justify-between">
-                <CardTitle className="text-base font-semibold text-blue-700">수입예산</CardTitle>
+              <CardHeader className="card-header-income flex flex-row items-center justify-between py-2 sm:py-3 px-3">
+                <CardTitle className="text-sm sm:text-base font-semibold text-blue-700">수입예산</CardTitle>
                 <Button
                   size="sm"
                   onClick={handleSaveIncomeBudgets}
-                  className={`btn-save ${hasIncomeBudgetsChanged ? "btn-save-income" : "btn-save-inactive"}`}
+                  className={`btn-save text-xs ${hasIncomeBudgetsChanged ? "btn-save-income" : "btn-save-inactive"}`}
                 >
                   저장
                 </Button>
               </CardHeader>
-              <CardContent className="space-y-2 pt-3">
+              <CardContent className="space-y-2 pt-2 sm:pt-3 px-3">
                 {incomeBudgets.map((budget, index) => (
-                  <div key={`income-budget-${index}`} className="flex items-center space-x-2">
-                    <span className="text-xs text-gray-500 w-20 truncate">
+                  <div key={`income-budget-${index}`} className="flex items-center gap-1.5 sm:gap-2">
+                    <span className="text-xs text-gray-500 w-16 sm:w-20 truncate">
                       {incomeItems[index] || `항목 ${index + 1}`}
                     </span>
                     <Input
@@ -391,12 +391,12 @@ export default function SettingsPage() {
                         newBudgets[index] = e.target.value;
                         setIncomeBudgets(newBudgets);
                       }}
-                      className="h-9 flex-1"
+                      className="h-8 sm:h-9 flex-1 text-xs sm:text-sm"
                     />
                   </div>
                 ))}
                 <Separator />
-                <div className="flex justify-between text-sm font-semibold">
+                <div className="flex justify-between text-xs sm:text-sm font-semibold">
                   <span className="text-gray-600">총수입 예산</span>
                   <span className="text-blue-600">{formatAmount(incomeBudgetTotal)} {currency}</span>
                 </div>
@@ -405,20 +405,20 @@ export default function SettingsPage() {
 
             {/* 지출 예산 */}
             <Card className="card-section-expense">
-              <CardHeader className="card-header-expense flex flex-row items-center justify-between">
-                <CardTitle className="text-base font-semibold text-red-700">지출예산</CardTitle>
+              <CardHeader className="card-header-expense flex flex-row items-center justify-between py-2 sm:py-3 px-3">
+                <CardTitle className="text-sm sm:text-base font-semibold text-red-700">지출예산</CardTitle>
                 <Button
                   size="sm"
                   onClick={handleSaveExpenseBudgets}
-                  className={`btn-save ${hasExpenseBudgetsChanged ? "btn-save-expense" : "btn-save-inactive"}`}
+                  className={`btn-save text-xs ${hasExpenseBudgetsChanged ? "btn-save-expense" : "btn-save-inactive"}`}
                 >
                   저장
                 </Button>
               </CardHeader>
-              <CardContent className="space-y-2 pt-3">
+              <CardContent className="space-y-2 pt-2 sm:pt-3 px-3">
                 {expenseBudgets.map((budget, index) => (
-                  <div key={`expense-budget-${index}`} className="flex items-center space-x-2">
-                    <span className="text-xs text-gray-500 w-20 truncate">
+                  <div key={`expense-budget-${index}`} className="flex items-center gap-1.5 sm:gap-2">
+                    <span className="text-xs text-gray-500 w-16 sm:w-20 truncate">
                       {expenseItems[index] || `항목 ${index + 1}`}
                     </span>
                     <Input
@@ -429,12 +429,12 @@ export default function SettingsPage() {
                         newBudgets[index] = e.target.value;
                         setExpenseBudgets(newBudgets);
                       }}
-                      className="h-9 flex-1"
+                      className="h-8 sm:h-9 flex-1 text-xs sm:text-sm"
                     />
                   </div>
                 ))}
                 <Separator />
-                <div className="flex justify-between text-sm font-semibold">
+                <div className="flex justify-between text-xs sm:text-sm font-semibold">
                   <span className="text-gray-600">총지출 예산</span>
                   <span className="text-red-600">{formatAmount(expenseBudgetTotal)} {currency}</span>
                 </div>
@@ -443,20 +443,20 @@ export default function SettingsPage() {
           </div>
 
           {/* 하단: 수입항목 / 지출항목 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             {/* 수입 항목 */}
             <Card className="card-section-income">
-              <CardHeader className="card-header-income flex flex-row items-center justify-between">
-                <CardTitle className="text-base font-semibold text-blue-700">수입항목</CardTitle>
+              <CardHeader className="card-header-income flex flex-row items-center justify-between py-2 sm:py-3 px-3">
+                <CardTitle className="text-sm sm:text-base font-semibold text-blue-700">수입항목</CardTitle>
                 <Button
                   size="sm"
                   onClick={handleSaveIncomeItems}
-                  className={`btn-save ${hasIncomeItemsChanged ? "btn-save-income" : "btn-save-inactive"}`}
+                  className={`btn-save text-xs ${hasIncomeItemsChanged ? "btn-save-income" : "btn-save-inactive"}`}
                 >
                   저장
                 </Button>
               </CardHeader>
-              <CardContent className="space-y-2 pt-3">
+              <CardContent className="space-y-2 pt-2 sm:pt-3 px-3">
                 {incomeItems.map((item, index) => (
                   <Input
                     key={`income-${index}`}
@@ -467,7 +467,7 @@ export default function SettingsPage() {
                       setIncomeItems(newItems);
                     }}
                     placeholder={`항목 ${index + 1}`}
-                    className="h-9"
+                    className="h-8 sm:h-9 text-xs sm:text-sm"
                   />
                 ))}
               </CardContent>
@@ -475,17 +475,17 @@ export default function SettingsPage() {
 
             {/* 지출 항목 */}
             <Card className="card-section-expense">
-              <CardHeader className="card-header-expense flex flex-row items-center justify-between">
-                <CardTitle className="text-base font-semibold text-red-700">지출항목</CardTitle>
+              <CardHeader className="card-header-expense flex flex-row items-center justify-between py-2 sm:py-3 px-3">
+                <CardTitle className="text-sm sm:text-base font-semibold text-red-700">지출항목</CardTitle>
                 <Button
                   size="sm"
                   onClick={handleSaveExpenseItems}
-                  className={`btn-save ${hasExpenseItemsChanged ? "btn-save-expense" : "btn-save-inactive"}`}
+                  className={`btn-save text-xs ${hasExpenseItemsChanged ? "btn-save-expense" : "btn-save-inactive"}`}
                 >
                   저장
                 </Button>
               </CardHeader>
-              <CardContent className="space-y-2 pt-3">
+              <CardContent className="space-y-2 pt-2 sm:pt-3 px-3">
                 {expenseItems.map((item, index) => (
                   <Input
                     key={`expense-${index}`}
@@ -496,7 +496,7 @@ export default function SettingsPage() {
                       setExpenseItems(newItems);
                     }}
                     placeholder={`항목 ${index + 1}`}
-                    className="h-9"
+                    className="h-8 sm:h-9 text-xs sm:text-sm"
                   />
                 ))}
               </CardContent>
@@ -505,20 +505,20 @@ export default function SettingsPage() {
         </div>
 
         {/* 오른쪽: 재정출납부 정보 및 메모 */}
-        <div className="space-y-4 flex flex-col">
+        <div className="space-y-3 sm:space-y-4 flex flex-col">
           {/* 재정출납부 정보 */}
           <Card className="shadow-sm">
-            <CardHeader className="py-3 border-b border-gray-100 flex flex-row items-center justify-between">
-              <CardTitle className="text-base font-semibold text-gray-700">재정출납부 정보</CardTitle>
+            <CardHeader className="py-2 sm:py-3 px-3 border-b border-gray-100 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm sm:text-base font-semibold text-gray-700">재정출납부 정보</CardTitle>
               <Button
                 size="sm"
                 onClick={handleSaveAuthorInfo}
-                className={`btn-save ${hasAuthorInfoChanged ? "btn-save-active" : "btn-save-inactive"}`}
+                className={`btn-save text-xs ${hasAuthorInfoChanged ? "btn-save-active" : "btn-save-inactive"}`}
               >
                 저장
               </Button>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2 sm:space-y-3 px-3">
               <div className="space-y-1">
                 <Label htmlFor="appTitle" className="text-xs">재정출납부 명칭</Label>
                 <Input
@@ -526,7 +526,7 @@ export default function SettingsPage() {
                   value={appTitle}
                   onChange={(e) => setAppTitle(e.target.value)}
                   placeholder="재정관리"
-                  className="h-9"
+                  className="h-8 sm:h-9 text-xs sm:text-sm"
                 />
               </div>
               <div className="space-y-1">
@@ -536,7 +536,7 @@ export default function SettingsPage() {
                   value={author}
                   onChange={(e) => setAuthor(e.target.value)}
                   placeholder="작성자 이름"
-                  className="h-9"
+                  className="h-8 sm:h-9 text-xs sm:text-sm"
                 />
               </div>
               <div className="space-y-1">
@@ -546,7 +546,7 @@ export default function SettingsPage() {
                   value={manager}
                   onChange={(e) => setManager(e.target.value)}
                   placeholder="책임자 이름"
-                  className="h-9"
+                  className="h-8 sm:h-9 text-xs sm:text-sm"
                 />
               </div>
               <div className="space-y-1">
@@ -556,7 +556,7 @@ export default function SettingsPage() {
                   value={auditor}
                   onChange={(e) => setAuditor(e.target.value)}
                   placeholder="감사자 이름"
-                  className="h-9"
+                  className="h-8 sm:h-9 text-xs sm:text-sm"
                 />
               </div>
               <div className="space-y-1">
@@ -566,7 +566,7 @@ export default function SettingsPage() {
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
                   placeholder="원"
-                  className="h-9"
+                  className="h-8 sm:h-9 text-xs sm:text-sm"
                 />
               </div>
             </CardContent>
@@ -574,17 +574,17 @@ export default function SettingsPage() {
 
           {/* 계좌현황 이름 */}
           <Card className="shadow-sm">
-            <CardHeader className="py-3 border-b border-gray-100 flex flex-row items-center justify-between">
-              <CardTitle className="text-base font-semibold text-gray-700">계좌현황 이름</CardTitle>
+            <CardHeader className="py-2 sm:py-3 px-3 border-b border-gray-100 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm sm:text-base font-semibold text-gray-700">계좌현황 이름</CardTitle>
               <Button
                 size="sm"
                 onClick={handleSaveAccountNames}
-                className={`btn-save ${hasAccountNamesChanged ? "btn-save-active" : "btn-save-inactive"}`}
+                className={`btn-save text-xs ${hasAccountNamesChanged ? "btn-save-active" : "btn-save-inactive"}`}
               >
                 저장
               </Button>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2 sm:space-y-3 px-3">
               <div className="space-y-1">
                 <Label htmlFor="account1Name" className="text-xs">계좌현황1</Label>
                 <Input
@@ -592,7 +592,7 @@ export default function SettingsPage() {
                   value={account1Name}
                   onChange={(e) => setAccount1Name(e.target.value)}
                   placeholder="현금"
-                  className="h-9"
+                  className="h-8 sm:h-9 text-xs sm:text-sm"
                 />
               </div>
               <div className="space-y-1">
@@ -602,7 +602,7 @@ export default function SettingsPage() {
                   value={account2Name}
                   onChange={(e) => setAccount2Name(e.target.value)}
                   placeholder="터치앤고"
-                  className="h-9"
+                  className="h-8 sm:h-9 text-xs sm:text-sm"
                 />
               </div>
               <div className="space-y-1">
@@ -612,7 +612,7 @@ export default function SettingsPage() {
                   value={account3Name}
                   onChange={(e) => setAccount3Name(e.target.value)}
                   placeholder="기타"
-                  className="h-9"
+                  className="h-8 sm:h-9 text-xs sm:text-sm"
                 />
               </div>
             </CardContent>
@@ -620,24 +620,24 @@ export default function SettingsPage() {
 
           {/* 메모 - 남은 공간 채우기 */}
           <Card className="flex-1 flex flex-col shadow-sm">
-            <CardHeader className="py-3 border-b border-gray-100 flex flex-row items-center justify-between">
-              <CardTitle className="text-base font-semibold text-gray-700">설정 메모</CardTitle>
+            <CardHeader className="py-2 sm:py-3 px-3 border-b border-gray-100 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm sm:text-base font-semibold text-gray-700">설정 메모</CardTitle>
               <Button
                 size="sm"
                 onClick={handleSaveMemo}
-                className={`btn-save ${hasMemoChanged ? "btn-save-active" : "btn-save-inactive"}`}
+                className={`btn-save text-xs ${hasMemoChanged ? "btn-save-active" : "btn-save-inactive"}`}
               >
                 저장
               </Button>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col">
+            <CardContent className="flex-1 flex flex-col px-3">
               <Label htmlFor="settings-memo" className="sr-only">설정 메모</Label>
               <textarea
                 id="settings-memo"
                 value={memo}
                 onChange={(e) => setMemo(e.target.value)}
                 placeholder="메모를 입력하세요..."
-                className="w-full flex-1 min-h-[300px] p-3 border rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full flex-1 min-h-[200px] sm:min-h-[300px] p-2 sm:p-3 border rounded-md text-xs sm:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </CardContent>
           </Card>

@@ -144,11 +144,11 @@ export default function TransactionTable({
                     }
                   />
                 </TableHead>
-                <TableHead className="min-w-[70px] sm:w-[100px] border border-gray-300 px-2 sm:px-3 py-2 text-center font-semibold text-xs sm:text-sm">날짜</TableHead>
-                <TableHead className="min-w-[50px] sm:w-[60px] border border-gray-300 px-2 sm:px-3 py-2 text-center font-semibold text-xs sm:text-sm">구분</TableHead>
-                <TableHead className="min-w-[80px] sm:w-[100px] border border-gray-300 px-2 sm:px-3 py-2 text-center font-semibold text-xs sm:text-sm">항목</TableHead>
-                <TableHead className="min-w-[100px] sm:w-[180px] border border-gray-300 px-2 sm:px-3 py-2 text-center font-semibold text-xs sm:text-sm">내용</TableHead>
-                <TableHead className="min-w-[80px] sm:w-[100px] border border-gray-300 px-2 sm:px-3 py-2 text-center font-semibold text-xs sm:text-sm">금액 ({currency})</TableHead>
+                <TableHead className="min-w-[60px] sm:w-[100px] border border-gray-300 px-1.5 sm:px-3 py-2 sm:py-2 text-center font-semibold text-xs sm:text-sm">날짜</TableHead>
+                <TableHead className="min-w-[45px] sm:w-[60px] border border-gray-300 px-1.5 sm:px-3 py-2 sm:py-2 text-center font-semibold text-xs sm:text-sm">구분</TableHead>
+                <TableHead className="min-w-[60px] sm:w-[100px] border border-gray-300 px-1.5 sm:px-3 py-2 sm:py-2 text-center font-semibold text-xs sm:text-sm">항목</TableHead>
+                <TableHead className="min-w-[70px] sm:w-[180px] border border-gray-300 px-1.5 sm:px-3 py-2 sm:py-2 text-center font-semibold text-xs sm:text-sm">내용</TableHead>
+                <TableHead className="min-w-[60px] sm:w-[100px] border border-gray-300 px-1.5 sm:px-3 py-2 sm:py-2 text-center font-semibold text-xs sm:text-sm">금액 ({currency})</TableHead>
                 <TableHead className="hidden sm:table-cell w-[118px] border border-gray-300 px-3 py-2 text-center font-semibold">메모</TableHead>
               </TableRow>
             </TableHeader>
@@ -178,13 +178,13 @@ export default function TransactionTable({
                         }
                       />
                     </TableCell>
-                    <TableCell className="border border-gray-300 px-2 sm:px-3 py-2 text-center text-xs sm:text-sm">
+                    <TableCell className="border border-gray-300 px-1.5 sm:px-3 py-1.5 sm:py-2 text-center text-xs sm:text-sm">
                       <span className="sm:hidden">{formatDate(transaction.date).monthDay}</span>
                       <span className="hidden sm:inline">{transaction.date}</span>
                     </TableCell>
-                    <TableCell className="border border-gray-300 px-2 sm:px-3 py-2 text-center">
+                    <TableCell className="border border-gray-300 px-1.5 sm:px-3 py-1.5 sm:py-2 text-center">
                       <span
-                        className={`px-1.5 sm:px-2 py-1 rounded text-xs font-medium ${
+                        className={`px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs font-medium ${
                           transaction.type === "수입"
                             ? "bg-blue-100 text-blue-700"
                             : "bg-red-100 text-red-700"
@@ -193,9 +193,9 @@ export default function TransactionTable({
                         {transaction.type}
                       </span>
                     </TableCell>
-                    <TableCell className="border border-gray-300 px-2 sm:px-3 py-2 text-center truncate text-xs sm:text-sm">{transaction.item}</TableCell>
-                    <TableCell className="border border-gray-300 px-2 sm:px-3 py-2 text-left truncate text-xs sm:text-sm">{transaction.description}</TableCell>
-                    <TableCell className="border border-gray-300 px-2 sm:px-3 py-2 text-right font-medium text-xs sm:text-sm">
+                    <TableCell className="border border-gray-300 px-1.5 sm:px-3 py-1.5 sm:py-2 text-center truncate text-xs sm:text-sm">{transaction.item}</TableCell>
+                    <TableCell className="border border-gray-300 px-1.5 sm:px-3 py-1.5 sm:py-2 text-left truncate text-xs sm:text-sm">{transaction.description}</TableCell>
+                    <TableCell className="border border-gray-300 px-1.5 sm:px-3 py-1.5 sm:py-2 text-right font-medium text-xs sm:text-sm">
                       {formatAmount(Number(transaction.amount))}
                     </TableCell>
                     <TableCell className="hidden sm:table-cell border border-gray-300 px-3 py-2 text-left text-gray-500 text-sm truncate">

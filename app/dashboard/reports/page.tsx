@@ -13,7 +13,7 @@ export default function ReportsPage() {
   return (
     <div className="space-y-4">
       {/* 헤더와 탭 */}
-      <div className="flex items-center justify-between">
+      <div className="space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-bold text-slate-800">보고서</h1>
           <p className="text-slate-400 text-xs mt-0.5">주간 및 월간 보고서를 확인하고 출력하세요</p>
@@ -47,7 +47,7 @@ export default function ReportsPage() {
       </div>
 
       {/* 탭 내용 */}
-      <Card className="p-6">
+      <Card className="p-3 sm:p-6">
         {activeTab === "weekly" ? (
           <WeeklyReport />
         ) : activeTab === "monthly" ? (
