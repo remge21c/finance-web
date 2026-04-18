@@ -58,10 +58,7 @@ export function useUserStatus() {
   }, [fetchUserStatus]);
 
   // 사용자 승인
-  const approveUser = async (userId: string, options: {
-    grantFinanceAdmin?: boolean;
-  } = {}) => {
-    const { grantFinanceAdmin = false } = options;
+  const approveUser = async (userId: string) => {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -71,53 +68,11 @@ export function useUserStatus() {
         status: "approved",
         approved_by: user?.id,
         rejected_reason: "",
-        is_finance_admin: grantFinanceAdmin,
-        finance_admin_approved_by: grantFinanceAdmin ? user?.id : null,
-        finance_admin_approved_at: grantFinanceAdmin ? new Date().toISOString() : null,
       })
       .eq("user_id", userId);
 
     if (error) {
       return { error: error.message };
-    }
-
-    // 재정관리자로 지정된 경우, 속한 그룹에 쓰기 권한 부여
-    if (grantFinanceAdmin) {
-      const { data: memberships } = await supabase
-        .from("finance_group_members")
-        .select("group_id")
-        .eq("user_id", userId);
-
-      if (memberships && memberships.length > 0) {
-        for (const membership of memberships) {
-          const { data: group } = await supabase
-            .from("finance_groups")
-            .select("permissions")
-            .eq("id", membership.group_id)
-            .single();
-
-          if (group) {
-            const permissions = (group.permissions as any) || { can_write: [], can_read: [] };
-
-            // 기존 권한에서 사용자 제거
-            const newCanWrite = (permissions.can_write || []).filter((id: string) => id !== userId);
-            const newCanRead = (permissions.can_read || []).filter((id: string) => id !== userId);
-
-            // 쓰기 권한 추가
-            newCanWrite.push(userId);
-
-            await supabase
-              .from("finance_groups")
-              .update({
-                permissions: {
-                  can_write: newCanWrite,
-                  can_read: newCanRead,
-                }
-              })
-              .eq("id", membership.group_id);
-          }
-        }
-      }
     }
 
     await fetchAllUsers();
@@ -167,93 +122,11 @@ export function useUserStatus() {
     return { success: true };
   };
 
-  // 재정관리자 권한 부여
-  const grantFinanceAdmin = async (userId: string) => {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    const { error } = await supabase
-      .from("finance_user_status")
-      .update({
-        is_finance_admin: true,
-        finance_admin_approved_by: user?.id,
-        finance_admin_approved_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId);
-
-    if (error) {
-      return { error: error.message };
-    }
-
-    // 사용자가 속한 그룹 조회
-    const { data: memberships } = await supabase
-      .from("finance_group_members")
-      .select("group_id")
-      .eq("user_id", userId);
-
-    if (memberships && memberships.length > 0) {
-      // 각 그룹에 쓰기 권한 부여
-      for (const membership of memberships) {
-        const { data: group } = await supabase
-          .from("finance_groups")
-          .select("permissions")
-          .eq("id", membership.group_id)
-          .single();
-
-        if (group) {
-          const permissions = (group.permissions as any) || { can_write: [], can_read: [] };
-
-          // 기존 권한에서 사용자 제거
-          const newCanWrite = (permissions.can_write || []).filter((id: string) => id !== userId);
-          const newCanRead = (permissions.can_read || []).filter((id: string) => id !== userId);
-
-          // 쓰기 권한 추가
-          newCanWrite.push(userId);
-
-          await supabase
-            .from("finance_groups")
-            .update({
-              permissions: {
-                can_write: newCanWrite,
-                can_read: newCanRead,
-              }
-            })
-            .eq("id", membership.group_id);
-        }
-      }
-    }
-
-    await fetchAllUsers();
-    return { success: true };
-  };
-
-  // 재정관리자 권한 박탈
-  const revokeFinanceAdmin = async (userId: string) => {
-    const supabase = createClient();
-
-    const { error } = await supabase
-      .from("finance_user_status")
-      .update({
-        is_finance_admin: false,
-        finance_admin_approved_by: null,
-        finance_admin_approved_at: null,
-      })
-      .eq("user_id", userId);
-
-    if (error) {
-      return { error: error.message };
-    }
-
-    await fetchAllUsers();
-    return { success: true };
-  };
-
   return {
     userStatus,
     allUsers,
     loading,
     isSuperAdmin: userStatus?.is_super_admin || false,
-    isFinanceAdmin: userStatus?.is_finance_admin || false,
     isApproved: userStatus?.status === "approved",
     isPending: userStatus?.status === "pending",
     isRejected: userStatus?.status === "rejected",
@@ -262,7 +135,5 @@ export function useUserStatus() {
     approveUser,
     rejectUser,
     reapply,
-    grantFinanceAdmin,
-    revokeFinanceAdmin,
   };
 }

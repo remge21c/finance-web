@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, AlertCircle, ArrowRight, Shield, Clock } from "lucide-react";
+import { Users, AlertCircle, ArrowRight, Clock } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
@@ -12,17 +12,11 @@ interface PendingRequestInfo {
   requested_at: string;
 }
 
-interface NoGroupAvailableProps {
-  isFinanceAdmin?: boolean;
-}
-
-export default function NoGroupAvailable({ isFinanceAdmin = false }: NoGroupAvailableProps) {
+export default function NoGroupAvailable() {
   const [pendingRequests, setPendingRequests] = useState<PendingRequestInfo[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    if (isFinanceAdmin) { setLoaded(true); return; }
-
     async function fetchPending() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -44,7 +38,7 @@ export default function NoGroupAvailable({ isFinanceAdmin = false }: NoGroupAvai
       setLoaded(true);
     }
     fetchPending();
-  }, [isFinanceAdmin]);
+  }, []);
 
   if (!loaded) return null;
 
@@ -64,22 +58,7 @@ export default function NoGroupAvailable({ isFinanceAdmin = false }: NoGroupAvai
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {isFinanceAdmin ? (
-            <>
-              <p className="text-gray-600">
-                재정관리자는 그룹을 생성할 수 있습니다.
-                <br />
-                아래 버튼을 클릭하여 새 그룹을 만들어주세요.
-              </p>
-              <Link href="/dashboard/finance/groups">
-                <Button className="w-full bg-teal-600 hover:bg-teal-700">
-                  <Shield className="h-4 w-4 mr-2" />
-                  그룹 관리 페이지로 이동
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </Link>
-            </>
-          ) : hasPending ? (
+          {hasPending ? (
             <>
               <p className="text-gray-600">
                 아래 그룹의 참여 요청이 관리자 승인을 기다리고 있습니다.
@@ -122,21 +101,19 @@ export default function NoGroupAvailable({ isFinanceAdmin = false }: NoGroupAvai
             </>
           )}
 
-          {!isFinanceAdmin && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start space-x-3">
-                <Users className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
-                <div className="text-sm text-blue-800">
-                  <p className="font-medium mb-1">그룹이란?</p>
-                  <p className="text-blue-700">
-                    그룹은 부서나 팀 단위로 재정을 관리하는 공간입니다.
-                    관리자가 승인하면 해당 그룹의 재정 데이터를 확인하고
-                    권한에 따라 입력/수정할 수 있습니다.
-                  </p>
-                </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <Users className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+              <div className="text-sm text-blue-800">
+                <p className="font-medium mb-1">그룹이란?</p>
+                <p className="text-blue-700">
+                  그룹은 부서나 팀 단위로 재정을 관리하는 공간입니다.
+                  관리자가 승인하면 해당 그룹의 재정 데이터를 확인하고
+                  권한에 따라 입력/수정할 수 있습니다.
+                </p>
               </div>
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
     </div>

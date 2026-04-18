@@ -18,16 +18,9 @@ import type { Transaction, TransactionInput } from "@/types/database";
 export default function DashboardPage() {
   const router = useRouter();
   const { groups, currentGroup, loading: groupsLoading, hasWritePermission } = useGroupContext();
-  const { isFinanceAdmin, loading: userStatusLoading } = useUserStatus();
+  const { loading: userStatusLoading } = useUserStatus();
   const { transactions, loading: txLoading, addTransaction, updateTransaction, deleteMultipleTransactions } = useTransactions();
   const { settings, loading: settingsLoading } = useSettings();
-
-  // 재정관리자가 그룹이 없으면 자동 리다이렉트
-  useEffect(() => {
-    if (!groupsLoading && !userStatusLoading && groups.length === 0 && isFinanceAdmin) {
-      router.replace('/dashboard/finance/groups');
-    }
-  }, [groupsLoading, userStatusLoading, groups.length, isFinanceAdmin, router]);
 
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -341,7 +334,7 @@ export default function DashboardPage() {
         </div>
       );
     }
-    return <NoGroupAvailable isFinanceAdmin={isFinanceAdmin} />;
+    return <NoGroupAvailable />;
   }
 
   return (

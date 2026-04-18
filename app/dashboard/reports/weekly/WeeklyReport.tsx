@@ -404,25 +404,25 @@ export default function WeeklyReport() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* 헤더 */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
-        <div className="flex-1 text-center">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800">주간 보고서</h2>
+      <div className="space-y-2">
+        <div className="text-center">
+          <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800">주간 보고서</h2>
         </div>
-        <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2">
-          <Button variant="outline" size="sm" onClick={() => setWeekOffset(weekOffset - 1)} className="text-xs">
+        <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
+          <Button variant="outline" size="sm" onClick={() => setWeekOffset(weekOffset - 1)} className="text-xs h-8 sm:h-9">
             ◀ 이전주
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setWeekOffset(0)} className="text-xs">
+          <Button variant="outline" size="sm" onClick={() => setWeekOffset(0)} className="text-xs h-8 sm:h-9">
             이번주
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setWeekOffset(weekOffset + 1)} className="text-xs">
+          <Button variant="outline" size="sm" onClick={() => setWeekOffset(weekOffset + 1)} className="text-xs h-8 sm:h-9">
             다음주 ▶
           </Button>
           <Button
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700 text-xs"
+            className="bg-emerald-600 hover:bg-emerald-700 text-xs h-8 sm:h-9"
             onClick={handlePrint}
           >
             출력

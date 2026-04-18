@@ -15,19 +15,18 @@ export async function getUserGroups(): Promise<Group[]> {
     }
 
     console.log("[getUserGroups] Fetching groups for user:", user.id);
-    // 먼저 슈퍼관리자 또는 재정관리자인지 확인
+    // 슈퍼관리자인지 확인
     const { data: userStatus } = await supabase
       .from("finance_user_status")
-      .select("is_super_admin, is_finance_admin")
+      .select("is_super_admin")
       .eq("user_id", user.id)
       .maybeSingle();
 
     const isSuperAdmin = userStatus?.is_super_admin || false;
-    const isFinanceAdmin = userStatus?.is_finance_admin || false;
 
-    console.log("[getUserGroups] User isSuperAdmin:", isSuperAdmin, "isFinanceAdmin:", isFinanceAdmin);
+    console.log("[getUserGroups] User isSuperAdmin:", isSuperAdmin);
 
-    // 슈퍼관리자는 모든 그룹 조회 (타입 무관)
+    // 슈퍼관리자는 모든 그룹 조회
     if (isSuperAdmin) {
       const { data: allGroups, error: allGroupsError } = await supabase
         .from("finance_groups")
@@ -43,51 +42,7 @@ export async function getUserGroups(): Promise<Group[]> {
       return (allGroups || []) as Group[];
     }
 
-    // 재정관리자: 자신이 생성한 그룹(타입 무관) + 멤버로 속한 그룹 모두 조회
-    if (isFinanceAdmin) {
-      // 1. 자신이 생성한 그룹 (group_type 무관)
-      const { data: ownedGroups, error: ownedError } = await supabase
-        .from("finance_groups")
-        .select("*")
-        .eq("created_by", user.id);
-
-      if (ownedError) {
-        console.error("[getUserGroups] Owned groups query error:", ownedError);
-      }
-
-      // 2. 멤버로 속한 그룹 (자신이 생성하지 않은 그룹)
-      const { data: memberData, error: memberError } = await supabase
-        .from("finance_group_members")
-        .select("group_id")
-        .eq("user_id", user.id);
-
-      let memberGroups: any[] = [];
-      if (memberData && memberData.length > 0) {
-        const groupIds = memberData.map((m: any) => m.group_id);
-        const { data: memberGroupsData, error: memberGroupsError } = await supabase
-          .from("finance_groups")
-          .select("*")
-          .in("id", groupIds);
-
-        if (!memberGroupsError) {
-          memberGroups = memberGroupsData || [];
-        }
-      }
-
-      // 3. 두 목록 합치기 (중복 제거를 위해 Set 사용)
-      const allGroupsMap = new Map();
-      (ownedGroups || []).forEach((g: any) => allGroupsMap.set(g.id, g));
-      memberGroups.forEach((g: any) => allGroupsMap.set(g.id, g));
-
-      const allGroups = Array.from(allGroupsMap.values()).sort((a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-
-      console.log("[getUserGroups] Finance admin groups:", allGroups.length, "(owned:", (ownedGroups || []).length, "+ member:", memberGroups.length, ")");
-      return allGroups as Group[];
-    }
-
-    // 일반 사용자: 멤버로 속한 department 그룹만 조회
+    // 일반 사용자: 멤버로 속한 그룹만 조회
     const { data: memberData, error: memberError } = await supabase
       .from("finance_group_members")
       .select("group_id")
@@ -105,8 +60,7 @@ export async function getUserGroups(): Promise<Group[]> {
       const { data: memberGroupsData, error: memberGroupsError } = await supabase
         .from("finance_groups")
         .select("*")
-        .in("id", groupIds)
-        .eq("group_type", "department");
+        .in("id", groupIds);
 
       if (memberGroupsError) {
         console.error("[getUserGroups] Member groups query error:", memberGroupsError);
@@ -231,7 +185,7 @@ export async function addGroupMember(input: GroupMemberInput): Promise<{ error?:
  */
 export async function updateGroupMember(
   memberId: string,
-  role: 'owner' | 'admin' | 'member'
+  role: 'owner' | 'admin' | 'finance_admin' | 'member'
 ): Promise<{ error?: string }> {
   const supabase = createClient();
   const { error } = await supabase
@@ -302,4 +256,72 @@ export async function getUserIdByEmail(email: string): Promise<string | null> {
   }
 
   return data.user_id;
+}
+
+/**
+ * 재정관리 권한 넘기기
+ * 현재 재정관리자의 권한을 다른 회원에게 넘기고, 현재 사용자는 일반 회원으로 변경 후 로그아웃
+ */
+export async function transferFinanceAdminRole(
+  groupId: string,
+  currentUserId: string,
+  newFinanceAdminId: string
+): Promise<{ error?: string }> {
+  const supabase = createClient();
+
+  try {
+    // 1. 현재 재정관리자의 멤버 정보 찾기
+    const { data: currentMember } = await supabase
+      .from("finance_group_members")
+      .select("id, role")
+      .eq("group_id", groupId)
+      .eq("user_id", currentUserId)
+      .single();
+
+    if (!currentMember) {
+      return { error: "현재 사용자가 이 그룹의 멤버가 아닙니다." };
+    }
+
+    // 2. 새로운 재정관리자의 멤버 정보 찾기
+    const { data: newMember } = await supabase
+      .from("finance_group_members")
+      .select("id, role")
+      .eq("group_id", groupId)
+      .eq("user_id", newFinanceAdminId)
+      .single();
+
+    if (!newMember) {
+      return { error: "선택한 사용자가 이 그룹의 멤버가 아닙니다." };
+    }
+
+    // 3. 현재 재정관리자의 역할을 member로 변경
+    const { error: updateError1 } = await supabase
+      .from("finance_group_members")
+      .update({ role: "member" })
+      .eq("id", currentMember.id);
+
+    if (updateError1) {
+      return { error: "현재 관리자 역할 변경 실패: " + updateError1.message };
+    }
+
+    // 4. 새로운 재정관리자의 역할을 finance_admin로 변경
+    const { error: updateError2 } = await supabase
+      .from("finance_group_members")
+      .update({ role: "finance_admin" })
+      .eq("id", newMember.id);
+
+    if (updateError2) {
+      // 롤백: 현재 관리자 역할 복구
+      await supabase
+        .from("finance_group_members")
+        .update({ role: currentMember.role })
+        .eq("id", currentMember.id);
+
+      return { error: "새 관리자 역할 변경 실패: " + updateError2.message };
+    }
+
+    return {};
+  } catch (error: any) {
+    return { error: error?.message || "권한 넘기기 실패" };
+  }
 }

@@ -407,35 +407,37 @@ export default function CustomRangeReport() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* 헤더 */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
-        <div>
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800">일정선택 보고서</h2>
+      <div className="space-y-2">
+        <div className="text-center">
+          <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800">일정선택 보고서</h2>
         </div>
-        <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
+        <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2">
           <div className="flex items-center gap-1">
-            <Label className="text-xs whitespace-nowrap">시작일</Label>
+            <Label className="text-xs whitespace-nowrap" htmlFor="start-date">시작일</Label>
             <Input
+              id="start-date"
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="h-7 sm:h-8 text-xs w-28 sm:w-36"
+              className="h-7 sm:h-8 text-xs w-24 sm:w-28 md:w-36"
             />
           </div>
           <div className="flex items-center gap-1">
-            <Label className="text-xs whitespace-nowrap">종료일</Label>
+            <Label className="text-xs whitespace-nowrap" htmlFor="end-date">종료일</Label>
             <Input
+              id="end-date"
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="h-7 sm:h-8 text-xs w-28 sm:w-36"
+              className="h-7 sm:h-8 text-xs w-24 sm:w-28 md:w-36"
             />
           </div>
-          <Button variant="outline" size="sm" onClick={handleApply} className="text-xs">
+          <Button variant="outline" size="sm" onClick={handleApply} className="text-xs h-8 sm:h-9">
             조회
           </Button>
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-xs" onClick={handlePrint}>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-xs h-8 sm:h-9" onClick={handlePrint}>
             출력
           </Button>
         </div>

@@ -25,8 +25,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Users, Shield, ArrowLeft, Check, X } from "lucide-react";
+import { Plus, Users, Shield, ArrowLeft, Check, X, Crown } from "lucide-react";
 import type { Group, GroupMember, UserStatus, GroupPermissions } from "@/types/database";
+import { transferFinanceAdminRole } from "@/lib/supabase/groups";
 
 interface GroupWithMembers extends Group {
   members: (GroupMember & { user_email: string; user_name: string })[];
@@ -34,7 +35,7 @@ interface GroupWithMembers extends Group {
 
 export default function FinanceAdminGroupsPage() {
   const router = useRouter();
-  const { isFinanceAdmin, isSuperAdmin, allUsers, loading: userStatusLoading } = useUserStatus();
+  const { isSuperAdmin, allUsers, loading: userStatusLoading } = useUserStatus();
   const [groups, setGroups] = useState<GroupWithMembers[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -42,7 +43,7 @@ export default function FinanceAdminGroupsPage() {
   const [memberDialogOpen, setMemberDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<GroupWithMembers | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: "", description: "" });
+  const [formData, setFormData] = useState({ name: "", description: "", finance_admin_id: "" });
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [selectedRole, setSelectedRole] = useState<"write" | "read">("read");
   const [requestedGroupUsers, setRequestedGroupUsers] = useState<UserStatus[]>([]);
@@ -52,6 +53,13 @@ export default function FinanceAdminGroupsPage() {
   interface JoinRequest { id: string; user_id: string; group_id: string; status: string; requested_at: string; user_name: string; user_email: string; group_name: string; }
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
 
+  // 권한 넘기기 관련 상태
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [selectedGroupForTransfer, setSelectedGroupForTransfer] = useState<GroupWithMembers | null>(null);
+  const [selectedMemberIdForTransfer, setSelectedMemberIdForTransfer] = useState<string | null>(null);
+  const [isTransferring, setIsTransferring] = useState(false);
+  const [transferConfirmChecked, setTransferConfirmChecked] = useState(false);
+
   // 승인된 사용자만 필터링
   const approvedUsers = allUsers.filter(u => u.status === "approved" && !u.is_super_admin);
 
@@ -60,8 +68,8 @@ export default function FinanceAdminGroupsPage() {
     if (userStatusLoading) {
       return;
     }
-    // 재정관리자가 아니면 리다이렉트
-    if (!isFinanceAdmin) {
+    // 최고관리자가 아니면 리다이렉트
+    if (!isSuperAdmin) {
       router.push("/dashboard");
       return;
     }
@@ -204,13 +212,19 @@ export default function FinanceAdminGroupsPage() {
 
   const handleCreateGroup = () => {
     setEditingGroup(null);
-    setFormData({ name: "", description: "" });
+    setFormData({ name: "", description: "", finance_admin_id: "" });
     setDialogOpen(true);
   };
 
   const handleEditGroup = (group: GroupWithMembers) => {
     setEditingGroup(group);
-    setFormData({ name: group.name, description: group.description || "" });
+    // 현재 재정관리자 찾기
+    const currentFinanceAdmin = group.members.find(m => m.role === 'finance_admin');
+    setFormData({
+      name: group.name,
+      description: group.description || "",
+      finance_admin_id: currentFinanceAdmin?.user_id || ""
+    });
     setDialogOpen(true);
   };
 
@@ -240,9 +254,47 @@ export default function FinanceAdminGroupsPage() {
           .eq("id", editingGroup.id);
 
         if (error) throw error;
+
+        // 재정관리자 변경
+        const currentFinanceAdmin = editingGroup.members.find(m => m.role === 'finance_admin');
+
+        if (formData.finance_admin_id && formData.finance_admin_id !== currentFinanceAdmin?.user_id) {
+          // 이전 재정관리자를 member로 변경
+          if (currentFinanceAdmin) {
+            await supabase
+              .from("finance_group_members")
+              .update({ role: "member" })
+              .eq("id", currentFinanceAdmin.id);
+          }
+
+          // 새로운 재정관리자 설정
+          const newFinanceAdminMember = editingGroup.members.find(m => m.user_id === formData.finance_admin_id);
+          if (newFinanceAdminMember) {
+            await supabase
+              .from("finance_group_members")
+              .update({ role: "finance_admin" })
+              .eq("id", newFinanceAdminMember.id);
+
+            // 쓰기 권한 자동 부여
+            const groupPerms = editingGroup.permissions || { can_write: [], can_read: [] };
+            if (!groupPerms.can_write.includes(formData.finance_admin_id)) {
+              const newPermissions = {
+                can_write: [...groupPerms.can_write, formData.finance_admin_id],
+                can_read: groupPerms.can_read.filter((id: string) => id !== formData.finance_admin_id)
+              };
+              await updateGroupPermissions(editingGroup.id, newPermissions);
+            }
+          }
+        }
+
         toast.success("그룹이 수정되었습니다.");
       } else {
         // 그룹 생성
+        if (!formData.finance_admin_id) {
+          toast.error("재정관리자를 지정해주세요.");
+          return;
+        }
+
         const { data: groupData, error: groupError } = await supabase
           .from("finance_groups")
           .insert({
@@ -250,12 +302,23 @@ export default function FinanceAdminGroupsPage() {
             description: formData.description,
             created_by: user.id,
             group_type: "department",
-            permissions: { can_write: [], can_read: [] },
+            permissions: { can_write: [formData.finance_admin_id], can_read: [] },
           })
           .select()
           .single();
 
         if (groupError) throw groupError;
+
+        // 재정관리자 멤버로 추가
+        const { error: memberError } = await supabase
+          .from("finance_group_members")
+          .insert({
+            group_id: groupData.id,
+            user_id: formData.finance_admin_id,
+            role: "finance_admin"
+          });
+
+        if (memberError) throw memberError;
 
         // 기본 settings 생성
         await supabase
@@ -474,6 +537,49 @@ export default function FinanceAdminGroupsPage() {
     return "none";
   };
 
+  // 권한 넘기기 다이얼로그 열기
+  const handleOpenTransferDialog = (group: GroupWithMembers) => {
+    setSelectedGroupForTransfer(group);
+    setSelectedMemberIdForTransfer(null);
+    setTransferConfirmChecked(false);
+    setTransferDialogOpen(true);
+  };
+
+  // 권한 넘기기 실행
+  const handleTransferRole = async () => {
+    if (!selectedGroupForTransfer || !selectedMemberIdForTransfer || !currentUserId) return;
+
+    setIsTransferring(true);
+
+    try {
+      const result = await transferFinanceAdminRole(
+        selectedGroupForTransfer.id,
+        currentUserId,
+        selectedMemberIdForTransfer
+      );
+
+      if (result.error) {
+        toast.error("권한 넘기기 실패: " + result.error);
+        setIsTransferring(false);
+        return;
+      }
+
+      toast.success("권한이 넘어갔습니다. 로그아웃됩니다.");
+
+      // 1초 후 로그아웃
+      setTimeout(async () => {
+        const supabase = createClient();
+        await supabase.auth.signOut();
+        localStorage.removeItem("selectedGroupId");
+        router.push("/");
+        router.refresh();
+      }, 1000);
+    } catch (error: any) {
+      toast.error("권한 넘기기 실패: " + error.message);
+      setIsTransferring(false);
+    }
+  };
+
   if (loading || userStatusLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -504,12 +610,10 @@ export default function FinanceAdminGroupsPage() {
             <p className="text-gray-500 text-xs sm:text-sm mt-0.5 sm:mt-1">부서별 그룹을 생성하고 회원 권한을 관리합니다</p>
           </div>
         </div>
-        {isSuperAdmin && (
-          <Button onClick={handleCreateGroup} className="bg-teal-600 hover:bg-teal-700 text-xs sm:text-sm h-8 sm:h-9">
-            <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            그룹 생성
-          </Button>
-        )}
+        <Button onClick={handleCreateGroup} className="bg-teal-600 hover:bg-teal-700 text-xs sm:text-sm h-8 sm:h-9">
+          <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+          그룹 생성
+        </Button>
       </div>
 
       {/* 그룹 참여 요청 */}
@@ -599,17 +703,14 @@ export default function FinanceAdminGroupsPage() {
                 >
                   수정
                 </Button>
-                {/* 그룹 소유자(owner) 또는 슈퍼관리자만 삭제 가능 */}
-                {(isSuperAdmin || group.members.some((m) => m.user_id === currentUserId && m.role === 'owner')) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeleteGroup(group.id)}
-                    className="text-red-600 border-red-600 hover:bg-red-50 text-xs sm:text-sm h-8 sm:h-9"
-                  >
-                    삭제
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDeleteGroup(group.id)}
+                  className="text-red-600 border-red-600 hover:bg-red-50 text-xs sm:text-sm h-8 sm:h-9"
+                >
+                  삭제
+                </Button>
               </div>
             </CardHeader>
             <CardContent className="p-3 sm:p-6">
@@ -643,13 +744,28 @@ export default function FinanceAdminGroupsPage() {
                         <p className="text-xs sm:text-sm font-medium truncate">
                           {member.user_name || member.user_email}
                           {isSelf && <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">나</span>}
+                          {member.role === 'finance_admin' && <span className="ml-1 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">재정관리자</span>}
                         </p>
                         <p className="text-xs text-gray-400 truncate">{member.user_email}</p>
                         <p className="text-xs text-gray-500">
-                          역할: {member.role === 'owner' ? '소유자' : member.role === 'admin' ? '관리자' : '멤버'}
+                          역할: {member.role === 'finance_admin' ? '그룹 재정관리자' : '멤버'}
                         </p>
                       </div>
-                      {!isSelf && (
+                      {isSelf ? (
+                        // 자기 자신인 경우: 재정관리자이면 권한 넘기기 버튼 표시
+                        member.role === 'finance_admin' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenTransferDialog(group)}
+                            className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 text-xs h-7 sm:h-8 px-2 flex items-center gap-1"
+                            title="재정관리 권한 넘기기"
+                          >
+                            <Crown className="h-3 w-3" />
+                            <span className="hidden xs:inline">권한 넘기기</span>
+                          </Button>
+                        )
+                      ) : (
                         <div className="flex items-center gap-2 sm:gap-4">
                           {/* 권한 토글 버튼 */}
                           <div className="flex items-center gap-1.5 sm:gap-2">
@@ -686,8 +802,8 @@ export default function FinanceAdminGroupsPage() {
                               <X className="h-3 w-3 sm:h-4 sm:w-4" />
                             </button>
                           </div>
-                          {/* 제거 버튼 */}
-                          {member.role !== "owner" && (
+                          {/* 제거 버튼 - 재정관리자는 제거 불가 */}
+                          {member.role !== "finance_admin" && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -715,7 +831,7 @@ export default function FinanceAdminGroupsPage() {
           <DialogHeader>
             <DialogTitle className="text-base sm:text-lg">{editingGroup ? "그룹 수정" : "그룹 생성"}</DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">
-              {editingGroup ? "그룹 이름과 설명을 수정합니다." : "새 부서 그룹을 생성합니다."}
+              {editingGroup ? "그룹 정보를 수정합니다." : "새 부서 그룹을 생성하고 재정관리자를 지정합니다."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 sm:space-y-4 py-3 sm:py-4">
@@ -738,6 +854,27 @@ export default function FinanceAdminGroupsPage() {
                 placeholder="그룹에 대한 설명"
                 className="h-9 sm:h-10 text-xs sm:text-sm"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="finance_admin" className="text-xs sm:text-sm">그룹 내 재정관리자 *</Label>
+              <Select
+                value={formData.finance_admin_id}
+                onValueChange={(value) => setFormData({ ...formData, finance_admin_id: value })}
+              >
+                <SelectTrigger className="h-9 sm:h-10 text-xs sm:text-sm">
+                  <SelectValue placeholder="재정관리자를 선택하세요" />
+                </SelectTrigger>
+                <SelectContent>
+                  {approvedUsers.map((user) => (
+                    <SelectItem key={user.user_id} value={user.user_id} className="text-xs sm:text-sm">
+                      {user.name || user.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500">
+                재정관리자는 쓰기 권한을 갖고, 다른 멤버의 권한을 설정할 수 있습니다.
+              </p>
             </div>
           </div>
           <DialogFooter>
@@ -853,6 +990,120 @@ export default function FinanceAdminGroupsPage() {
               disabled={loadingUsers || selectedUserIds.length === 0}
             >
               추가 {selectedUserIds.length > 0 && `(${selectedUserIds.length}명)`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 권한 넘기기 확인 다이얼로그 */}
+      <Dialog open={transferDialogOpen} onOpenChange={setTransferDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Crown className="h-5 w-5 text-purple-600" />
+              재정관리 권한 넘기기
+            </DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
+              재정관리 권한을 다른 회원에게 넘기겠습니다.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* 경고 메시지 */}
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-2">
+              <div className="flex items-start gap-2">
+                <span className="text-red-600 text-lg">⚠️</span>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-red-800">중요 경고</p>
+                  <ul className="text-xs text-red-700 list-disc list-inside space-y-1 mt-2">
+                    <li>권한을 넘기면 현재 재정관리자는 <strong>일반 회원</strong>으로 변경됩니다</li>
+                    <li>권한 변경 후 <strong>자동으로 로그아웃</strong>됩니다</li>
+                    <li>다시 로그인하여 계속 사용할 수 있습니다</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* 권한을 넘길 회원 선택 */}
+            {selectedGroupForTransfer && (
+              <div className="space-y-2">
+                <Label className="text-xs sm:text-sm font-semibold text-gray-700">
+                  권한을 넘길 회원 선택 *
+                </Label>
+                <Select value={selectedMemberIdForTransfer || ""} onValueChange={setSelectedMemberIdForTransfer}>
+                  <SelectTrigger className="h-9 sm:h-10 text-xs sm:text-sm">
+                    <SelectValue placeholder="회원을 선택하세요" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectedGroupForTransfer.members
+                      .filter(m => m.user_id !== currentUserId) // 자신은 제외
+                      .map((member) => (
+                        <SelectItem key={member.id} value={member.user_id} className="text-xs sm:text-sm">
+                          {member.user_name || member.user_email}
+                          {member.role === 'finance_admin' && ' (재정관리자)'}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* 선택된 회원 정보 미리보기 */}
+            {selectedGroupForTransfer && selectedMemberIdForTransfer && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <p className="text-xs font-medium text-gray-700 mb-2">
+                  권한을 넘길 회원:
+                </p>
+                {(() => {
+                  const selectedMember = selectedGroupForTransfer.members.find(m => m.user_id === selectedMemberIdForTransfer);
+                  if (!selectedMember) return null;
+                  return (
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-semibold">
+                        {selectedMember.user_name?.charAt(0) || selectedMember.user_email?.charAt(0) || "?"}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">
+                          {selectedMember.user_name || selectedMember.user_email}
+                        </p>
+                        <p className="text-xs text-gray-500">{selectedMember.user_email}</p>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* 확인 체크박스 */}
+            <div className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                id="transfer-confirm"
+                checked={transferConfirmChecked}
+                onChange={(e) => setTransferConfirmChecked(e.target.checked)}
+                className="mt-1 w-4 h-4 rounded accent-red-600"
+              />
+              <label htmlFor="transfer-confirm" className="text-xs text-gray-700 cursor-pointer">
+                위 내용을 이해했으며, 재정관리 권한을 넘기겠습니다.
+              </label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setTransferDialogOpen(false)}
+              disabled={isTransferring}
+              className="text-xs sm:text-sm h-8 sm:h-9"
+            >
+              취소
+            </Button>
+            <Button
+              onClick={handleTransferRole}
+              disabled={!selectedMemberIdForTransfer || !transferConfirmChecked || isTransferring}
+              className="bg-red-600 hover:bg-red-700 text-xs sm:text-sm h-8 sm:h-9"
+            >
+              {isTransferring ? "처리 중..." : "권한 넘기기"}
             </Button>
           </DialogFooter>
         </DialogContent>

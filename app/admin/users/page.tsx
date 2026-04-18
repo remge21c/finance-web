@@ -696,9 +696,13 @@ export default function AdminUsersPage() {
                       <TableCell className="text-gray-600 text-sm">{user.email}</TableCell>
                       <TableCell>{getStatusBadge(user.status)}</TableCell>
                       <TableCell className="text-gray-500 text-sm">
-                        {user.status === "approved"
-                          ? getGroupNamesWithRoles(user.user_id)
-                          : getGroupName(user.requested_group_id)}
+                        {user.is_super_admin ? (
+                          <span className="text-purple-600 font-medium text-xs">전체 관리</span>
+                        ) : user.status === "approved" ? (
+                          getGroupNamesWithRoles(user.user_id)
+                        ) : (
+                          getGroupName(user.requested_group_id)
+                        )}
                       </TableCell>
                       <TableCell>
                         {pendingRequests.length > 0 ? (

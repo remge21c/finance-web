@@ -27,12 +27,11 @@ import {
 interface NavbarProps {
   user: User;
   isSuperAdmin?: boolean;
-  isFinanceAdmin?: boolean;
   appTitle?: string;
   pendingRequestCount?: number;
 }
 
-export default function Navbar({ user, isSuperAdmin = false, isFinanceAdmin = false, appTitle = "재정관리", pendingRequestCount = 0 }: NavbarProps) {
+export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정관리", pendingRequestCount = 0 }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { groups, currentGroup, setCurrentGroup, hasWritePermission } = useGroupContext();
@@ -63,12 +62,12 @@ export default function Navbar({ user, isSuperAdmin = false, isFinanceAdmin = fa
         {/* 상단 바 */}
         <div className="flex items-center justify-between h-14">
           {/* 로고 */}
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard" className="flex items-center gap-2 font-bold text-base sm:text-lg tracking-tight hover:opacity-90 transition-opacity">
-              <div className="bg-emerald-600 rounded-lg p-1.5 border border-emerald-500">
-                <Wallet className="h-4 w-4" />
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            <Link href="/dashboard" className="flex items-center gap-1.5 sm:gap-2 font-bold tracking-tight hover:opacity-90 transition-opacity">
+              <div className="bg-emerald-600 rounded-lg p-1 sm:p-1.5 border border-emerald-500">
+                <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </div>
-              <span className="text-sm sm:text-base">{displayTitle}</span>
+              <span className="text-sm sm:text-base truncate max-w-[120px] sm:max-w-none">{displayTitle}</span>
             </Link>
           </div>
 
@@ -100,16 +99,6 @@ export default function Navbar({ user, isSuperAdmin = false, isFinanceAdmin = fa
                   currentGroup={currentGroup}
                   onGroupChange={setCurrentGroup}
                 />
-              ) : isFinanceAdmin ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-teal-200 hover:bg-emerald-600 hover:text-white text-xs gap-1.5"
-                  onClick={() => router.push("/dashboard/finance/groups")}
-                >
-                  <Shield className="h-3.5 w-3.5" />
-                  그룹 생성하기
-                </Button>
               ) : (
                 <div className="px-3 py-1.5 text-xs text-emerald-300">
                   그룹 없음
@@ -117,7 +106,7 @@ export default function Navbar({ user, isSuperAdmin = false, isFinanceAdmin = fa
               )}
             </div>
 
-            {/* 슈퍼/재정관리자 버튼 (데스크톱) */}
+            {/* 슈퍼관리자 버튼 (데스크톱) */}
             <div className="hidden lg:flex items-center gap-2">
               {isSuperAdmin && (
                 <>
@@ -134,24 +123,12 @@ export default function Navbar({ user, isSuperAdmin = false, isFinanceAdmin = fa
                     variant="ghost"
                     size="sm"
                     className="text-white hover:bg-emerald-600 border border-emerald-500/60 text-xs gap-1.5"
-                    onClick={() => router.push("/admin/groups")}
+                    onClick={() => router.push("/dashboard/finance/groups")}
                   >
-                    <FolderOpen className="h-3.5 w-3.5" />
+                    <Shield className="h-3.5 w-3.5" />
                     그룹 관리
                   </Button>
                 </>
-              )}
-
-              {isFinanceAdmin && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-white hover:bg-emerald-600 border border-teal-500/60 text-xs gap-1.5"
-                  onClick={() => router.push("/dashboard/finance/groups")}
-                >
-                  <Shield className="h-3.5 w-3.5" />
-                  그룹 관리
-                </Button>
               )}
             </div>
 
@@ -271,29 +248,14 @@ export default function Navbar({ user, isSuperAdmin = false, isFinanceAdmin = fa
                     size="sm"
                     className="text-white hover:bg-emerald-600 border border-emerald-500/60 text-xs gap-2 justify-start"
                     onClick={() => {
-                      router.push("/admin/groups");
+                      router.push("/dashboard/finance/groups");
                       setMobileMenuOpen(false);
                     }}
                   >
-                    <FolderOpen className="h-4 w-4" />
+                    <Shield className="h-4 w-4" />
                     그룹 관리
                   </Button>
                 </>
-              )}
-
-              {isFinanceAdmin && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-white hover:bg-emerald-600 border border-teal-500/60 text-xs gap-2 justify-start"
-                  onClick={() => {
-                    router.push("/dashboard/finance/groups");
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  <Shield className="h-4 w-4" />
-                  그룹 관리
-                </Button>
               )}
             </div>
 
