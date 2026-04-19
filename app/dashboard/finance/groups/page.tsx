@@ -591,27 +591,27 @@ export default function FinanceAdminGroupsPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* 헤더 */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div className="flex items-center gap-2 sm:gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3 sm:gap-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.back()}
             className="flex items-center space-x-2"
           >
-            <ArrowLeft className="h-4 w-4" />
-            <span className="text-xs sm:text-sm">뒤로</span>
+            <ArrowLeft className="h-5 w-5" />
+            <span className="text-sm">뒤로</span>
           </Button>
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center space-x-2">
-              <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-teal-600" />
-              <span className="text-base sm:text-xl">재정관리자 그룹 관리</span>
+              <Shield className="h-6 w-6 text-teal-600" />
+              <span>재정관리자 그룹 관리</span>
             </h1>
-            <p className="text-gray-500 text-xs sm:text-sm mt-0.5 sm:mt-1">부서별 그룹을 생성하고 회원 권한을 관리합니다</p>
+            <p className="text-gray-500 text-sm mt-1">부서별 그룹을 생성하고 회원 권한을 관리합니다</p>
           </div>
         </div>
-        <Button onClick={handleCreateGroup} className="bg-teal-600 hover:bg-teal-700 text-xs sm:text-sm h-8 sm:h-9">
-          <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+        <Button onClick={handleCreateGroup} className="bg-teal-600 hover:bg-teal-700 text-sm h-10 px-4">
+          <Plus className="h-4 w-4 mr-2" />
           그룹 생성
         </Button>
       </div>
@@ -619,23 +619,23 @@ export default function FinanceAdminGroupsPage() {
       {/* 그룹 참여 요청 */}
       {joinRequests.length > 0 && (
         <Card className="border-yellow-200 bg-yellow-50">
-          <CardHeader className="pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
-            <CardTitle className="text-sm sm:text-base text-yellow-800 flex items-center gap-2">
-              <span className="inline-flex items-center justify-center w-5 h-5 bg-yellow-500 text-white text-xs font-bold rounded-full">{joinRequests.length}</span>
+          <CardHeader className="pb-3 px-4 sm:px-6 pt-4 sm:pt-6">
+            <CardTitle className="text-base sm:text-lg text-yellow-800 flex items-center gap-2">
+              <span className="inline-flex items-center justify-center w-6 h-6 bg-yellow-500 text-white text-sm font-bold rounded-full">{joinRequests.length}</span>
               그룹 참여 요청 대기 중
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 px-3 sm:px-6 pb-4 sm:pb-6">
+          <CardContent className="space-y-3 px-4 sm:px-6 pb-4 sm:pb-6">
             {joinRequests.map(req => (
-              <div key={req.id} className="flex items-center justify-between bg-white rounded-lg px-3 sm:px-4 py-2 sm:py-3 border border-yellow-200">
+              <div key={req.id} className="flex items-center justify-between bg-white rounded-lg px-4 sm:px-5 py-3 sm:py-4 border border-yellow-200">
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs sm:text-sm font-medium text-gray-800 truncate">{req.user_name}</p>
-                  <p className="text-xs text-gray-500 truncate">{req.user_email} → <span className="text-blue-600 font-medium">{req.group_name}</span></p>
+                  <p className="text-sm sm:text-base font-medium text-gray-800 truncate">{req.user_name}</p>
+                  <p className="text-sm text-gray-500 truncate">{req.user_email} → <span className="text-blue-600 font-medium">{req.group_name}</span></p>
                 </div>
-                <div className="flex gap-1.5 sm:gap-2">
+                <div className="flex gap-2 sm:gap-3">
                   <Button
                     size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700 h-7 text-xs"
+                    className="bg-emerald-600 hover:bg-emerald-700 h-10 px-5 text-sm font-medium"
                     onClick={async () => {
                       const supabase = createClient();
                       // 이미 멤버인지 확인
@@ -660,12 +660,12 @@ export default function FinanceAdminGroupsPage() {
                       fetchGroups();
                     }}
                   >
-                    <Check className="h-3 w-3 mr-1" /> 승인
+                    <Check className="h-4 w-4 mr-1" /> 승인
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-red-300 text-red-600 hover:bg-red-50 h-7 text-xs"
+                    className="border-red-300 text-red-600 hover:bg-red-50 h-10 px-5 text-sm font-medium"
                     onClick={async () => {
                       const supabase = createClient();
                       await supabase
@@ -676,7 +676,7 @@ export default function FinanceAdminGroupsPage() {
                       fetchJoinRequests();
                     }}
                   >
-                    <X className="h-3 w-3 mr-1" /> 거절
+                    <X className="h-4 w-4 mr-1" /> 거절
                   </Button>
                 </div>
               </div>
@@ -689,17 +689,17 @@ export default function FinanceAdminGroupsPage() {
       <div className="space-y-4 sm:space-y-6">
         {groups.map((group) => (
           <Card key={group.id} className="overflow-hidden">
-            <CardHeader className="bg-gray-50 border-b flex flex-row items-center justify-between py-2 sm:py-3 px-3 sm:px-6">
+            <CardHeader className="bg-gray-50 border-b flex flex-row items-center justify-between py-3 sm:py-4 px-4 sm:px-6">
               <div className="min-w-0 flex-1">
-                <CardTitle className="text-base sm:text-lg truncate pr-2">{group.name}</CardTitle>
-                <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1 truncate">{group.description || "설명 없음"}</p>
+                <CardTitle className="text-lg sm:text-xl truncate pr-3">{group.name}</CardTitle>
+                <p className="text-sm text-gray-500 mt-1 truncate">{group.description || "설명 없음"}</p>
               </div>
-              <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
+              <div className="flex gap-2 flex-shrink-0">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleEditGroup(group)}
-                  className="text-xs sm:text-sm h-8 sm:h-9"
+                  className="text-sm h-10 px-5 font-medium"
                 >
                   수정
                 </Button>
@@ -707,47 +707,47 @@ export default function FinanceAdminGroupsPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => handleDeleteGroup(group.id)}
-                  className="text-red-600 border-red-600 hover:bg-red-50 text-xs sm:text-sm h-8 sm:h-9"
+                  className="text-red-600 border-red-600 hover:bg-red-50 text-sm h-10 px-5 font-medium"
                 >
                   삭제
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="p-3 sm:p-6">
+            <CardContent className="p-4 sm:p-6">
               {/* 멤버 추가 버튼 */}
-              <div className="flex justify-between items-center mb-3 sm:mb-4">
-                <h3 className="text-xs sm:text-sm font-medium text-gray-700 flex items-center">
-                  <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-sm font-medium text-gray-700 flex items-center">
+                  <Users className="h-4 w-4 mr-2" />
                   그룹 멤버 ({group.members.length})
                 </h3>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleOpenMemberDialog(group.id)}
-                  className="text-teal-600 border-teal-600 hover:bg-teal-50 text-xs sm:text-sm h-7 sm:h-8 px-2 sm:px-3"
+                  className="text-teal-600 border-teal-600 hover:bg-teal-50 text-sm h-10 px-5 font-medium"
                 >
-                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
+                  <Plus className="h-4 w-4 mr-1" />
                   멤버 추가
                 </Button>
               </div>
 
               {/* 멤버 목록 */}
               {group.members.length === 0 ? (
-                <p className="text-gray-500 text-center py-6 sm:py-8 text-xs sm:text-sm">등록된 멤버가 없습니다.</p>
+                <p className="text-gray-500 text-center py-8 sm:py-10 text-sm">등록된 멤버가 없습니다.</p>
               ) : (
-                <div className="space-y-2 sm:space-y-3">
+                <div className="space-y-3">
                   {group.members.map((member) => {
                     const isSelf = member.user_id === currentUserId;
                     return (
-                    <div key={member.id} className="flex items-center justify-between p-3 sm:p-4 border rounded-lg hover:bg-gray-50">
+                    <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs sm:text-sm font-medium truncate">
+                        <p className="text-sm font-medium truncate">
                           {member.user_name || member.user_email}
-                          {isSelf && <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">나</span>}
-                          {member.role === 'finance_admin' && <span className="ml-1 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">재정관리자</span>}
+                          {isSelf && <span className="ml-2 text-sm bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">나</span>}
+                          {member.role === 'finance_admin' && <span className="ml-1 text-sm bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full">재정관리자</span>}
                         </p>
-                        <p className="text-xs text-gray-400 truncate">{member.user_email}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-sm text-gray-400 truncate">{member.user_email}</p>
+                        <p className="text-sm text-gray-500">
                           역할: {member.role === 'finance_admin' ? '그룹 재정관리자' : '멤버'}
                         </p>
                       </div>
@@ -758,21 +758,21 @@ export default function FinanceAdminGroupsPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleOpenTransferDialog(group)}
-                            className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 text-xs h-7 sm:h-8 px-2 flex items-center gap-1"
+                            className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 text-sm h-10 px-4 flex items-center gap-1"
                             title="재정관리 권한 넘기기"
                           >
-                            <Crown className="h-3 w-3" />
+                            <Crown className="h-4 w-4" />
                             <span className="hidden xs:inline">권한 넘기기</span>
                           </Button>
                         )
                       ) : (
-                        <div className="flex items-center gap-2 sm:gap-4">
+                        <div className="flex items-center gap-3 sm:gap-4">
                           {/* 권한 토글 버튼 */}
-                          <div className="flex items-center gap-1.5 sm:gap-2">
-                            <span className="text-xs text-gray-500 hidden sm:inline">권한:</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-500 hidden sm:inline">권한:</span>
                             <button
                               onClick={() => handleTogglePermission(group.id, member.user_id, "write")}
-                              className={`px-2 sm:px-3 py-1 rounded text-xs font-medium transition-colors ${
+                              className={`px-3 py-2 rounded text-sm font-medium transition-colors min-h-[44px] ${
                                 getUserPermission(group, member.user_id) === "write"
                                   ? "bg-blue-600 text-white"
                                   : "bg-gray-200 text-gray-600 hover:bg-gray-300"
@@ -782,7 +782,7 @@ export default function FinanceAdminGroupsPage() {
                             </button>
                             <button
                               onClick={() => handleTogglePermission(group.id, member.user_id, "read")}
-                              className={`px-2 sm:px-3 py-1 rounded text-xs font-medium transition-colors ${
+                              className={`px-3 py-2 rounded text-sm font-medium transition-colors min-h-[44px] ${
                                 getUserPermission(group, member.user_id) === "read"
                                   ? "bg-green-600 text-white"
                                   : "bg-gray-200 text-gray-600 hover:bg-gray-300"
@@ -792,14 +792,14 @@ export default function FinanceAdminGroupsPage() {
                             </button>
                             <button
                               onClick={() => handleTogglePermission(group.id, member.user_id, "none")}
-                              className={`px-1.5 sm:px-3 py-1 rounded text-xs font-medium transition-colors ${
+                              className={`px-3 py-2 rounded text-sm font-medium transition-colors min-h-[44px] ${
                                 getUserPermission(group, member.user_id) === "none"
                                   ? "bg-gray-400 text-white"
                                   : "bg-gray-200 text-gray-600 hover:bg-gray-300"
                               }`}
                               title="권한 없음"
                             >
-                              <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                              <X className="h-4 w-4" />
                             </button>
                           </div>
                           {/* 제거 버튼 - 재정관리자는 제거 불가 */}
@@ -808,7 +808,7 @@ export default function FinanceAdminGroupsPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleRemoveMember(group.id, member.id, member.user_id)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs h-7 sm:h-8 px-2"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 text-sm h-10 px-4"
                             >
                               제거
                             </Button>
@@ -829,59 +829,59 @@ export default function FinanceAdminGroupsPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-base sm:text-lg">{editingGroup ? "그룹 수정" : "그룹 생성"}</DialogTitle>
-            <DialogDescription className="text-xs sm:text-sm">
+            <DialogTitle className="text-lg sm:text-xl">{editingGroup ? "그룹 수정" : "그룹 생성"}</DialogTitle>
+            <DialogDescription className="text-sm">
               {editingGroup ? "그룹 정보를 수정합니다." : "새 부서 그룹을 생성하고 재정관리자를 지정합니다."}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 sm:space-y-4 py-3 sm:py-4">
+          <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-xs sm:text-sm">그룹 이름 *</Label>
+              <Label htmlFor="name" className="text-sm font-medium">그룹 이름 *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="예: 재정부, 교육부"
-                className="h-9 sm:h-10 text-xs sm:text-sm"
+                className="h-10 text-sm"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-xs sm:text-sm">설명</Label>
+              <Label htmlFor="description" className="text-sm font-medium">설명</Label>
               <Input
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="그룹에 대한 설명"
-                className="h-9 sm:h-10 text-xs sm:text-sm"
+                className="h-10 text-sm"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="finance_admin" className="text-xs sm:text-sm">그룹 내 재정관리자 *</Label>
+              <Label htmlFor="finance_admin" className="text-sm font-medium">그룹 내 재정관리자 *</Label>
               <Select
                 value={formData.finance_admin_id}
                 onValueChange={(value) => setFormData({ ...formData, finance_admin_id: value })}
               >
-                <SelectTrigger className="h-9 sm:h-10 text-xs sm:text-sm">
+                <SelectTrigger className="h-10 text-sm">
                   <SelectValue placeholder="재정관리자를 선택하세요" />
                 </SelectTrigger>
                 <SelectContent>
                   {approvedUsers.map((user) => (
-                    <SelectItem key={user.user_id} value={user.user_id} className="text-xs sm:text-sm">
+                    <SelectItem key={user.user_id} value={user.user_id} className="text-sm">
                       {user.name || user.email}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-500">
+              <p className="text-sm text-gray-500">
                 재정관리자는 쓰기 권한을 갖고, 다른 멤버의 권한을 설정할 수 있습니다.
               </p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)} className="text-xs sm:text-sm h-8 sm:h-9">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="text-sm h-10 px-5 font-medium">
               취소
             </Button>
-            <Button onClick={handleSaveGroup} className="bg-teal-600 hover:bg-teal-700 text-xs sm:text-sm h-8 sm:h-9">
+            <Button onClick={handleSaveGroup} className="bg-teal-600 hover:bg-teal-700 text-sm h-10 px-5 font-medium">
               {editingGroup ? "수정" : "생성"}
             </Button>
           </DialogFooter>
@@ -892,32 +892,32 @@ export default function FinanceAdminGroupsPage() {
       <Dialog open={memberDialogOpen} onOpenChange={setMemberDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-base sm:text-lg">멤버 추가</DialogTitle>
-            <DialogDescription className="text-xs sm:text-sm">
+            <DialogTitle className="text-lg sm:text-xl">멤버 추가</DialogTitle>
+            <DialogDescription className="text-sm">
               그룹 신청자를 선택하거나 사용자를 직접 검색하여 추가합니다.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 sm:space-y-5 py-3 sm:py-4">
+          <div className="space-y-5 py-4">
 
             {/* 그룹 신청자 목록 */}
             <div className="space-y-2">
-              <Label className="text-xs sm:text-sm font-semibold text-gray-700">
+              <Label className="text-sm font-semibold text-gray-700">
                 그룹 신청자
                 {!loadingUsers && requestedGroupUsers.length > 0 && (
-                  <span className="ml-2 text-xs font-normal text-teal-600">
+                  <span className="ml-2 text-sm font-normal text-teal-600">
                     ({requestedGroupUsers.filter(u => !groups.find(g => g.id === selectedGroupId)?.members.find(m => m.user_id === u.user_id)).length}명)
                   </span>
                 )}
               </Label>
               {loadingUsers ? (
-                <p className="text-xs sm:text-sm text-gray-400 py-2">불러오는 중...</p>
+                <p className="text-sm text-gray-400 py-3">불러오는 중...</p>
               ) : (() => {
                 const currentGroup = groups.find(g => g.id === selectedGroupId);
                 const existingIds = new Set(currentGroup?.members.map(m => m.user_id) || []);
                 const pendingUsers = requestedGroupUsers.filter(u => !existingIds.has(u.user_id));
 
                 return pendingUsers.length === 0 ? (
-                  <p className="text-xs sm:text-sm text-gray-400 py-2 text-center border rounded-lg bg-gray-50">
+                  <p className="text-sm text-gray-400 py-3 text-center border rounded-lg bg-gray-50">
                     이 그룹을 신청한 사용자가 없습니다.
                   </p>
                 ) : (
@@ -927,7 +927,7 @@ export default function FinanceAdminGroupsPage() {
                       return (
                         <label
                           key={user.user_id}
-                          className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 cursor-pointer hover:bg-gray-50 transition-colors ${isChecked ? "bg-teal-50" : ""}`}
+                          className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors min-h-[52px] ${isChecked ? "bg-teal-50" : ""}`}
                         >
                           <input
                             type="checkbox"
@@ -939,17 +939,17 @@ export default function FinanceAdminGroupsPage() {
                                   : prev.filter(id => id !== user.user_id)
                               );
                             }}
-                            className="w-4 h-4 rounded accent-teal-600"
+                            className="w-5 h-5 rounded accent-teal-600"
                           />
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs sm:text-sm font-medium text-gray-800 truncate">
+                            <p className="text-sm font-medium text-gray-800 truncate">
                               {user.name || user.email}
                             </p>
                             {user.name && (
-                              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                              <p className="text-sm text-gray-500 truncate">{user.email}</p>
                             )}
                           </div>
-                          {isChecked && <Check className="h-4 w-4 text-teal-600 shrink-0" />}
+                          {isChecked && <Check className="h-5 w-5 text-teal-600 shrink-0" />}
                         </label>
                       );
                     })}
@@ -960,9 +960,9 @@ export default function FinanceAdminGroupsPage() {
 
             {/* 권한 */}
             <div className="space-y-2">
-              <Label className="text-xs sm:text-sm font-semibold text-gray-700">기본 권한 *</Label>
+              <Label className="text-sm font-semibold text-gray-700">기본 권한 *</Label>
               <Select value={selectedRole} onValueChange={(value: "write" | "read") => setSelectedRole(value)}>
-                <SelectTrigger className="h-9 sm:h-10 text-xs sm:text-sm">
+                <SelectTrigger className="h-10 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -974,19 +974,19 @@ export default function FinanceAdminGroupsPage() {
 
             {/* 선택 요약 */}
             {selectedUserIds.length > 0 && (
-              <p className="text-xs text-teal-700 bg-teal-50 rounded px-3 py-2">
+              <p className="text-sm text-teal-700 bg-teal-50 rounded px-4 py-3">
                 {selectedUserIds.length}명 선택됨 —{" "}
                 <span className="font-medium">{selectedRole === "read" ? "읽기" : "쓰기"}</span> 권한으로 추가됩니다.
               </p>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setMemberDialogOpen(false)} className="text-xs sm:text-sm h-8 sm:h-9">
+            <Button variant="outline" onClick={() => setMemberDialogOpen(false)} className="text-sm h-10 px-5 font-medium">
               취소
             </Button>
             <Button
               onClick={handleAddMember}
-              className="bg-teal-600 hover:bg-teal-700 text-xs sm:text-sm h-8 sm:h-9"
+              className="bg-teal-600 hover:bg-teal-700 text-sm h-10 px-5 font-medium"
               disabled={loadingUsers || selectedUserIds.length === 0}
             >
               추가 {selectedUserIds.length > 0 && `(${selectedUserIds.length}명)`}
@@ -999,11 +999,11 @@ export default function FinanceAdminGroupsPage() {
       <Dialog open={transferDialogOpen} onOpenChange={setTransferDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Crown className="h-5 w-5 text-purple-600" />
+            <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <Crown className="h-6 w-6 text-purple-600" />
               재정관리 권한 넘기기
             </DialogTitle>
-            <DialogDescription className="text-xs sm:text-sm">
+            <DialogDescription className="text-sm">
               재정관리 권한을 다른 회원에게 넘기겠습니다.
             </DialogDescription>
           </DialogHeader>
@@ -1012,10 +1012,10 @@ export default function FinanceAdminGroupsPage() {
             {/* 경고 메시지 */}
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-2">
               <div className="flex items-start gap-2">
-                <span className="text-red-600 text-lg">⚠️</span>
+                <span className="text-red-600 text-xl">⚠️</span>
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-red-800">중요 경고</p>
-                  <ul className="text-xs text-red-700 list-disc list-inside space-y-1 mt-2">
+                  <p className="text-base font-semibold text-red-800">중요 경고</p>
+                  <ul className="text-sm text-red-700 list-disc list-inside space-y-1 mt-2">
                     <li>권한을 넘기면 현재 재정관리자는 <strong>일반 회원</strong>으로 변경됩니다</li>
                     <li>권한 변경 후 <strong>자동으로 로그아웃</strong>됩니다</li>
                     <li>다시 로그인하여 계속 사용할 수 있습니다</li>
@@ -1027,18 +1027,18 @@ export default function FinanceAdminGroupsPage() {
             {/* 권한을 넘길 회원 선택 */}
             {selectedGroupForTransfer && (
               <div className="space-y-2">
-                <Label className="text-xs sm:text-sm font-semibold text-gray-700">
+                <Label className="text-sm font-semibold text-gray-700">
                   권한을 넘길 회원 선택 *
                 </Label>
                 <Select value={selectedMemberIdForTransfer || ""} onValueChange={setSelectedMemberIdForTransfer}>
-                  <SelectTrigger className="h-9 sm:h-10 text-xs sm:text-sm">
+                  <SelectTrigger className="h-10 text-sm">
                     <SelectValue placeholder="회원을 선택하세요" />
                   </SelectTrigger>
                   <SelectContent>
                     {selectedGroupForTransfer.members
                       .filter(m => m.user_id !== currentUserId) // 자신은 제외
                       .map((member) => (
-                        <SelectItem key={member.id} value={member.user_id} className="text-xs sm:text-sm">
+                        <SelectItem key={member.id} value={member.user_id} className="text-sm">
                           {member.user_name || member.user_email}
                           {member.role === 'finance_admin' && ' (재정관리자)'}
                         </SelectItem>
@@ -1050,23 +1050,23 @@ export default function FinanceAdminGroupsPage() {
 
             {/* 선택된 회원 정보 미리보기 */}
             {selectedGroupForTransfer && selectedMemberIdForTransfer && (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                <p className="text-xs font-medium text-gray-700 mb-2">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <p className="text-sm font-medium text-gray-700 mb-3">
                   권한을 넘길 회원:
                 </p>
                 {(() => {
                   const selectedMember = selectedGroupForTransfer.members.find(m => m.user_id === selectedMemberIdForTransfer);
                   if (!selectedMember) return null;
                   return (
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-semibold">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-semibold text-base">
                         {selectedMember.user_name?.charAt(0) || selectedMember.user_email?.charAt(0) || "?"}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-800">
+                        <p className="text-base font-medium text-gray-800">
                           {selectedMember.user_name || selectedMember.user_email}
                         </p>
-                        <p className="text-xs text-gray-500">{selectedMember.user_email}</p>
+                        <p className="text-sm text-gray-500">{selectedMember.user_email}</p>
                       </div>
                     </div>
                   );
@@ -1075,15 +1075,15 @@ export default function FinanceAdminGroupsPage() {
             )}
 
             {/* 확인 체크박스 */}
-            <div className="flex items-start gap-2">
+            <div className="flex items-start gap-3">
               <input
                 type="checkbox"
                 id="transfer-confirm"
                 checked={transferConfirmChecked}
                 onChange={(e) => setTransferConfirmChecked(e.target.checked)}
-                className="mt-1 w-4 h-4 rounded accent-red-600"
+                className="mt-1 w-5 h-5 rounded accent-red-600"
               />
-              <label htmlFor="transfer-confirm" className="text-xs text-gray-700 cursor-pointer">
+              <label htmlFor="transfer-confirm" className="text-sm text-gray-700 cursor-pointer">
                 위 내용을 이해했으며, 재정관리 권한을 넘기겠습니다.
               </label>
             </div>
@@ -1094,14 +1094,14 @@ export default function FinanceAdminGroupsPage() {
               variant="outline"
               onClick={() => setTransferDialogOpen(false)}
               disabled={isTransferring}
-              className="text-xs sm:text-sm h-8 sm:h-9"
+              className="text-sm h-10 px-5 font-medium"
             >
               취소
             </Button>
             <Button
               onClick={handleTransferRole}
               disabled={!selectedMemberIdForTransfer || !transferConfirmChecked || isTransferring}
-              className="bg-red-600 hover:bg-red-700 text-xs sm:text-sm h-8 sm:h-9"
+              className="bg-red-600 hover:bg-red-700 text-sm h-10 px-5 font-medium"
             >
               {isTransferring ? "처리 중..." : "권한 넘기기"}
             </Button>

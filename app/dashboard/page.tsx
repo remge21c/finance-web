@@ -339,26 +339,26 @@ export default function DashboardPage() {
             <div className="pb-3 border-b border-slate-100 mb-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-xl font-bold text-slate-800">재정출납부</h1>
-                  <p className="text-xs text-slate-400 mt-0.5">{currentGroup?.name}</p>
+                  <h1 className="text-xl sm:text-2xl font-bold text-slate-800">재정출납부</h1>
+                  <p className="text-sm text-slate-400 mt-1">{currentGroup?.name}</p>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <Button
                     variant={viewMode === "weekly" ? "default" : "outline"}
                     size="sm"
                     onClick={() => setViewMode("weekly")}
-                    className={`gap-1.5 text-xs h-8 ${viewMode === "weekly" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+                    className={`gap-2 text-sm h-10 ${viewMode === "weekly" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "text-slate-600 border-slate-200 hover:bg-slate-50"}`}
                   >
-                    <CalendarDays className="h-3.5 w-3.5" />
+                    <CalendarDays className="h-4 w-4" />
                     주간보기
                   </Button>
                   <Button
                     variant={viewMode === "all" ? "default" : "outline"}
                     size="sm"
                     onClick={() => setViewMode("all")}
-                    className={`gap-1.5 text-xs h-8 ${viewMode === "all" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+                    className={`gap-2 text-sm h-10 ${viewMode === "all" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "text-slate-600 border-slate-200 hover:bg-slate-50"}`}
                   >
-                    <List className="h-3.5 w-3.5" />
+                    <List className="h-4 w-4" />
                     전체보기
                   </Button>
                 </div>
@@ -390,29 +390,29 @@ export default function DashboardPage() {
       {/* 모바일: 헤더만 표시, 입력 폼은 일반 스크롤 */}
       <div className="sm:hidden">
         {/* 모바일 헤더 */}
-        <div className="bg-slate-50 border-b border-slate-200 pt-4 pb-3 mb-4">
+        <div className="bg-slate-50 border-b border-slate-200 pt-5 pb-4 mb-4">
           <div className="flex flex-col items-start justify-between gap-3">
             <div className="flex-1">
-              <h1 className="text-lg font-bold text-slate-800">재정출납부</h1>
-              <p className="text-xs text-slate-400 mt-0.5">{currentGroup?.name}</p>
+              <h1 className="text-lg sm:text-xl font-bold text-slate-800">재정출납부</h1>
+              <p className="text-sm text-slate-400 mt-1">{currentGroup?.name}</p>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <Button
                 variant={viewMode === "weekly" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setViewMode("weekly")}
-                className={`gap-1 text-xs h-7 px-2 ${viewMode === "weekly" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+                className={`gap-2 text-sm h-10 px-4 ${viewMode === "weekly" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "text-slate-600 border-slate-200 hover:bg-slate-50"}`}
               >
-                <CalendarDays className="h-3 w-3" />
+                <CalendarDays className="h-4 w-4" />
                 주간
               </Button>
               <Button
                 variant={viewMode === "all" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setViewMode("all")}
-                className={`gap-1 text-xs h-7 px-2 ${viewMode === "all" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+                className={`gap-2 text-sm h-10 px-4 ${viewMode === "all" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "text-slate-600 border-slate-200 hover:bg-slate-50"}`}
               >
-                <List className="h-3 w-3" />
+                <List className="h-4 w-4" />
                 전체
               </Button>
             </div>
@@ -421,8 +421,8 @@ export default function DashboardPage() {
 
         {/* 읽기 권한 경고 */}
         {!hasWritePermission && (
-          <div className="mb-4 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 flex items-center gap-2">
-            <Eye className="h-4 w-4 flex-shrink-0" />
+          <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 flex items-center gap-2">
+            <Eye className="h-5 w-5 flex-shrink-0" />
             <span>읽기 전용 모드 — 이 그룹의 데이터를 조회만 할 수 있습니다.</span>
           </div>
         )}

@@ -588,8 +588,8 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-800">사용자 관리</h1>
-        <p className="text-gray-500">사용자를 클릭하면 상세 설정을 변경할 수 있습니다.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">사용자 관리</h1>
+        <p className="text-gray-500 text-sm sm:text-base">사용자를 클릭하면 상세 설정을 변경할 수 있습니다.</p>
       </div>
 
       {/* 통계 카드 */}
@@ -598,7 +598,7 @@ export default function AdminUsersPage() {
           <CardContent className="pt-6">
             <div className="text-center">
               <p className="text-3xl font-bold text-gray-800">{allUsers.length}</p>
-              <p className="text-sm text-gray-500">전체 사용자</p>
+              <p className="text-base text-gray-500">전체 사용자</p>
             </div>
           </CardContent>
         </Card>
@@ -606,7 +606,7 @@ export default function AdminUsersPage() {
           <CardContent className="pt-6">
             <div className="text-center">
               <p className={`text-3xl font-bold ${pendingFinanceAdminCount > 0 ? "text-purple-600" : "text-gray-400"}`}>{pendingFinanceAdminCount}</p>
-              <p className="text-sm text-gray-500">재정관리자 신청</p>
+              <p className="text-base text-gray-500">재정관리자 신청</p>
             </div>
           </CardContent>
         </Card>
@@ -614,7 +614,7 @@ export default function AdminUsersPage() {
           <CardContent className="pt-6">
             <div className="text-center">
               <p className="text-3xl font-bold text-green-600">{approvedCount}</p>
-              <p className="text-sm text-gray-500">승인됨</p>
+              <p className="text-base text-gray-500">승인됨</p>
             </div>
           </CardContent>
         </Card>
@@ -622,7 +622,7 @@ export default function AdminUsersPage() {
           <CardContent className="pt-6">
             <div className="text-center">
               <p className={`text-3xl font-bold ${groupRequestCount > 0 ? "text-orange-600" : "text-gray-400"}`}>{groupRequestCount}</p>
-              <p className="text-sm text-gray-500">그룹 요청</p>
+              <p className="text-base text-gray-500">그룹 요청</p>
             </div>
           </CardContent>
         </Card>
@@ -631,27 +631,27 @@ export default function AdminUsersPage() {
       {/* 재정관리자 신청 대기 강조 영역 */}
       {pendingFinanceAdminCount > 0 && (
         <Card className="border-purple-300 bg-purple-50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-purple-700 text-base flex items-center gap-2">
-              <span className="inline-flex items-center justify-center w-5 h-5 bg-purple-600 text-white text-xs rounded-full font-bold">{pendingFinanceAdminCount}</span>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-purple-700 text-base sm:text-lg flex items-center gap-2">
+              <span className="inline-flex items-center justify-center w-6 h-6 bg-purple-600 text-white text-sm rounded-full font-bold">{pendingFinanceAdminCount}</span>
               재정관리자 신청 승인 대기
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {allUsers
                 .filter(u => u.status === "pending" && u.requested_role === "finance_admin")
                 .map(u => (
                   <div
                     key={u.id}
-                    className="flex items-center justify-between bg-white border border-purple-200 rounded-lg px-4 py-3 cursor-pointer hover:bg-purple-50 transition-colors"
+                    className="flex items-center justify-between bg-white border border-purple-200 rounded-lg px-4 py-4 cursor-pointer hover:bg-purple-50 transition-colors"
                     onClick={() => handleUserClick(u)}
                   >
                     <div>
-                      <p className="text-sm font-medium text-gray-800">{u.name || u.email}</p>
-                      <p className="text-xs text-gray-500">{u.email}</p>
+                      <p className="text-base font-medium text-gray-800">{u.name || u.email}</p>
+                      <p className="text-sm text-gray-500">{u.email}</p>
                     </div>
-                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">재정관리자 신청</span>
+                    <span className="text-sm bg-purple-100 text-purple-700 px-3 py-1 rounded-full">재정관리자 신청</span>
                   </div>
                 ))}
             </div>
@@ -662,24 +662,24 @@ export default function AdminUsersPage() {
       {/* 사용자 목록 */}
       <Card>
         <CardHeader>
-          <CardTitle>사용자 목록</CardTitle>
+          <CardTitle className="text-lg">사용자 목록</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50">
-                <TableHead>이름</TableHead>
-                <TableHead>이메일</TableHead>
-                <TableHead>상태</TableHead>
-                <TableHead>소속 그룹</TableHead>
-                <TableHead>그룹 요청</TableHead>
-                <TableHead>가입일</TableHead>
+                <TableHead className="text-sm font-semibold py-3">이름</TableHead>
+                <TableHead className="text-sm font-semibold py-3">이메일</TableHead>
+                <TableHead className="text-sm font-semibold py-3">상태</TableHead>
+                <TableHead className="text-sm font-semibold py-3">소속 그룹</TableHead>
+                <TableHead className="text-sm font-semibold py-3">그룹 요청</TableHead>
+                <TableHead className="text-sm font-semibold py-3">가입일</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {allUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={6} className="text-center py-10 text-gray-500 text-sm">
                     등록된 사용자가 없습니다.
                   </TableCell>
                 </TableRow>
@@ -692,10 +692,10 @@ export default function AdminUsersPage() {
                       className="cursor-pointer hover:bg-blue-50 transition-colors"
                       onClick={() => handleUserClick(user)}
                     >
-                      <TableCell className="font-medium">{user.name || user.email}</TableCell>
-                      <TableCell className="text-gray-600 text-sm">{user.email}</TableCell>
-                      <TableCell>{getStatusBadge(user.status)}</TableCell>
-                      <TableCell className="text-gray-500 text-sm">
+                      <TableCell className="font-medium text-sm py-3">{user.name || user.email}</TableCell>
+                      <TableCell className="text-gray-600 text-sm py-3">{user.email}</TableCell>
+                      <TableCell className="py-3">{getStatusBadge(user.status)}</TableCell>
+                      <TableCell className="text-gray-500 text-sm py-3">
                         {user.is_super_admin ? (
                           <span className="text-purple-600 font-medium text-xs">전체 관리</span>
                         ) : user.status === "approved" ? (
@@ -704,17 +704,17 @@ export default function AdminUsersPage() {
                           getGroupName(user.requested_group_id)
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-3">
                         {pendingRequests.length > 0 ? (
-                          <div className="flex flex-col gap-1" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
                             {pendingRequests.map(req => (
-                              <div key={req.id} className="flex items-center gap-1.5">
-                                <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full whitespace-nowrap">
+                              <div key={req.id} className="flex items-center gap-2">
+                                <span className="text-xs bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full whitespace-nowrap">
                                   {req.group_name}
                                 </span>
                                 <Button
                                   size="sm"
-                                  className="h-5 px-2 text-[11px] bg-emerald-600 hover:bg-emerald-700"
+                                  className="h-9 px-3 text-xs bg-emerald-600 hover:bg-emerald-700 font-medium"
                                   onClick={(e) => handleApproveJoinRequest(e, req, user.user_id)}
                                 >
                                   승인
@@ -722,7 +722,7 @@ export default function AdminUsersPage() {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="h-5 px-2 text-[11px] text-red-500 border-red-300 hover:bg-red-50"
+                                  className="h-9 px-3 text-xs text-red-500 border-red-300 hover:bg-red-50 font-medium"
                                   onClick={(e) => handleRejectJoinRequest(e, req.id, req.group_name)}
                                 >
                                   거절
@@ -734,7 +734,7 @@ export default function AdminUsersPage() {
                           <span className="text-gray-300 text-xs">-</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-gray-500 text-sm">
+                      <TableCell className="text-gray-500 text-sm py-3">
                         {format(new Date(user.created_at), "yyyy-MM-dd", { locale: ko })}
                       </TableCell>
                     </TableRow>
@@ -753,63 +753,63 @@ export default function AdminUsersPage() {
             <>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-lg">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xl">
                     {(selectedUser.name || selectedUser.email).charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="text-base font-semibold">{selectedUser.name || selectedUser.email}</p>
-                    <p className="text-xs text-gray-500 font-normal">{selectedUser.email}</p>
+                    <p className="text-lg font-semibold">{selectedUser.name || selectedUser.email}</p>
+                    <p className="text-sm text-gray-500 font-normal">{selectedUser.email}</p>
                   </div>
                 </DialogTitle>
-                <DialogDescription className="flex items-center gap-2 pt-1">
+                <DialogDescription className="flex items-center gap-2 pt-2">
                   {getStatusBadge(selectedUser.status)}
                   {selectedUser.is_super_admin && <span className="badge badge-admin">전체관리자</span>}
                   {selectedUser.is_finance_admin && <span className="badge badge-finance">재정관리자</span>}
-                  <span className="text-xs text-gray-400">
+                  <span className="text-sm text-gray-400">
                     가입일 {format(new Date(selectedUser.created_at), "yyyy년 MM월 dd일", { locale: ko })}
                   </span>
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-4 py-2">
+              <div className="space-y-4 py-3">
 
                 {/* 대기 중 사용자 */}
                 {!selectedUser.is_super_admin && selectedUser.status === "pending" && (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {selectedUser.requested_role === "finance_admin" && (
-                      <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-md px-3 py-2">
-                        <span className="text-xs font-medium text-purple-700">재정관리자 신청</span>
-                        <span className="text-xs text-purple-500">— 승인 시 그룹 생성·관리 권한이 부여됩니다</span>
+                      <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-md px-4 py-3">
+                        <span className="text-sm font-medium text-purple-700">재정관리자 신청</span>
+                        <span className="text-sm text-purple-500">— 승인 시 그룹 생성·관리 권한이 부여됩니다</span>
                       </div>
                     )}
                     {selectedUser.requested_group_id && (
-                      <div className="text-sm text-gray-600 bg-gray-50 rounded-md px-3 py-2">
+                      <div className="text-sm text-gray-600 bg-gray-50 rounded-md px-4 py-3">
                         요청 그룹: <span className="font-medium">{getGroupName(selectedUser.requested_group_id)}</span>
                       </div>
                     )}
-                    <div className="border rounded-lg p-3 space-y-3">
+                    <div className="border rounded-lg p-4 space-y-4">
                       <p className="text-sm font-medium text-gray-700">승인 설정</p>
                       <div className="space-y-2">
-                        <Label className="text-xs text-gray-600">소속 그룹</Label>
+                        <Label className="text-sm text-gray-600">소속 그룹</Label>
                         <GroupSearchInput value={approveGroupId} onChange={setApproveGroupId} placeholder="그룹 검색 (선택사항)" />
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-3">
                         <Checkbox id="approve-finance-admin" checked={approveGrantFinanceAdmin} onCheckedChange={(v) => setApproveGrantFinanceAdmin(v === true)} />
                         <Label htmlFor="approve-finance-admin" className="text-sm cursor-pointer">
                           재정관리자 <span className="text-xs text-gray-400">(그룹 생성·관리 가능)</span>
                         </Label>
                       </div>
-                      <Button className="w-full bg-emerald-600 hover:bg-emerald-700" onClick={handleApproveConfirm}>승인</Button>
+                      <Button className="w-full bg-emerald-600 hover:bg-emerald-700 h-10 text-sm font-medium" onClick={handleApproveConfirm}>승인</Button>
                     </div>
                     {!rejectMode ? (
-                      <Button variant="outline" className="w-full text-red-600 border-red-300 hover:bg-red-50" onClick={() => setRejectMode(true)}>거절</Button>
+                      <Button variant="outline" className="w-full text-red-600 border-red-300 hover:bg-red-50 h-10 text-sm font-medium" onClick={() => setRejectMode(true)}>거절</Button>
                     ) : (
-                      <div className="border border-red-200 rounded-lg p-3 space-y-2 bg-red-50">
+                      <div className="border border-red-200 rounded-lg p-4 space-y-3 bg-red-50">
                         <Label className="text-sm font-medium text-red-700">거절 사유 (선택사항)</Label>
-                        <Input value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="거절 사유를 입력하세요..." />
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => setRejectMode(false)} className="flex-1">취소</Button>
-                          <Button variant="destructive" size="sm" onClick={handleRejectConfirm} className="flex-1">거절 확인</Button>
+                        <Input value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="거절 사유를 입력하세요..." className="h-10 text-sm" />
+                        <div className="flex gap-3">
+                          <Button variant="outline" size="sm" onClick={() => setRejectMode(false)} className="flex-1 h-10 text-sm">취소</Button>
+                          <Button variant="destructive" size="sm" onClick={handleRejectConfirm} className="flex-1 h-10 text-sm">거절 확인</Button>
                         </div>
                       </div>
                     )}
@@ -965,7 +965,7 @@ export default function AdminUsersPage() {
                           <div className="flex gap-1.5">
                             <Button
                               size="sm"
-                              className="bg-emerald-600 hover:bg-emerald-700 text-xs h-7"
+                              className="bg-emerald-600 hover:bg-emerald-700 text-xs h-9 font-medium"
                               onClick={(e) => handleApproveJoinRequest(e, req, selectedUser.user_id)}
                             >
                               승인
@@ -973,7 +973,7 @@ export default function AdminUsersPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="border-red-300 text-red-500 hover:bg-red-50 text-xs h-7"
+                              className="border-red-300 text-red-500 hover:bg-red-50 text-xs h-9 font-medium"
                               onClick={(e) => handleRejectJoinRequest(e, req.id, req.group_name)}
                             >
                               거절
@@ -986,12 +986,12 @@ export default function AdminUsersPage() {
                         <div className="space-y-2 pt-1">
                           <GroupSearchInput value={newGroupId} onChange={setNewGroupId} placeholder="추가할 그룹 검색" />
                           <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={() => { setAddGroupMode(false); setNewGroupId(""); }} className="flex-1">취소</Button>
-                            <Button size="sm" onClick={handleAddGroup} disabled={!newGroupId} className="flex-1">추가</Button>
+                            <Button variant="outline" size="sm" onClick={() => { setAddGroupMode(false); setNewGroupId(""); }} className="flex-1 h-10 font-medium">취소</Button>
+                            <Button size="sm" onClick={handleAddGroup} disabled={!newGroupId} className="flex-1 h-10 font-medium">추가</Button>
                           </div>
                         </div>
                       ) : (
-                        <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => setAddGroupMode(true)}>+ 그룹 추가</Button>
+                        <Button variant="outline" size="sm" className="w-full text-xs h-10 font-medium" onClick={() => setAddGroupMode(true)}>+ 그룹 추가</Button>
                       )}
                     </div>
 
@@ -999,9 +999,9 @@ export default function AdminUsersPage() {
                     <div className="border rounded-lg p-3 space-y-2">
                       <p className="text-sm font-medium text-gray-700">관리 권한</p>
                       {selectedUser.is_finance_admin ? (
-                        <Button variant="outline" size="sm" className="text-orange-600 border-orange-300 hover:bg-orange-50 w-full" onClick={handleRevokeFinanceAdmin}>재정관리자 해제</Button>
+                        <Button variant="outline" size="sm" className="text-orange-600 border-orange-300 hover:bg-orange-50 w-full h-10 font-medium" onClick={handleRevokeFinanceAdmin}>재정관리자 해제</Button>
                       ) : (
-                        <Button variant="outline" size="sm" className="text-purple-600 border-purple-300 hover:bg-purple-50 w-full" onClick={handleGrantFinanceAdmin}>재정관리자로 승격</Button>
+                        <Button variant="outline" size="sm" className="text-purple-600 border-purple-300 hover:bg-purple-50 w-full h-10 font-medium" onClick={handleGrantFinanceAdmin}>재정관리자로 승격</Button>
                       )}
                     </div>
                   </div>

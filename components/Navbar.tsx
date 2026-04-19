@@ -60,24 +60,24 @@ export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정�
     <nav className="sticky top-0 z-50 bg-emerald-700 text-white shadow-lg border-b border-emerald-800">
       <div className="container mx-auto px-4">
         {/* 상단 바 */}
-        <div className="flex items-center justify-between h-14">
+        <div className="flex items-center justify-between h-16">
           {/* 로고 */}
           <div className="flex items-center space-x-2 sm:space-x-4">
-            <Link href="/dashboard" className="flex items-center gap-1.5 sm:gap-2 font-bold tracking-tight hover:opacity-90 transition-opacity">
-              <div className="bg-emerald-600 rounded-lg p-1 sm:p-1.5 border border-emerald-500">
-                <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <Link href="/dashboard" className="flex items-center gap-2 sm:gap-3 font-bold tracking-tight hover:opacity-90 transition-opacity">
+              <div className="bg-emerald-600 rounded-lg p-1.5 sm:p-2 border border-emerald-500">
+                <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
-              <span className="text-sm sm:text-base truncate max-w-[120px] sm:max-w-none">{displayTitle}</span>
+              <span className="text-base sm:text-lg truncate max-w-[140px] sm:max-w-none">{displayTitle}</span>
             </Link>
           </div>
 
           {/* 데스크톱 네비게이션 링크 */}
-          <div className="hidden md:flex items-center space-x-0.5">
+          <div className="hidden md:flex items-center space-x-1">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
                   pathname === link.href
                     ? "bg-emerald-800 text-white"
                     : "text-emerald-100 hover:bg-emerald-600 hover:text-white"
@@ -113,19 +113,19 @@ export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정�
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-white hover:bg-emerald-600 border border-emerald-500/60 text-xs gap-1.5"
+                    className="text-white hover:bg-emerald-600 border border-emerald-500/60 text-sm gap-2"
                     onClick={() => router.push("/admin/users")}
                   >
-                    <Users className="h-3.5 w-3.5" />
+                    <Users className="h-4 w-4" />
                     사용자 관리
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-white hover:bg-emerald-600 border border-emerald-500/60 text-xs gap-1.5"
+                    className="text-white hover:bg-emerald-600 border border-emerald-500/60 text-sm gap-2"
                     onClick={() => router.push("/dashboard/finance/groups")}
                   >
-                    <Shield className="h-3.5 w-3.5" />
+                    <Shield className="h-4 w-4" />
                     그룹 관리
                   </Button>
                 </>
@@ -134,7 +134,7 @@ export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정�
 
             {/* 사용자 액션 */}
             <div className="flex items-center gap-1">
-              <span className="hidden lg:inline text-xs text-emerald-200 mr-1 max-w-[120px] truncate">
+              <span className="hidden lg:inline text-sm text-emerald-200 mr-2 max-w-[140px] truncate">
                 {user.email}
               </span>
 
@@ -142,12 +142,12 @@ export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정�
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-emerald-100 hover:bg-emerald-600 hover:text-white h-8 w-8 p-0"
+                  className="text-emerald-100 hover:bg-emerald-600 hover:text-white h-10 w-10 p-0"
                   title={pendingRequestCount > 0 ? `그룹 참여 요청 ${pendingRequestCount}건` : "프로필 설정"}
                 >
-                  <UserCircle className="h-4 w-4" />
+                  <UserCircle className="h-5 w-5" />
                   {pendingRequestCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 leading-none">
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-5 flex items-center justify-center px-1.5 leading-none">
                       {pendingRequestCount > 9 ? "9+" : pendingRequestCount}
                     </span>
                   )}
@@ -157,21 +157,21 @@ export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정�
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-emerald-100 hover:bg-emerald-600 hover:text-white h-8 w-8 p-0"
+                className="text-emerald-100 hover:bg-emerald-600 hover:text-white h-10 w-10 p-0"
                 onClick={handleLogout}
                 title="로그아웃"
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-5 w-5" />
               </Button>
 
               {/* 모바일 햄버거 버튼 */}
               <Button
                 variant="ghost"
                 size="sm"
-                className="md:hidden text-white hover:bg-emerald-600 h-8 w-8 p-0"
+                className="md:hidden text-white hover:bg-emerald-600 h-10 w-10 p-0"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
-                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </Button>
             </div>
           </div>
@@ -188,19 +188,6 @@ export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정�
                   currentGroup={currentGroup}
                   onGroupChange={setCurrentGroup}
                 />
-              ) : isFinanceAdmin ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full text-teal-200 hover:bg-emerald-600 hover:text-white text-xs gap-1.5 justify-start"
-                  onClick={() => {
-                    router.push("/dashboard/finance/groups");
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  <Shield className="h-3.5 w-3.5" />
-                  그룹 생성하기
-                </Button>
               ) : (
                 <div className="px-3 py-1.5 text-xs text-emerald-300">
                   그룹 없음
@@ -209,13 +196,13 @@ export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정�
             </div>
 
             {/* 네비게이션 링크 */}
-            <div className="space-y-1 px-2 mb-3">
+            <div className="space-y-1 px-3 mb-3">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium transition-colors min-h-[48px] ${
                     pathname === link.href
                       ? "bg-emerald-800 text-white"
                       : "text-emerald-100 hover:bg-emerald-600 hover:text-white"
@@ -228,31 +215,31 @@ export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정�
             </div>
 
             {/* 관리자 버튼 (모바일) */}
-            <div className="flex flex-col gap-2 px-2 mb-3">
+            <div className="flex flex-col gap-2 px-3 mb-3">
               {isSuperAdmin && (
                 <>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-white hover:bg-emerald-600 border border-emerald-500/60 text-xs gap-2 justify-start"
+                    className="text-white hover:bg-emerald-600 border border-emerald-500/60 text-sm gap-2 justify-start h-11 px-4"
                     onClick={() => {
                       router.push("/admin/users");
                       setMobileMenuOpen(false);
                     }}
                   >
-                    <Users className="h-4 w-4" />
+                    <Users className="h-5 w-5" />
                     사용자 관리
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-white hover:bg-emerald-600 border border-emerald-500/60 text-xs gap-2 justify-start"
+                    className="text-white hover:bg-emerald-600 border border-emerald-500/60 text-sm gap-2 justify-start h-11 px-4"
                     onClick={() => {
                       router.push("/dashboard/finance/groups");
                       setMobileMenuOpen(false);
                     }}
                   >
-                    <Shield className="h-4 w-4" />
+                    <Shield className="h-5 w-5" />
                     그룹 관리
                   </Button>
                 </>
@@ -260,7 +247,7 @@ export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정�
             </div>
 
             {/* 사용자 이메일 (모바일) */}
-            <div className="px-4 py-2 border-t border-emerald-600 text-xs text-emerald-200">
+            <div className="px-4 py-3 border-t border-emerald-600 text-sm text-emerald-200">
               {user.email}
             </div>
           </div>

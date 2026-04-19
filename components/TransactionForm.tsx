@@ -288,30 +288,30 @@ export default function TransactionForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-3 sm:p-4 rounded-lg shadow mb-4">
-      <div className="flex flex-col sm:flex-row flex-wrap items-start gap-2 sm:gap-2">
+    <form onSubmit={handleSubmit} className="bg-white p-4 sm:p-5 rounded-lg shadow mb-4">
+      <div className="flex flex-col sm:flex-row flex-wrap items-start gap-3 sm:gap-3">
         {/* 날짜 */}
-        <div className="space-y-1 w-full sm:w-[130px]">
-          <Label htmlFor="date" className="text-xs">날짜</Label>
+        <div className="space-y-1.5 w-full sm:w-[140px]">
+          <Label htmlFor="date" className="text-sm font-medium">날짜</Label>
           <Input
             id="date"
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="h-9 w-full"
+            className="h-10 w-full text-sm"
           />
         </div>
 
         {/* 수입항목 */}
-        <div className="space-y-1 w-full sm:w-[150px]">
-          <Label htmlFor="income-item" className="text-xs">수입항목</Label>
+        <div className="space-y-1.5 w-full sm:w-[160px]">
+          <Label htmlFor="income-item" className="text-sm font-medium">수입항목</Label>
           <Select value={incomeItem} onValueChange={handleIncomeItemChange}>
-            <SelectTrigger className="h-9 w-full">
+            <SelectTrigger className="w-full text-sm !h-10">
               <SelectValue placeholder="수입" />
             </SelectTrigger>
             <SelectContent className="min-w-[var(--radix-select-trigger-width)]">
               {(settings?.income_items || []).map((i) => (
-                <SelectItem key={i} value={i}>
+                <SelectItem key={i} value={i} className="text-sm">
                   {i}
                 </SelectItem>
               ))}
@@ -320,15 +320,15 @@ export default function TransactionForm({
         </div>
 
         {/* 지출항목 */}
-        <div className="space-y-1 w-full sm:w-[150px]">
-          <Label htmlFor="expense-item" className="text-xs">지출항목</Label>
+        <div className="space-y-1.5 w-full sm:w-[160px]">
+          <Label htmlFor="expense-item" className="text-sm font-medium">지출항목</Label>
           <Select value={expenseItem} onValueChange={handleExpenseItemChange}>
-            <SelectTrigger className="h-9 w-full">
+            <SelectTrigger className="w-full text-sm !h-10">
               <SelectValue placeholder="지출" />
             </SelectTrigger>
             <SelectContent className="min-w-[var(--radix-select-trigger-width)]">
               {(settings?.expense_items || []).map((i) => (
-                <SelectItem key={i} value={i}>
+                <SelectItem key={i} value={i} className="text-sm">
                   {i}
                 </SelectItem>
               ))}
@@ -337,20 +337,20 @@ export default function TransactionForm({
         </div>
 
         {/* 내용 */}
-        <div className="space-y-1 w-full sm:flex-1 sm:min-w-[150px]">
-          <Label htmlFor="description" className="text-xs">내용</Label>
+        <div className="space-y-1.5 w-full sm:flex-1 sm:min-w-[160px]">
+          <Label htmlFor="description" className="text-sm font-medium">내용</Label>
           <Input
             id="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="내용 입력"
-            className="h-9 w-full"
+            className="h-10 w-full text-sm"
           />
         </div>
 
         {/* 금액 */}
-        <div className="space-y-1 w-full sm:w-[90px]">
-          <Label htmlFor="amount" className="text-xs">금액({settings?.currency || "RM"})</Label>
+        <div className="space-y-1.5 w-full sm:w-[100px]">
+          <Label htmlFor="amount" className="text-sm font-medium">금액({settings?.currency || "RM"})</Label>
           <Input
             id="amount"
             type="number"
@@ -358,13 +358,13 @@ export default function TransactionForm({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0"
-            className="h-9 w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="h-10 w-full text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
         </div>
 
         {/* 메모 (텍스트 입력 + 드롭다운) */}
-        <div className="space-y-1 relative w-full sm:w-[180px]">
-          <Label htmlFor="memo" className="text-xs">메모</Label>
+        <div className="space-y-1.5 relative w-full sm:w-[200px]">
+          <Label htmlFor="memo" className="text-sm font-medium">메모</Label>
           <Input
             ref={memoInputRef}
             id="memo"
@@ -372,7 +372,7 @@ export default function TransactionForm({
             onChange={(e) => setMemo(e.target.value)}
             onFocus={() => setShowMemoDropdown(true)}
             placeholder="메모 입력"
-            className="h-9 w-full"
+            className="h-10 w-full text-sm"
             autoComplete="off"
           />
           {/* 메모 드롭다운 */}
@@ -385,7 +385,7 @@ export default function TransactionForm({
                 <button
                   key={item.text}
                   type="button"
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex justify-between items-center"
+                  className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-100 flex justify-between items-center min-h-[44px]"
                   onClick={() => {
                     setMemo(item.text);
                     setShowMemoDropdown(false);
@@ -399,12 +399,12 @@ export default function TransactionForm({
           )}
         </div>
 
-        {/* 버튼들 - 추가, 수정, 삭제, 새입력, CSV저장, CSV불러오기 */}
-        <div className="flex flex-wrap gap-1.5 items-center w-full sm:w-auto">
+        {/* 버튼들 - 추가, 수정, 삭제, 새입력 */}
+        <div className="flex flex-wrap gap-2 items-center w-full sm:w-auto sm:mt-auto">
           <Button
             type="submit"
             disabled={loading || !currentItem || !amount || readOnly}
-            className="h-9 px-4 bg-emerald-600 hover:bg-emerald-700 flex-1 sm:flex-none"
+            className="h-10 px-5 bg-emerald-600 hover:bg-emerald-700 text-sm font-medium"
           >
             추가
           </Button>
@@ -412,7 +412,7 @@ export default function TransactionForm({
             type="button"
             disabled={loading || !selectedTransaction || !currentItem || !amount || readOnly}
             onClick={handleUpdate}
-            className="h-9 px-4 bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
+            className="h-10 px-5 bg-blue-600 hover:bg-blue-700 text-sm font-medium"
           >
             수정
           </Button>
@@ -421,7 +421,7 @@ export default function TransactionForm({
             variant="destructive"
             disabled={loading || (selectedCount === 0 && !selectedTransaction) || readOnly}
             onClick={handleDeleteClick}
-            className="h-9 px-4 flex-1 sm:flex-none"
+            className="h-10 px-5 text-sm font-medium"
           >
             삭제
             {selectedCount > 0
@@ -434,11 +434,12 @@ export default function TransactionForm({
             type="button"
             variant="outline"
             onClick={handleClear}
-            className="h-9 px-4 flex-1 sm:flex-none"
+            className="h-10 px-5 text-sm font-medium"
           >
             새입력
           </Button>
         </div>
+
         {/* CSV 파일 입력 (숨김) */}
         {onCsvImport && (
           <input

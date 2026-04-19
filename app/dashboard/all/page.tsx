@@ -84,11 +84,13 @@ export default function AllListPage() {
     return filteredTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
   }, [filteredTransactions]);
 
-  // 항목 목록
+  // 항목 목록 (중복 제거)
   const items = useMemo(() => {
     if (typeFilter === "수입") return settings?.income_items || [];
     if (typeFilter === "지출") return settings?.expense_items || [];
-    return [...(settings?.income_items || []), ...(settings?.expense_items || [])];
+    // 전체일 때는 중복 제거
+    const allItems = [...(settings?.income_items || []), ...(settings?.expense_items || [])];
+    return Array.from(new Set(allItems));
   }, [typeFilter, settings]);
 
   // 항목 필터 드롭다운 폭 계산
@@ -231,36 +233,36 @@ export default function AllListPage() {
             </div>
 
             {/* 필터 */}
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-3 items-center">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-3 items-end">
             {/* 시작일 */}
-            <div className="space-y-1 min-w-0">
-              <Label htmlFor="startDate" className="text-xs">시작일</Label>
+            <div className="space-y-1.5 min-w-0">
+              <Label htmlFor="startDate" className="text-sm font-medium">시작일</Label>
               <Input
                 id="startDate"
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="h-9 w-full"
+                className="h-10 w-full text-sm"
               />
             </div>
 
             {/* 종료일 */}
-            <div className="space-y-1 min-w-0">
-              <Label htmlFor="endDate" className="text-xs">종료일</Label>
+            <div className="space-y-1.5 min-w-0">
+              <Label htmlFor="endDate" className="text-sm font-medium">종료일</Label>
               <Input
                 id="endDate"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="h-9 w-full"
+                className="h-10 w-full text-sm"
               />
             </div>
 
             {/* 구분 */}
-            <div className="space-y-1 min-w-0">
-              <Label className="text-xs">구분</Label>
+            <div className="space-y-1.5 min-w-0">
+              <Label className="text-sm font-medium">구분</Label>
               <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setItemFilter("all"); }}>
-                <SelectTrigger className="h-9 w-full">
+                <SelectTrigger className="h-10 w-full text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -272,10 +274,10 @@ export default function AllListPage() {
             </div>
 
             {/* 항목 */}
-            <div className="space-y-1 min-w-0" style={{ minWidth: `${itemFilterWidth}px` }}>
-              <Label className="text-xs">항목</Label>
+            <div className="space-y-1.5 min-w-0" style={{ minWidth: `${itemFilterWidth}px` }}>
+              <Label className="text-sm font-medium">항목</Label>
               <Select value={itemFilter} onValueChange={setItemFilter}>
-                <SelectTrigger className="h-9 w-full">
+                <SelectTrigger className="h-10 w-full text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent style={{ minWidth: `${itemFilterWidth}px` }}>
@@ -290,14 +292,14 @@ export default function AllListPage() {
             </div>
 
             {/* 빠른 선택 버튼 */}
-            <div className="col-span-2 flex items-center gap-1 md:gap-2 flex-wrap min-w-0">
+            <div className="col-span-2 flex items-center gap-2 flex-wrap min-w-0">
               {/* 주 단위 네비게이션 */}
               <div className="flex items-center gap-1 flex-shrink-0">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => moveWeek("prev")}
-                  className="h-8 w-7 p-0 text-xs flex-shrink-0"
+                  className="h-10 w-8 p-0 text-sm flex-shrink-0"
                   title="한 주 앞으로"
                 >
                   ◀
@@ -306,7 +308,7 @@ export default function AllListPage() {
                   variant="outline"
                   size="sm"
                   onClick={setThisWeek}
-                  className="h-8 px-2 md:px-4 text-xs whitespace-nowrap flex-shrink-0"
+                  className="h-10 px-3 text-sm whitespace-nowrap flex-shrink-0"
                 >
                   이번주
                 </Button>
@@ -314,7 +316,7 @@ export default function AllListPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => moveWeek("next")}
-                  className="h-8 w-7 p-0 text-xs flex-shrink-0"
+                  className="h-10 w-8 p-0 text-sm flex-shrink-0"
                   title="한 주 뒤로"
                 >
                   ▶
@@ -326,7 +328,7 @@ export default function AllListPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => moveMonth("prev")}
-                  className="h-8 w-7 p-0 text-xs flex-shrink-0"
+                  className="h-10 w-8 p-0 text-sm flex-shrink-0"
                   title="한 달 앞으로"
                 >
                   ◀
@@ -335,7 +337,7 @@ export default function AllListPage() {
                   variant="outline"
                   size="sm"
                   onClick={setThisMonth}
-                  className="h-8 px-2 md:px-4 text-xs whitespace-nowrap flex-shrink-0"
+                  className="h-10 px-3 text-sm whitespace-nowrap flex-shrink-0"
                 >
                   이번달
                 </Button>
@@ -343,7 +345,7 @@ export default function AllListPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => moveMonth("next")}
-                  className="h-8 w-7 p-0 text-xs flex-shrink-0"
+                  className="h-10 w-8 p-0 text-sm flex-shrink-0"
                   title="한 달 뒤로"
                 >
                   ▶
@@ -354,7 +356,7 @@ export default function AllListPage() {
                 variant="outline"
                 size="sm"
                 onClick={setThisYear}
-                className="h-8 px-2 md:px-4 text-xs whitespace-nowrap flex-shrink-0"
+                className="h-10 px-3 text-sm whitespace-nowrap flex-shrink-0"
               >
                 올해
               </Button>
@@ -373,43 +375,43 @@ export default function AllListPage() {
 
         {/* 모바일 필터 */}
         <Card className="shadow-sm bg-white">
-          <CardContent className="p-3">
+          <CardContent className="p-4">
             {/* 필터 */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               {/* 날짜와 구분 필터 */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 {/* 시작일 */}
-                <div className="space-y-1">
-                  <Label htmlFor="startDate-mobile" className="text-xs">시작일</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="startDate-mobile" className="text-sm font-medium">시작일</Label>
                   <Input
                     id="startDate-mobile"
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="h-9 w-full text-sm"
+                    className="h-10 w-full text-sm"
                   />
                 </div>
 
                 {/* 종료일 */}
-                <div className="space-y-1">
-                  <Label htmlFor="endDate-mobile" className="text-xs">종료일</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="endDate-mobile" className="text-sm font-medium">종료일</Label>
                   <Input
                     id="endDate-mobile"
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="h-9 w-full text-sm"
+                    className="h-10 w-full text-sm"
                   />
                 </div>
               </div>
 
               {/* 구분과 항목 필터 */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 {/* 구분 */}
-                <div className="space-y-1">
-                  <Label className="text-xs">구분</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium">구분</Label>
                   <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setItemFilter("all"); }}>
-                    <SelectTrigger className="h-9 w-full text-sm">
+                    <SelectTrigger className="h-10 w-full text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -421,10 +423,10 @@ export default function AllListPage() {
                 </div>
 
                 {/* 항목 */}
-                <div className="space-y-1">
-                  <Label className="text-xs">항목</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium">항목</Label>
                   <Select value={itemFilter} onValueChange={setItemFilter}>
-                    <SelectTrigger className="h-9 w-full text-sm">
+                    <SelectTrigger className="h-10 w-full text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -440,14 +442,14 @@ export default function AllListPage() {
               </div>
 
               {/* 빠른 선택 버튼 */}
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-2">
                 {/* 주 단위 네비게이션 */}
                 <div className="flex items-center gap-1">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => moveWeek("prev")}
-                    className="h-7 w-6 p-0 text-xs"
+                    className="h-10 w-10 p-0"
                     title="한 주 앞으로"
                   >
                     ◀
@@ -456,7 +458,7 @@ export default function AllListPage() {
                     variant="outline"
                     size="sm"
                     onClick={setThisWeek}
-                    className="h-7 px-2 text-xs"
+                    className="h-10 px-4"
                   >
                     이번주
                   </Button>
@@ -464,7 +466,7 @@ export default function AllListPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => moveWeek("next")}
-                    className="h-7 w-6 p-0 text-xs"
+                    className="h-10 w-10 p-0"
                     title="한 주 뒤로"
                   >
                     ▶
@@ -476,7 +478,7 @@ export default function AllListPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => moveMonth("prev")}
-                    className="h-7 w-6 p-0 text-xs"
+                    className="h-10 w-10 p-0"
                     title="한 달 앞으로"
                   >
                     ◀
@@ -485,7 +487,7 @@ export default function AllListPage() {
                     variant="outline"
                     size="sm"
                     onClick={setThisMonth}
-                    className="h-7 px-2 text-xs"
+                    className="h-10 px-4"
                   >
                     이번달
                   </Button>
@@ -493,7 +495,7 @@ export default function AllListPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => moveMonth("next")}
-                    className="h-7 w-6 p-0 text-xs"
+                    className="h-10 w-10 p-0"
                     title="한 달 뒤로"
                   >
                     ▶
@@ -504,7 +506,7 @@ export default function AllListPage() {
                   variant="outline"
                   size="sm"
                   onClick={setThisYear}
-                  className="h-7 px-2 text-xs"
+                  className="h-10 px-4"
                 >
                   올해
                 </Button>
@@ -516,23 +518,23 @@ export default function AllListPage() {
 
       {/* 결과 테이블 - 엑셀 스타일 */}
       <Card className="shadow-sm">
-        <CardContent className="p-2 sm:p-4">
-          <div className="-mx-2 sm:mx-0 overflow-x-auto rounded-lg border border-gray-300">
-            <Table className="w-full border-collapse text-xs sm:text-sm min-w-[600px]">
+        <CardContent className="p-3 sm:p-5">
+          <div className="-mx-3 sm:mx-0 overflow-x-auto rounded-lg border border-gray-300">
+            <Table className="w-full border-collapse text-sm min-w-[600px]">
               <TableHeader>
                 <TableRow className="bg-gray-100 border-b-2 border-gray-300">
-                  <TableHead className="min-w-[60px] sm:w-[100px] border border-gray-300 px-1.5 sm:px-3 py-2 text-center font-semibold text-xs sm:text-sm">날짜</TableHead>
-                  <TableHead className="min-w-[45px] sm:w-[60px] border border-gray-300 px-1.5 sm:px-3 py-2 text-center font-semibold text-xs sm:text-sm">구분</TableHead>
-                  <TableHead className="min-w-[60px] sm:w-[100px] border border-gray-300 px-1.5 sm:px-3 py-2 text-center font-semibold text-xs sm:text-sm">항목</TableHead>
-                  <TableHead className="min-w-[70px] sm:w-[180px] border border-gray-300 px-1.5 sm:px-3 py-2 text-center font-semibold text-xs sm:text-sm">내용</TableHead>
-                  <TableHead className="min-w-[60px] sm:w-[100px] border border-gray-300 px-1.5 sm:px-3 py-2 text-right font-semibold text-xs sm:text-sm">금액 ({currency})</TableHead>
-                  <TableHead className="hidden sm:table-cell w-[118px] border border-gray-300 px-3 py-2 text-center font-semibold">메모</TableHead>
+                  <TableHead className="min-w-[70px] sm:w-[110px] border border-gray-300 px-3 sm:px-4 py-3 text-center font-semibold text-sm">날짜</TableHead>
+                  <TableHead className="min-w-[50px] sm:w-[70px] border border-gray-300 px-3 sm:px-4 py-3 text-center font-semibold text-sm">구분</TableHead>
+                  <TableHead className="min-w-[70px] sm:w-[110px] border border-gray-300 px-3 sm:px-4 py-3 text-center font-semibold text-sm">항목</TableHead>
+                  <TableHead className="min-w-[80px] sm:w-[190px] border border-gray-300 px-3 sm:px-4 py-3 text-center font-semibold text-sm">내용</TableHead>
+                  <TableHead className="min-w-[70px] sm:w-[110px] border border-gray-300 px-3 sm:px-4 py-3 text-right font-semibold text-sm">금액 ({currency})</TableHead>
+                  <TableHead className="hidden sm:table-cell w-[130px] border border-gray-300 px-4 py-3 text-center font-semibold">메모</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredTransactions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-gray-500 border border-gray-300 text-xs sm:text-sm">
+                    <TableCell colSpan={6} className="text-center py-10 text-gray-500 border border-gray-300 text-sm">
                       조회 결과가 없습니다.
                     </TableCell>
                   </TableRow>
@@ -544,13 +546,13 @@ export default function AllListPage() {
                         index % 2 === 0 ? "bg-white" : "bg-gray-50"
                       } hover:bg-blue-50`}
                     >
-                      <TableCell className="border border-gray-300 px-1.5 sm:px-3 py-1.5 sm:py-2 text-center text-xs sm:text-sm">
+                      <TableCell className="border border-gray-300 px-3 sm:px-4 py-3 text-center text-sm">
                         <span className="sm:hidden">{formatDate(t.date).monthDay}</span>
                         <span className="hidden sm:inline">{t.date}</span>
                       </TableCell>
-                      <TableCell className="border border-gray-300 px-1.5 sm:px-3 py-1.5 sm:py-2">
+                      <TableCell className="border border-gray-300 px-3 sm:px-4 py-3">
                         <span
-                          className={`px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs font-medium ${
+                          className={`px-2 sm:px-3 py-1 rounded text-sm font-medium ${
                             t.type === "수입"
                               ? "bg-blue-100 text-blue-700"
                               : "bg-red-100 text-red-700"
@@ -559,12 +561,12 @@ export default function AllListPage() {
                           {t.type}
                         </span>
                       </TableCell>
-                      <TableCell className="border border-gray-300 px-1.5 sm:px-3 py-1.5 sm:py-2 truncate text-xs sm:text-sm">{t.item}</TableCell>
-                      <TableCell className="border border-gray-300 px-1.5 sm:px-3 py-1.5 sm:py-2 truncate text-xs sm:text-sm">{t.description}</TableCell>
-                      <TableCell className="border border-gray-300 px-1.5 sm:px-3 py-1.5 sm:py-2 text-right font-medium text-xs sm:text-sm">
+                      <TableCell className="border border-gray-300 px-3 sm:px-4 py-3 truncate text-sm">{t.item}</TableCell>
+                      <TableCell className="border border-gray-300 px-3 sm:px-4 py-3 truncate text-sm">{t.description}</TableCell>
+                      <TableCell className="border border-gray-300 px-3 sm:px-4 py-3 text-right font-medium text-sm">
                         {formatAmount(Number(t.amount))}
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell border border-gray-300 px-3 py-2 text-gray-500 text-sm truncate">
+                      <TableCell className="hidden sm:table-cell border border-gray-300 px-4 py-3 text-gray-500 text-sm truncate">
                         {t.memo}
                       </TableCell>
                     </TableRow>
@@ -575,15 +577,15 @@ export default function AllListPage() {
           </div>
 
           {/* 총액 표시 */}
-          <div className="mt-4 p-3 sm:p-4 border-t-2 border-gray-300 bg-emerald-50 rounded-lg">
-            <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-end gap-1 sm:gap-2 text-center sm:text-right">
-              <div className="text-xs sm:text-sm text-gray-600">
+          <div className="mt-5 p-4 sm:p-5 border-t-2 border-gray-300 bg-emerald-50 rounded-lg">
+            <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-end gap-2 text-center sm:text-right">
+              <div className="text-sm text-gray-600">
                 조회된 총액:{" "}
-                <span className="font-bold text-emerald-700 text-sm sm:text-base">
+                <span className="font-bold text-emerald-700 text-base sm:text-lg">
                   {formatAmount(totalAmount)} {currency}
                 </span>
               </div>
-              <span className="text-gray-500 text-xs">
+              <span className="text-gray-500 text-sm">
                 ({filteredTransactions.length}건)
               </span>
             </div>

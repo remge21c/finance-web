@@ -404,25 +404,25 @@ export default function WeeklyReport() {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4">
+    <div className="space-y-4">
       {/* 헤더 */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="text-center">
-          <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800">주간 보고서</h2>
+          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">주간 보고서</h2>
         </div>
-        <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
-          <Button variant="outline" size="sm" onClick={() => setWeekOffset(weekOffset - 1)} className="text-xs h-8 sm:h-9">
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setWeekOffset(weekOffset - 1)} className="text-sm h-10 px-4">
             ◀ 이전주
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setWeekOffset(0)} className="text-xs h-8 sm:h-9">
+          <Button variant="outline" size="sm" onClick={() => setWeekOffset(0)} className="text-sm h-10 px-4">
             이번주
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setWeekOffset(weekOffset + 1)} className="text-xs h-8 sm:h-9">
+          <Button variant="outline" size="sm" onClick={() => setWeekOffset(weekOffset + 1)} className="text-sm h-10 px-4">
             다음주 ▶
           </Button>
           <Button
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700 text-xs h-8 sm:h-9"
+            className="bg-emerald-600 hover:bg-emerald-700 text-sm h-10 px-5 font-medium"
             onClick={handlePrint}
           >
             출력
@@ -431,42 +431,42 @@ export default function WeeklyReport() {
       </div>
 
       {/* 주간 범위 표시 */}
-      <div className="text-center text-gray-600 text-xs sm:text-sm">
+      <div className="text-center text-gray-600 text-sm">
         {format(weekRange.start, "yyyy년 M월 d일", { locale: ko })} ~ {format(weekRange.end, "M월 d일", { locale: ko })}
       </div>
 
       {/* 화면 표시 영역 */}
       <div className="print:hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* 수입 테이블 */}
           <Card>
-            <CardHeader className="bg-blue-50 py-2 sm:py-3 px-3">
+            <CardHeader className="bg-blue-50 py-3 px-4">
               <CardTitle className="text-base sm:text-lg text-blue-700">수입</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-16 sm:w-20 text-xs sm:text-sm">날짜</TableHead>
-                    <TableHead className="w-20 sm:w-24 text-xs sm:text-sm">항목</TableHead>
-                    <TableHead className="text-xs sm:text-sm">내용</TableHead>
-                    <TableHead className="text-right w-20 sm:w-24 text-xs sm:text-sm">금액</TableHead>
+                    <TableHead className="w-20 sm:w-24 text-sm">날짜</TableHead>
+                    <TableHead className="w-24 sm:w-28 text-sm">항목</TableHead>
+                    <TableHead className="text-sm">내용</TableHead>
+                    <TableHead className="text-right w-24 sm:w-28 text-sm">금액</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {incomeTransactions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-3 sm:py-4 text-gray-400 text-xs sm:text-sm">
+                      <TableCell colSpan={4} className="text-center py-4 text-gray-400 text-sm">
                         수입 내역 없음
                       </TableCell>
                     </TableRow>
                   ) : (
                     incomeTransactions.map((t, i) => (
                       <TableRow key={t.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                        <TableCell className="text-xs sm:text-sm">{format(parseISO(t.date), "MM-dd")}</TableCell>
-                        <TableCell className="text-xs sm:text-sm">{t.item}</TableCell>
-                        <TableCell className="text-xs sm:text-sm">{t.description}</TableCell>
-                        <TableCell className="text-right text-xs sm:text-sm">{formatAmount(Number(t.amount))}</TableCell>
+                        <TableCell className="text-sm">{format(parseISO(t.date), "MM-dd")}</TableCell>
+                        <TableCell className="text-sm">{t.item}</TableCell>
+                        <TableCell className="text-sm">{t.description}</TableCell>
+                        <TableCell className="text-right text-sm">{formatAmount(Number(t.amount))}</TableCell>
                       </TableRow>
                     ))
                   )}
@@ -477,33 +477,33 @@ export default function WeeklyReport() {
 
           {/* 지출 테이블 */}
           <Card>
-            <CardHeader className="bg-red-50 py-2 sm:py-3 px-3">
+            <CardHeader className="bg-red-50 py-3 px-4">
               <CardTitle className="text-base sm:text-lg text-red-700">지출</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-16 sm:w-20 text-xs sm:text-sm">날짜</TableHead>
-                    <TableHead className="w-20 sm:w-24 text-xs sm:text-sm">항목</TableHead>
-                    <TableHead className="text-xs sm:text-sm">내용</TableHead>
-                    <TableHead className="text-right w-20 sm:w-24 text-xs sm:text-sm">금액</TableHead>
+                    <TableHead className="w-20 sm:w-24 text-sm">날짜</TableHead>
+                    <TableHead className="w-24 sm:w-28 text-sm">항목</TableHead>
+                    <TableHead className="text-sm">내용</TableHead>
+                    <TableHead className="text-right w-24 sm:w-28 text-sm">금액</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {expenseTransactions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-3 sm:py-4 text-gray-400 text-xs sm:text-sm">
+                      <TableCell colSpan={4} className="text-center py-4 text-gray-400 text-sm">
                         지출 내역 없음
                       </TableCell>
                     </TableRow>
                   ) : (
                     expenseTransactions.map((t, i) => (
                       <TableRow key={t.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                        <TableCell className="text-xs sm:text-sm">{format(parseISO(t.date), "MM-dd")}</TableCell>
-                        <TableCell className="text-xs sm:text-sm">{t.item}</TableCell>
-                        <TableCell className="text-xs sm:text-sm">{t.description}</TableCell>
-                        <TableCell className="text-right text-xs sm:text-sm">{formatAmount(Number(t.amount))}</TableCell>
+                        <TableCell className="text-sm">{format(parseISO(t.date), "MM-dd")}</TableCell>
+                        <TableCell className="text-sm">{t.item}</TableCell>
+                        <TableCell className="text-sm">{t.description}</TableCell>
+                        <TableCell className="text-right text-sm">{formatAmount(Number(t.amount))}</TableCell>
                       </TableRow>
                     ))
                   )}
@@ -514,28 +514,28 @@ export default function WeeklyReport() {
         </div>
 
         {/* 요약 정보 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mt-3 sm:mt-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
           {/* 주간 요약 */}
           <Card>
-            <CardHeader className="py-2 sm:py-3 px-3">
+            <CardHeader className="py-3 px-4">
               <CardTitle className="text-base sm:text-lg">주간 요약</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-1.5 sm:space-y-2 px-3">
-              <div className="flex justify-between text-xs sm:text-sm">
+            <CardContent className="space-y-2 px-4">
+              <div className="flex justify-between text-sm">
                 <span>지난주 이월금:</span>
                 <span className="font-medium">{formatAmount(lastWeekBalance)} {currency}</span>
               </div>
-              <div className="flex justify-between text-xs sm:text-sm">
+              <div className="flex justify-between text-sm">
                 <span>이번주 총 수입:</span>
                 <span className="font-medium text-blue-600">{formatAmount(incomeTotal)} {currency}</span>
               </div>
-              <div className="flex justify-between text-xs sm:text-sm">
+              <div className="flex justify-between text-sm">
                 <span>이번주 총 지출:</span>
                 <span className="font-medium text-red-600">{formatAmount(expenseTotal)} {currency}</span>
               </div>
-              <div className="flex justify-between border-t pt-2 text-xs sm:text-sm">
+              <div className="flex justify-between border-t pt-2 text-sm">
                 <span className="font-bold">이번주 잔액:</span>
-                <span className={`font-bold sm:text-lg ${currentBalance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                <span className={`font-bold text-base sm:text-lg ${currentBalance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                   {formatAmount(currentBalance)} {currency}
                 </span>
               </div>
@@ -544,49 +544,49 @@ export default function WeeklyReport() {
 
           {/* 계좌 현황 */}
           <Card>
-            <CardHeader className="py-2 sm:py-3 px-3">
+            <CardHeader className="py-3 px-4">
               <CardTitle className="text-base sm:text-lg">계좌 현황</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 sm:space-y-3 px-3">
+            <CardContent className="space-y-3 px-4">
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <Label htmlFor="cash" className="text-xs">{settings?.account1_name || "현금"}</Label>
+                  <Label htmlFor="cash" className="text-sm font-medium">{settings?.account1_name || "현금"}</Label>
                   <Input
                     id="cash"
                     type="number"
                     value={cashAmount}
                     onChange={(e) => setCashAmount(e.target.value)}
-                    className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="h-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="touch" className="text-xs">{settings?.account2_name || "터치앤고"}</Label>
+                  <Label htmlFor="touch" className="text-sm font-medium">{settings?.account2_name || "터치앤고"}</Label>
                   <Input
                     id="touch"
                     type="number"
                     value={touchAmount}
                     onChange={(e) => setTouchAmount(e.target.value)}
-                    className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="h-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="other" className="text-xs">{settings?.account3_name || "기타"}</Label>
+                  <Label htmlFor="other" className="text-sm font-medium">{settings?.account3_name || "기타"}</Label>
                   <Input
                     id="other"
                     type="number"
                     value={otherAmount}
                     onChange={(e) => setOtherAmount(e.target.value)}
-                    className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="h-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
               </div>
-              <div className="flex justify-between items-center border-t pt-2 text-xs sm:text-sm">
+              <div className="flex justify-between items-center border-t pt-2 text-sm">
                 <span className="font-bold">총액:</span>
-                <span className="font-bold sm:text-lg text-emerald-600">
+                <span className="font-bold text-base sm:text-lg text-emerald-600">
                   {formatAmount(totalAccount)} {currency}
                 </span>
               </div>
-              <Button size="sm" onClick={handleSaveAmounts} className="w-full">
+              <Button size="sm" onClick={handleSaveAmounts} className="w-full h-10 text-sm">
                 저장
               </Button>
             </CardContent>
