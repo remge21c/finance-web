@@ -23,13 +23,16 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import GroupSearchInput from "@/components/GroupSearchInput";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { createClient } from "@/lib/supabase/client";
-import type { UserStatus, GroupPermissions, GroupMember } from "@/types/database";
+import type { UserStatus, GroupMember, PermissionLevel } from "@/types/database";
+import { setMemberPermissionLevel } from "@/lib/supabase/groupPermissions";
+import { transferFinanceAdminRole } from "@/lib/supabase/groups";
+import { useRouter } from "next/navigation";
+import { Users, Clock, Shield } from "lucide-react";
 
 interface PendingRequest {
   id: string;
@@ -37,18 +40,10 @@ interface PendingRequest {
   group_name: string;
 }
 
-type PermissionType = 'write' | 'read' | 'waiting';
-type GroupRole = 'owner' | 'admin' | 'finance_admin' | 'member';
-
-interface GroupPermission {
-  group_id: string;
-  permission: PermissionType;
-  role: GroupRole;
-}
-
 export default function AdminUsersPage() {
-  const { allUsers, loading, isSuperAdmin, fetchAllUsers, approveUser, rejectUser, grantFinanceAdmin, revokeFinanceAdmin } = useUserStatus();
+  const { userStatus, allUsers, loading, isSuperAdmin, fetchAllUsers, approveUser, rejectUser } = useUserStatus();
   const { groups } = useGroupContext();
+  const router = useRouter();
   const [allUsersLoading, setAllUsersLoading] = useState(true);
   const [userGroupMap, setUserGroupMap] = useState<Record<string, string[]>>({});
   const [groupNameMap, setGroupNameMap] = useState<Record<string, string>>({});
@@ -61,7 +56,6 @@ export default function AdminUsersPage() {
 
   // 승인 관련
   const [approveGroupId, setApproveGroupId] = useState("");
-  const [approveGrantFinanceAdmin, setApproveGrantFinanceAdmin] = useState(false);
 
   // 거절 관련
   const [rejectMode, setRejectMode] = useState(false);
@@ -75,33 +69,33 @@ export default function AdminUsersPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // 그룹별 권한 관리
-  const [userGroupPermissions, setUserGroupPermissions] = useState<Record<string, GroupPermission[]>>({});
-  // 사용자별 그룹 역할 정보
-  const [userGroupRoles, setUserGroupRoles] = useState<Record<string, Record<string, GroupRole>>>({});
+  // 사용자별 그룹 permission_level
+  const [userPermissionLevels, setUserPermissionLevels] = useState<Record<string, Record<string, PermissionLevel>>>({});
 
   const fetchUserGroupMap = async () => {
     const supabase = createClient();
     const { data } = await supabase
       .from("finance_group_members")
-      .select("user_id, group_id, role, finance_groups(id, name)");
+      .select("user_id, group_id, permission_level, finance_groups(id, name)");
     if (data) {
       const memberMap: Record<string, string[]> = {};
       const nameMap: Record<string, string> = {};
-      const roleMap: Record<string, Record<string, GroupRole>> = {};
+      const levelMap: Record<string, Record<string, PermissionLevel>> = {};
 
-      for (const item of data as GroupMember[]) {
+      for (const item of data as any[]) {
         if (!memberMap[item.user_id]) {
           memberMap[item.user_id] = [];
-          roleMap[item.user_id] = {};
+          levelMap[item.user_id] = {};
         }
         memberMap[item.user_id].push(item.group_id);
-        roleMap[item.user_id][item.group_id] = item.role;
+        levelMap[item.user_id][item.group_id] = item.permission_level ?? 'general';
 
-        // Note: finance_groups data comes from JOIN, need to handle separately if needed
+        if (item.finance_groups) {
+          nameMap[item.group_id] = item.finance_groups.name;
+        }
       }
       setUserGroupMap(memberMap);
-      setUserGroupRoles(roleMap);
+      setUserPermissionLevels(levelMap);
       setGroupNameMap(prev => ({ ...prev, ...nameMap }));
     }
   };
@@ -148,143 +142,50 @@ export default function AdminUsersPage() {
   };
 
   /**
-   * 사용자의 그룹별 권한 조회
+   * 사용자의 그룹 permission_level 업데이트
    */
-  const fetchUserGroupPermissions = async (userId: string, groupIds: string[]): Promise<GroupPermission[]> => {
-    if (groupIds.length === 0) return [];
+  const handleSetPermissionLevel = async (userId: string, groupId: string, level: PermissionLevel) => {
+    // 관리자 권한 넘기기 확인
+    if (level === 'admin' && !isSuperAdmin) {
+      if (userId === userStatus?.user_id) return; // 자신은 이미 어드민
 
-    const supabase = createClient();
-    const { data: groups } = await supabase
-      .from("finance_groups")
-      .select("id, permissions")
-      .in("id", groupIds);
-
-    if (!groups) return [];
-
-    const permissions: GroupPermission[] = [];
-    const roles = userGroupRoles[userId] || {};
-
-    for (const group of groups as any[]) {
-      const groupPerms = (group.permissions as GroupPermissions) || { can_write: [], can_read: [] };
-      const role = roles[group.id] || 'member';
-
-      // 역할에 따른 기본 권한 결정
-      // 재정관리: 자동 쓰기 권한
-      // 일반: 명시적으로 부여된 권한만 있음 (없으면 대기 상태)
-      let permission: PermissionType = 'waiting';
-
-      if (role === 'finance_admin') {
-        permission = 'write';
-      } else if (groupPerms.can_write?.includes(userId)) {
-        permission = 'write';
-      } else if (groupPerms.can_read?.includes(userId)) {
-        permission = 'read';
+      const confirmed = window.confirm(
+        "해당 사용자에게 관리자 권한을 넘기시겠습니까?\n확인을 누르면 즉시 관리자 권한이 이양되며 로그아웃됩니다."
+      );
+      
+      if (confirmed) {
+        const result = await transferFinanceAdminRole(groupId, userStatus!.user_id, userId);
+        if (result.error) {
+          toast.error("권한 이양 실패: " + result.error);
+          return;
+        }
+        toast.success("관리 권한이 성공적으로 이양되었습니다. 로그아웃합니다.");
+        const supabase = createClient();
+        await supabase.auth.signOut();
+        router.push("/");
+        return;
+      } else {
+        return;
       }
-
-      permissions.push({
-        group_id: group.id,
-        permission,
-        role
-      });
     }
 
-    return permissions;
-  };
-
-  /**
-   * 사용자의 그룹 권한 업데이트
-   */
-  const handleUpdateGroupPermission = async (groupId: string, permission: PermissionType) => {
-    if (!selectedUser) return;
-
-    const supabase = createClient();
-
-    // 현재 그룹 권한 가져오기
-    const { data: group } = await supabase
-      .from("finance_groups")
-      .select("permissions")
-      .eq("id", groupId)
-      .single();
-
-    if (!group) {
-      toast.error("그룹을 찾을 수 없습니다.");
+    const result = await setMemberPermissionLevel(groupId, userId, level);
+    if (result.error) {
+      toast.error("권한 업데이트 실패: " + result.error);
       return;
     }
-
-    const currentPermissions = (group.permissions as GroupPermissions) || { can_write: [], can_read: [] };
-    const userId = selectedUser.user_id;
-
-    // 기존 권한 제거
-    const newPermissions: GroupPermissions = {
-      can_write: currentPermissions.can_write?.filter((id: string) => id !== userId) || [],
-      can_read: currentPermissions.can_read?.filter((id: string) => id !== userId) || [],
-    };
-
-    // 새 권한 추가
-    if (permission === 'write') {
-      newPermissions.can_write.push(userId);
-    } else if (permission === 'read') {
-      newPermissions.can_read.push(userId);
-    }
-    // permission === 'waiting'인 경우 아무것도 추가하지 않음 (권한 대기 상태)
-
-    // 권한 업데이트
-    const { error } = await supabase
-      .from("finance_groups")
-      .update({ permissions: newPermissions })
-      .eq("id", groupId);
-
-    if (error) {
-      toast.error("권한 업데이트 실패: " + error.message);
-      return;
+    
+    // 사용자가 'pending' 상태라면 자동으로 'approved' 처리
+    if (selectedUser?.status === "pending") {
+      await approveUser(userId);
     }
 
     toast.success("권한이 업데이트되었습니다.");
-
-    // 로컬 상태 업데이트
-    setUserGroupPermissions(prev => ({
+    await fetchAllUsers(); // 전체 사용자 상태 갱신
+    setUserPermissionLevels(prev => ({
       ...prev,
-      [selectedUser.user_id]: (prev[selectedUser.user_id] || []).map(p =>
-        p.group_id === groupId ? { ...p, permission } : p
-      ),
+      [userId]: { ...(prev[userId] || {}), [groupId]: level },
     }));
-  };
-
-  /**
-   * 사용자의 그룹 역할 업데이트
-   */
-  const handleUpdateGroupRole = async (groupId: string, role: GroupRole) => {
-    if (!selectedUser) return;
-
-    const supabase = createClient();
-
-    // 역할 업데이트
-    const { error } = await supabase
-      .from("finance_group_members")
-      .update({ role })
-      .eq("user_id", selectedUser.user_id)
-      .eq("group_id", groupId);
-
-    if (error) {
-      toast.error("역할 업데이트 실패: " + error.message);
-      return;
-    }
-
-    // 로컬 상태 업데이트
-    setUserGroupRoles(prev => ({
-      ...prev,
-      [selectedUser.user_id]: {
-        ...(prev[selectedUser.user_id] || {}),
-        [groupId]: role,
-      },
-    }));
-
-    // 재정관리자로 변경 시 자동으로 쓰기 권한 부여
-    if (role === 'finance_admin') {
-      await handleUpdateGroupPermission(groupId, 'write');
-    }
-
-    toast.success("역할이 업데이트되었습니다.");
   };
 
   useEffect(() => {
@@ -315,39 +216,16 @@ export default function AdminUsersPage() {
     return ids.map(gid => getGroupName(gid)).join(", ");
   };
 
-  const getGroupNamesWithRoles = (userId: string) => {
-    const ids = userGroupMap[userId] || [];
-    const roles = userGroupRoles[userId] || {};
-
-    if (ids.length === 0) return "-";
-
-    return (
-      <div className="flex flex-wrap gap-1">
-        {ids.map(gid => {
-          const groupName = getGroupName(gid);
-          const role = roles[gid] || 'member';
-          const isFinanceAdmin = role === 'finance_admin';
-
-          return (
-            <span key={gid} className="inline-flex items-center gap-1">
-              <span className="text-xs text-gray-600">{groupName}</span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                isFinanceAdmin
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-gray-100 text-gray-600'
-              }`}>
-                {isFinanceAdmin ? '재정' : '일반'}
-              </span>
-            </span>
-          );
-        })}
-      </div>
-    );
-  };
 
   // 그룹 참여 요청 인라인 승인
   const handleApproveJoinRequest = async (e: React.MouseEvent, req: PendingRequest, userId: string) => {
     e.stopPropagation(); // 행 클릭(상세 다이얼로그) 방지
+    
+    if (!isSuperAdmin && !adminGroupIds.includes(req.group_id)) {
+      toast.error("해당 그룹에 대한 승인 권한이 없습니다.");
+      return;
+    }
+
     const supabase = createClient();
 
     // 이미 멤버인지 확인
@@ -361,7 +239,7 @@ export default function AdminUsersPage() {
     if (!existing) {
       const { error } = await supabase
         .from("finance_group_members")
-        .insert({ group_id: req.group_id, user_id: userId, role: "member" });
+        .insert({ group_id: req.group_id, user_id: userId, permission_level: "general" });
       if (error) {
         toast.error("그룹 추가 실패: " + error.message);
         return;
@@ -373,8 +251,15 @@ export default function AdminUsersPage() {
       .update({ status: "approved", reviewed_at: new Date().toISOString() })
       .eq("id", req.id);
 
+    // 사용자의 전체 상태가 'pending'인 경우 'approved'로 자동 승인 처리
+    await supabase
+      .from("finance_user_status")
+      .update({ status: "approved" })
+      .eq("user_id", userId)
+      .eq("status", "pending");
+
     toast.success(`${req.group_name} 참여가 승인되었습니다.`);
-    await Promise.all([fetchUserGroupMap(), fetchJoinRequestMap()]);
+    await Promise.all([fetchAllUsers(), fetchUserGroupMap(), fetchJoinRequestMap()]);
   };
 
   // 그룹 참여 요청 거절
@@ -392,20 +277,21 @@ export default function AdminUsersPage() {
   // 사용자 클릭 → 상세 다이얼로그 열기
   const handleUserClick = async (user: UserStatus) => {
     setSelectedUser(user);
-    setApproveGroupId(user.requested_group_id || "");
-    // 재정관리자 신청으로 가입한 경우 자동 체크
-    setApproveGrantFinanceAdmin(user.requested_role === "finance_admin");
+    
+    // 기본 승인 그룹 설정
+    if (user.requested_group_id) {
+      setApproveGroupId(user.requested_group_id);
+    } else if (!isSuperAdmin && adminGroupIds.length === 1) {
+      // 그룹관리자인데 관리하는 그룹이 딱 하나라면 자동 선택
+      setApproveGroupId(adminGroupIds[0]);
+    } else {
+      setApproveGroupId("");
+    }
+
     setRejectMode(false);
     setRejectReason("");
     setAddGroupMode(false);
     setNewGroupId("");
-
-    // 사용자의 그룹별 권한 조회
-    const groupIds = userGroupMap[user.user_id] || [];
-    if (groupIds.length > 0) {
-      const permissions = await fetchUserGroupPermissions(user.user_id, groupIds);
-      setUserGroupPermissions(prev => ({ ...prev, [user.user_id]: permissions }));
-    }
 
     setDetailOpen(true);
   };
@@ -413,9 +299,12 @@ export default function AdminUsersPage() {
   // 신규 가입 승인 처리
   const handleApproveConfirm = async () => {
     if (!selectedUser) return;
-    const result = await approveUser(selectedUser.user_id, {
-      grantFinanceAdmin: approveGrantFinanceAdmin,
-    });
+
+    if (!isSuperAdmin) {
+      toast.error("전체 승인 권한은 최고관리자만 가능합니다.");
+      return;
+    }
+    const result = await approveUser(selectedUser.user_id);
     if (result.error) {
       toast.error("승인 실패: " + result.error);
       return;
@@ -431,7 +320,11 @@ export default function AdminUsersPage() {
       if (!existing) {
         const { error: memberError } = await supabase
           .from("finance_group_members")
-          .insert({ group_id: approveGroupId, user_id: selectedUser.user_id, role: "member" });
+          .insert({
+            group_id: approveGroupId,
+            user_id: selectedUser.user_id,
+            permission_level: "general",
+          });
         if (memberError) {
           toast.warning("승인되었으나 그룹 추가 실패: " + memberError.message);
         } else {
@@ -456,32 +349,6 @@ export default function AdminUsersPage() {
     setDetailOpen(false);
   };
 
-  const handleGrantFinanceAdmin = async () => {
-    if (!selectedUser) return;
-    const result = await grantFinanceAdmin(selectedUser.user_id);
-    if (result.error) {
-      toast.error("재정관리자 승격 실패: " + result.error);
-    } else {
-      toast.success("재정관리자로 승격되었습니다.");
-      await refreshAll();
-      const updated = allUsers.find(u => u.user_id === selectedUser.user_id);
-      if (updated) setSelectedUser({ ...updated, is_finance_admin: true });
-    }
-  };
-
-  const handleRevokeFinanceAdmin = async () => {
-    if (!selectedUser) return;
-    const result = await revokeFinanceAdmin(selectedUser.user_id);
-    if (result.error) {
-      toast.error("재정관리자 권한 박탈 실패: " + result.error);
-    } else {
-      toast.success("재정관리자 권한이 박탈되었습니다.");
-      await refreshAll();
-      const updated = allUsers.find(u => u.user_id === selectedUser.user_id);
-      if (updated) setSelectedUser({ ...updated, is_finance_admin: false });
-    }
-  };
-
   const handleAddGroup = async () => {
     if (!selectedUser || !newGroupId) return;
     const supabase = createClient();
@@ -494,18 +361,16 @@ export default function AdminUsersPage() {
     if (existing) { toast.warning("이미 해당 그룹의 멤버입니다."); return; }
     const { error } = await supabase
       .from("finance_group_members")
-      .insert({ group_id: newGroupId, user_id: selectedUser.user_id, role: "member" });
+      .insert({ group_id: newGroupId, user_id: selectedUser.user_id, permission_level: "general" });
     if (error) {
       toast.error("그룹 추가 실패: " + error.message);
     } else {
+      // 사용자가 'pending' 상태라면 자동으로 'approved' 처리
+      if (selectedUser.status === "pending") {
+        await approveUser(selectedUser.user_id);
+      }
       toast.success("그룹에 추가되었습니다.");
-      await fetchUserGroupMap();
-
-      // 권한 정보도 다시 로드
-      const groupIds = [...(userGroupMap[selectedUser.user_id] || []), newGroupId];
-      const permissions = await fetchUserGroupPermissions(selectedUser.user_id, groupIds);
-      setUserGroupPermissions(prev => ({ ...prev, [selectedUser.user_id]: permissions }));
-
+      await Promise.all([fetchAllUsers(), fetchUserGroupMap()]);
       setAddGroupMode(false);
       setNewGroupId("");
     }
@@ -564,10 +429,13 @@ export default function AdminUsersPage() {
     }
   };
 
-  const pendingFinanceAdminCount = allUsers.filter(u => u.status === "pending" && u.requested_role === "finance_admin").length;
-  const pendingCount = allUsers.filter(u => u.status === "pending").length;
-  const approvedCount = allUsers.filter(u => u.status === "approved").length;
-  const groupRequestCount = Object.values(joinRequestMap).reduce((acc, reqs) => acc + reqs.length, 0);
+  // 현재 사용자가 관리자인 그룹 ID 목록
+  const adminGroupIds = Object.keys(userPermissionLevels[userStatus?.user_id || ''] || {})
+    .filter(gid => userPermissionLevels[userStatus?.user_id || '']?.[gid] === 'admin');
+
+  // isGroupAdmin 폴백 적용: 기존 finance_user_status 의 관리자 권한도 허용
+  const isFinanceAdmin = (userStatus as any)?.is_finance_admin || false;
+  const isGroupAdmin = adminGroupIds.length > 0 || isFinanceAdmin;
 
   if (loading || allUsersLoading) {
     return (
@@ -577,36 +445,90 @@ export default function AdminUsersPage() {
     );
   }
 
-  if (!isSuperAdmin) {
+  if (!isSuperAdmin && !isGroupAdmin) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-red-500">접근 권한이 없습니다.</div>
+        <div className="text-red-500">접근 권한이 없습니다. 관리자만 이용 가능합니다.</div>
       </div>
     );
   }
 
+  // 필터링 적용
+  const filteredUsers = isSuperAdmin 
+    ? allUsers 
+    : allUsers.filter(u => {
+        // 최고관리자는 그룹관리자 목록에서 제외
+        if (u.is_super_admin) return false;
+
+        // 이미 소속 멤버인 경우
+        const userGroups = userGroupMap[u.user_id] || [];
+        if (userGroups.some(gid => adminGroupIds.includes(gid))) return true;
+        
+        // 가입 신청한 그룹이 나의 관리 그룹인 경우
+        if (u.requested_group_id && adminGroupIds.includes(u.requested_group_id)) return true;
+        
+        // 추가 참여 요청이 나의 관리 그룹인 경우
+        const reqs = joinRequestMap[u.user_id] || [];
+        if (reqs.some(r => adminGroupIds.includes(r.group_id))) return true;
+        
+        return false;
+      });
+
+  const filteredJoinRequestMap: Record<string, PendingRequest[]> = {};
+  if (isSuperAdmin) {
+    Object.assign(filteredJoinRequestMap, joinRequestMap);
+  } else {
+    Object.keys(joinRequestMap).forEach(uid => {
+      const myReqs = joinRequestMap[uid].filter(r => adminGroupIds.includes(r.group_id));
+      if (myReqs.length > 0) {
+        filteredJoinRequestMap[uid] = myReqs;
+      }
+    });
+  }
+
+  const approvedCount = filteredUsers.filter(u => u.status === "approved").length;
+  const groupRequestCount = Object.values(filteredJoinRequestMap).reduce((acc, reqs) => acc + reqs.length, 0);
+
+  // 최고관리자용 그룹별 섹션 데이터
+  const pendingUsers = filteredUsers.filter(u => !u.is_super_admin && u.status === "pending");
+  const superAdmins = filteredUsers.filter(u => u.is_super_admin);
+
+  const allGroupIdsInUse = new Set<string>();
+  filteredUsers.forEach(u => (userGroupMap[u.user_id] || []).forEach(gid => allGroupIdsInUse.add(gid)));
+  Object.values(filteredJoinRequestMap).forEach(reqs => reqs.forEach(r => allGroupIdsInUse.add(r.group_id)));
+
+  type GroupPendingReq = PendingRequest & { userId: string };
+  const groupSections = [...allGroupIdsInUse].map(gid => {
+    const members = filteredUsers.filter(
+      u => !u.is_super_admin && u.status === "approved" && (userGroupMap[u.user_id] || []).includes(gid)
+    );
+    const pendingReqs: GroupPendingReq[] = [];
+    Object.entries(filteredJoinRequestMap).forEach(([uid, reqs]) =>
+      reqs.filter(r => r.group_id === gid).forEach(r => pendingReqs.push({ ...r, userId: uid }))
+    );
+    return { id: gid, name: getGroupName(gid), members, pendingRequests: pendingReqs };
+  }).sort((a, b) => a.name.localeCompare(b.name, "ko"));
+
+  const noGroupApprovedUsers = filteredUsers.filter(
+    u => !u.is_super_admin && u.status === "approved" && (userGroupMap[u.user_id] || []).length === 0
+  );
+
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">사용자 관리</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+          {isSuperAdmin ? "전체 사용자 관리" : "소속 그룹원 및 승인 관리"}
+        </h1>
         <p className="text-gray-500 text-sm sm:text-base">사용자를 클릭하면 상세 설정을 변경할 수 있습니다.</p>
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className={`grid gap-4 ${isSuperAdmin ? "grid-cols-3" : "grid-cols-2"}`}>
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <p className="text-3xl font-bold text-gray-800">{allUsers.length}</p>
-              <p className="text-base text-gray-500">전체 사용자</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className={pendingFinanceAdminCount > 0 ? "border-purple-300 bg-purple-50" : ""}>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <p className={`text-3xl font-bold ${pendingFinanceAdminCount > 0 ? "text-purple-600" : "text-gray-400"}`}>{pendingFinanceAdminCount}</p>
-              <p className="text-base text-gray-500">재정관리자 신청</p>
+              <p className="text-3xl font-bold text-gray-800">{filteredUsers.length}</p>
+              <p className="text-base text-gray-500">관리 대상</p>
             </div>
           </CardContent>
         </Card>
@@ -618,75 +540,225 @@ export default function AdminUsersPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className={groupRequestCount > 0 ? "border-orange-300 bg-orange-50" : ""}>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <p className={`text-3xl font-bold ${groupRequestCount > 0 ? "text-orange-600" : "text-gray-400"}`}>{groupRequestCount}</p>
-              <p className="text-base text-gray-500">그룹 요청</p>
-            </div>
-          </CardContent>
-        </Card>
+        {isSuperAdmin && (
+          <Card className={groupRequestCount > 0 ? "border-orange-300 bg-orange-50" : ""}>
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <p className={`text-3xl font-bold ${groupRequestCount > 0 ? "text-orange-600" : "text-gray-400"}`}>{groupRequestCount}</p>
+                <p className="text-base text-gray-500">그룹 요청</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      {/* 재정관리자 신청 대기 강조 영역 */}
-      {pendingFinanceAdminCount > 0 && (
-        <Card className="border-purple-300 bg-purple-50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-purple-700 text-base sm:text-lg flex items-center gap-2">
-              <span className="inline-flex items-center justify-center w-6 h-6 bg-purple-600 text-white text-sm rounded-full font-bold">{pendingFinanceAdminCount}</span>
-              재정관리자 신청 승인 대기
-            </CardTitle>
+      {/* 사용자 목록 */}
+      {isSuperAdmin ? (
+        /* 최고관리자: 그룹별 섹션 */
+        <div className="space-y-4">
+          {/* 승인 대기 */}
+          {pendingUsers.length > 0 && (
+            <Card className="border-orange-200 bg-orange-50/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-orange-500" />
+                  승인 대기
+                  <span className="text-sm font-normal text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">{pendingUsers.length}명</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-orange-50/60">
+                      <TableHead className="text-xs py-2 w-[22%]">이름</TableHead>
+                      <TableHead className="text-xs py-2 w-[43%]">이메일</TableHead>
+                      <TableHead className="text-xs py-2 w-[15%]">요청 그룹</TableHead>
+                      <TableHead className="text-xs py-2 w-[20%]">가입일</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pendingUsers.map(user => (
+                      <TableRow key={user.id} className="cursor-pointer hover:bg-orange-50 transition-colors" onClick={() => handleUserClick(user)}>
+                        <TableCell className="font-medium text-sm py-2.5">{user.name || user.email}</TableCell>
+                        <TableCell className="text-gray-500 text-sm py-2.5">{user.email}</TableCell>
+                        <TableCell className="text-sm py-2.5">{getGroupName(user.requested_group_id)}</TableCell>
+                        <TableCell className="text-gray-400 text-xs py-2.5">{format(new Date(user.created_at), "yyyy-MM-dd", { locale: ko })}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* 그룹별 섹션 */}
+          {groupSections.map(group => (
+            <Card key={group.id}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Users className="h-4 w-4 text-emerald-600" />
+                  {group.name}
+                  <span className="text-sm font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{group.members.length}명</span>
+                  {group.pendingRequests.length > 0 && (
+                    <span className="text-sm font-normal text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">요청 {group.pendingRequests.length}건</span>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                {group.members.length > 0 && (
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-gray-50">
+                        <TableHead className="text-xs py-2 w-[22%]">이름</TableHead>
+                        <TableHead className="text-xs py-2 w-[43%]">이메일</TableHead>
+                        <TableHead className="text-xs py-2 w-[15%]">권한</TableHead>
+                        <TableHead className="text-xs py-2 w-[20%]">가입일</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {group.members.map(user => {
+                        const level: PermissionLevel = userPermissionLevels[user.user_id]?.[group.id] || "general";
+                        const levelColors: Record<PermissionLevel, string> = { admin: "bg-purple-100 text-purple-700", assistant: "bg-blue-100 text-blue-700", general: "bg-gray-100 text-gray-600" };
+                        const levelLabels: Record<PermissionLevel, string> = { admin: "관리", assistant: "보조", general: "일반" };
+                        return (
+                          <TableRow key={user.id} className="cursor-pointer hover:bg-blue-50 transition-colors" onClick={() => handleUserClick(user)}>
+                            <TableCell className="font-medium text-sm py-2.5">{user.name || user.email}</TableCell>
+                            <TableCell className="text-gray-500 text-sm py-2.5">{user.email}</TableCell>
+                            <TableCell className="py-2.5">
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${levelColors[level]}`}>{levelLabels[level]}</span>
+                            </TableCell>
+                            <TableCell className="text-gray-400 text-xs py-2.5">{format(new Date(user.created_at), "yyyy-MM-dd", { locale: ko })}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+
+                {/* 그룹 가입 요청 */}
+                {group.pendingRequests.length > 0 && (
+                  <div className={`space-y-1.5 ${group.members.length > 0 ? "mt-3 pt-3 border-t border-dashed border-orange-200" : ""}`}>
+                    <p className="text-xs font-medium text-orange-600 mb-2">가입 요청</p>
+                    {group.pendingRequests.map(req => {
+                      const user = filteredUsers.find(u => u.user_id === req.userId);
+                      return (
+                        <div key={req.id} className="flex items-center justify-between bg-orange-50 border border-orange-200 rounded-md px-3 py-2">
+                          <div>
+                            <p className="text-sm font-medium">{user?.name || user?.email || req.userId}</p>
+                            <p className="text-xs text-gray-400">{user?.email}</p>
+                          </div>
+                          <div className="flex gap-1.5">
+                            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-xs h-8 font-medium" onClick={(e) => handleApproveJoinRequest(e, req, req.userId)}>승인</Button>
+                            <Button size="sm" variant="outline" className="text-red-500 border-red-300 hover:bg-red-50 text-xs h-8 font-medium" onClick={(e) => handleRejectJoinRequest(e, req.id, req.group_name)}>거절</Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {group.members.length === 0 && group.pendingRequests.length === 0 && (
+                  <p className="text-sm text-gray-400 text-center py-3">멤버가 없습니다.</p>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+
+          {/* 그룹 미배정 */}
+          {noGroupApprovedUsers.length > 0 && (
+            <Card className="border-gray-200">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2 text-gray-500">
+                  <Users className="h-4 w-4" />
+                  그룹 미배정
+                  <span className="text-sm font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{noGroupApprovedUsers.length}명</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50">
+                      <TableHead className="text-xs py-2 w-[22%]">이름</TableHead>
+                      <TableHead className="text-xs py-2 w-[58%]">이메일</TableHead>
+                      <TableHead className="text-xs py-2 w-[20%]">가입일</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {noGroupApprovedUsers.map(user => (
+                      <TableRow key={user.id} className="cursor-pointer hover:bg-blue-50 transition-colors" onClick={() => handleUserClick(user)}>
+                        <TableCell className="font-medium text-sm py-2.5">{user.name || user.email}</TableCell>
+                        <TableCell className="text-gray-500 text-sm py-2.5">{user.email}</TableCell>
+                        <TableCell className="text-gray-400 text-xs py-2.5">{format(new Date(user.created_at), "yyyy-MM-dd", { locale: ko })}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* 최고관리자 */}
+          {superAdmins.length > 0 && (
+            <Card className="border-purple-100">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-purple-600" />
+                  최고관리자
+                  <span className="text-sm font-normal text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">{superAdmins.length}명</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-purple-50/50">
+                      <TableHead className="text-xs py-2 w-[22%]">이름</TableHead>
+                      <TableHead className="text-xs py-2 w-[58%]">이메일</TableHead>
+                      <TableHead className="text-xs py-2 w-[20%]">가입일</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {superAdmins.map(user => (
+                      <TableRow key={user.id} className="cursor-pointer hover:bg-purple-50 transition-colors" onClick={() => handleUserClick(user)}>
+                        <TableCell className="font-medium text-sm py-2.5">{user.name || user.email}</TableCell>
+                        <TableCell className="text-gray-500 text-sm py-2.5">{user.email}</TableCell>
+                        <TableCell className="text-gray-400 text-xs py-2.5">{format(new Date(user.created_at), "yyyy-MM-dd", { locale: ko })}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
+          {filteredUsers.length === 0 && (
+            <div className="text-center py-12 text-gray-400 text-sm">등록된 사용자가 없습니다.</div>
+          )}
+        </div>
+      ) : (
+        /* 그룹관리자: 기존 플랫 테이블 */
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">사용자 목록</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {allUsers
-                .filter(u => u.status === "pending" && u.requested_role === "finance_admin")
-                .map(u => (
-                  <div
-                    key={u.id}
-                    className="flex items-center justify-between bg-white border border-purple-200 rounded-lg px-4 py-4 cursor-pointer hover:bg-purple-50 transition-colors"
-                    onClick={() => handleUserClick(u)}
-                  >
-                    <div>
-                      <p className="text-base font-medium text-gray-800">{u.name || u.email}</p>
-                      <p className="text-sm text-gray-500">{u.email}</p>
-                    </div>
-                    <span className="text-sm bg-purple-100 text-purple-700 px-3 py-1 rounded-full">재정관리자 신청</span>
-                  </div>
-                ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 사용자 목록 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">사용자 목록</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50">
-                <TableHead className="text-sm font-semibold py-3">이름</TableHead>
-                <TableHead className="text-sm font-semibold py-3">이메일</TableHead>
-                <TableHead className="text-sm font-semibold py-3">상태</TableHead>
-                <TableHead className="text-sm font-semibold py-3">소속 그룹</TableHead>
-                <TableHead className="text-sm font-semibold py-3">그룹 요청</TableHead>
-                <TableHead className="text-sm font-semibold py-3">가입일</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {allUsers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-10 text-gray-500 text-sm">
-                    등록된 사용자가 없습니다.
-                  </TableCell>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50">
+                  <TableHead className="text-sm font-semibold py-3">이름</TableHead>
+                  <TableHead className="text-sm font-semibold py-3">이메일</TableHead>
+                  <TableHead className="text-sm font-semibold py-3">상태</TableHead>
+                  <TableHead className="text-sm font-semibold py-3">가입일</TableHead>
                 </TableRow>
-              ) : (
-                allUsers.map((user) => {
-                  const pendingRequests = joinRequestMap[user.user_id] || [];
-                  return (
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-10 text-gray-500 text-sm">
+                      등록된 사용자가 없습니다.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredUsers.map((user) => (
                     <TableRow
                       key={user.id}
                       className="cursor-pointer hover:bg-blue-50 transition-colors"
@@ -696,55 +768,16 @@ export default function AdminUsersPage() {
                       <TableCell className="text-gray-600 text-sm py-3">{user.email}</TableCell>
                       <TableCell className="py-3">{getStatusBadge(user.status)}</TableCell>
                       <TableCell className="text-gray-500 text-sm py-3">
-                        {user.is_super_admin ? (
-                          <span className="text-purple-600 font-medium text-xs">전체 관리</span>
-                        ) : user.status === "approved" ? (
-                          getGroupNamesWithRoles(user.user_id)
-                        ) : (
-                          getGroupName(user.requested_group_id)
-                        )}
-                      </TableCell>
-                      <TableCell className="py-3">
-                        {pendingRequests.length > 0 ? (
-                          <div className="flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
-                            {pendingRequests.map(req => (
-                              <div key={req.id} className="flex items-center gap-2">
-                                <span className="text-xs bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full whitespace-nowrap">
-                                  {req.group_name}
-                                </span>
-                                <Button
-                                  size="sm"
-                                  className="h-9 px-3 text-xs bg-emerald-600 hover:bg-emerald-700 font-medium"
-                                  onClick={(e) => handleApproveJoinRequest(e, req, user.user_id)}
-                                >
-                                  승인
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-9 px-3 text-xs text-red-500 border-red-300 hover:bg-red-50 font-medium"
-                                  onClick={(e) => handleRejectJoinRequest(e, req.id, req.group_name)}
-                                >
-                                  거절
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-gray-300 text-xs">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-gray-500 text-sm py-3">
                         {format(new Date(user.created_at), "yyyy-MM-dd", { locale: ko })}
                       </TableCell>
                     </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 사용자 상세 설정 다이얼로그 */}
       <Dialog open={detailOpen} onOpenChange={(open) => { setDetailOpen(open); if (!open) { setRejectMode(false); setAddGroupMode(false); } }}>
@@ -764,7 +797,6 @@ export default function AdminUsersPage() {
                 <DialogDescription className="flex items-center gap-2 pt-2">
                   {getStatusBadge(selectedUser.status)}
                   {selectedUser.is_super_admin && <span className="badge badge-admin">전체관리자</span>}
-                  {selectedUser.is_finance_admin && <span className="badge badge-finance">재정관리자</span>}
                   <span className="text-sm text-gray-400">
                     가입일 {format(new Date(selectedUser.created_at), "yyyy년 MM월 dd일", { locale: ko })}
                   </span>
@@ -776,31 +808,47 @@ export default function AdminUsersPage() {
                 {/* 대기 중 사용자 */}
                 {!selectedUser.is_super_admin && selectedUser.status === "pending" && (
                   <div className="space-y-4">
-                    {selectedUser.requested_role === "finance_admin" && (
-                      <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-md px-4 py-3">
-                        <span className="text-sm font-medium text-purple-700">재정관리자 신청</span>
-                        <span className="text-sm text-purple-500">— 승인 시 그룹 생성·관리 권한이 부여됩니다</span>
-                      </div>
-                    )}
                     {selectedUser.requested_group_id && (
                       <div className="text-sm text-gray-600 bg-gray-50 rounded-md px-4 py-3">
                         요청 그룹: <span className="font-medium">{getGroupName(selectedUser.requested_group_id)}</span>
                       </div>
                     )}
-                    <div className="border rounded-lg p-4 space-y-4">
-                      <p className="text-sm font-medium text-gray-700">승인 설정</p>
-                      <div className="space-y-2">
-                        <Label className="text-sm text-gray-600">소속 그룹</Label>
-                        <GroupSearchInput value={approveGroupId} onChange={setApproveGroupId} placeholder="그룹 검색 (선택사항)" />
+
+                    {isSuperAdmin ? (
+                      /* 최고관리자: 그룹 검색 + 전체 승인 */
+                      <div className="border rounded-lg p-4 space-y-4">
+                        <p className="text-sm font-medium text-gray-700">승인 설정</p>
+                        <div className="space-y-2">
+                          <Label className="text-sm text-gray-600">소속 그룹</Label>
+                          <GroupSearchInput value={approveGroupId} onChange={setApproveGroupId} placeholder="그룹 검색 (선택사항)" />
+                        </div>
+                        <Button className="w-full bg-emerald-600 hover:bg-emerald-700 h-10 text-sm font-medium" onClick={handleApproveConfirm}>승인</Button>
                       </div>
-                      <div className="flex items-center space-x-3">
-                        <Checkbox id="approve-finance-admin" checked={approveGrantFinanceAdmin} onCheckedChange={(v) => setApproveGrantFinanceAdmin(v === true)} />
-                        <Label htmlFor="approve-finance-admin" className="text-sm cursor-pointer">
-                          재정관리자 <span className="text-xs text-gray-400">(그룹 생성·관리 가능)</span>
-                        </Label>
+                    ) : (
+                      /* 그룹관리자: 내 그룹의 join request 승인만 가능 */
+                      <div className="border rounded-lg p-4 space-y-3">
+                        <p className="text-sm font-medium text-gray-700">그룹 가입 승인</p>
+                        {(() => {
+                          const myReqs = (joinRequestMap[selectedUser.user_id] || []).filter(r => adminGroupIds.includes(r.group_id));
+                          if (myReqs.length === 0) {
+                            return <p className="text-sm text-gray-400">내 관리 그룹에 대한 가입 요청이 없습니다.</p>;
+                          }
+                          return myReqs.map(req => (
+                            <div key={req.id} className="flex items-center justify-between bg-orange-50 border border-orange-200 rounded-md px-3 py-2">
+                              <span className="text-sm text-orange-800 font-medium">{req.group_name}</span>
+                              <Button
+                                size="sm"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-xs h-9 font-medium"
+                                onClick={(e) => handleApproveJoinRequest(e, req, selectedUser.user_id)}
+                              >
+                                그룹 가입 승인
+                              </Button>
+                            </div>
+                          ));
+                        })()}
                       </div>
-                      <Button className="w-full bg-emerald-600 hover:bg-emerald-700 h-10 text-sm font-medium" onClick={handleApproveConfirm}>승인</Button>
-                    </div>
+                    )}
+
                     {!rejectMode ? (
                       <Button variant="outline" className="w-full text-red-600 border-red-300 hover:bg-red-50 h-10 text-sm font-medium" onClick={() => setRejectMode(true)}>거절</Button>
                     ) : (
@@ -816,8 +864,8 @@ export default function AdminUsersPage() {
                   </div>
                 )}
 
-                {/* 거절된 사용자 */}
-                {!selectedUser.is_super_admin && selectedUser.status === "rejected" && (
+                {/* 거절된 사용자 - 최고관리자만 재승인 가능 */}
+                {!selectedUser.is_super_admin && selectedUser.status === "rejected" && isSuperAdmin && (
                   <div className="space-y-3">
                     {selectedUser.rejected_reason && (
                       <div className="text-sm text-red-600 bg-red-50 rounded-md px-3 py-2">
@@ -830,185 +878,106 @@ export default function AdminUsersPage() {
                         <Label className="text-xs text-gray-600">소속 그룹</Label>
                         <GroupSearchInput value={approveGroupId} onChange={setApproveGroupId} placeholder="그룹 검색 (선택사항)" />
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="reapprove-finance-admin" checked={approveGrantFinanceAdmin} onCheckedChange={(v) => setApproveGrantFinanceAdmin(v === true)} />
-                        <Label htmlFor="reapprove-finance-admin" className="text-sm cursor-pointer">재정관리자</Label>
-                      </div>
                       <Button className="w-full bg-emerald-600 hover:bg-emerald-700" onClick={handleApproveConfirm}>승인</Button>
                     </div>
                   </div>
                 )}
 
-                {/* 승인된 사용자 */}
+                {/* 승인된 사용자 소속 그룹 목록 필터링 */}
                 {!selectedUser.is_super_admin && selectedUser.status === "approved" && (
                   <div className="space-y-3">
-                    {/* 소속 그룹 */}
                     <div className="border rounded-lg p-3 space-y-2">
                       <p className="text-sm font-medium text-gray-700">소속 그룹</p>
-                      {(userGroupMap[selectedUser.user_id] || []).length === 0 ? (
-                        <p className="text-xs text-gray-400">소속 그룹 없음</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {(userGroupMap[selectedUser.user_id] || []).map(gid => {
-                            const groupName = getGroupName(gid);
-                            const permission = userGroupPermissions[selectedUser.user_id]?.find(p => p.group_id === gid)?.permission || 'waiting';
-                            const role = userGroupRoles[selectedUser.user_id]?.[gid] || 'member';
+                      {(() => {
+                        const userGroups = userGroupMap[selectedUser.user_id] || [];
+                        const myManagedGroups = isSuperAdmin ? userGroups : userGroups.filter(gid => adminGroupIds.includes(gid));
+                        
+                        if (myManagedGroups.length === 0) {
+                          return <p className="text-xs text-gray-400">관리 중인 그룹 내 소속 없음</p>;
+                        }
 
-                            const roleLabels: Record<string, string> = {
-                              finance_admin: '재정관리',
-                              member: '일반'
-                            };
+                        return (
+                          <div className="space-y-2">
+                            {myManagedGroups.map(gid => {
+                              const groupName = getGroupName(gid);
+                              const currentLevel: PermissionLevel = userPermissionLevels[selectedUser.user_id]?.[gid] || 'general';
+                              const levelLabel: Record<PermissionLevel, string> = { admin: '관리', assistant: '보조', general: '일반' };
+                              
+                              const activeColor: Record<PermissionLevel, string> = {
+                                admin: 'bg-purple-600 text-white',
+                                assistant: 'bg-blue-600 text-white',
+                                general: 'bg-gray-600 text-white',
+                              };
 
-                            const roleBadgeColors: Record<string, string> = {
-                              finance_admin: 'bg-green-100 text-green-700',
-                              member: 'bg-gray-100 text-gray-700'
-                            };
-
-                            return (
-                              <div key={gid} className="bg-gray-50 rounded-md p-3 space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
+                              return (
+                                <div key={gid} className="bg-gray-50 rounded-md p-3 space-y-2">
+                                  <div className="flex items-center justify-between">
                                     <span className="text-sm font-medium text-gray-700">{groupName}</span>
-                                    <span className={`text-xs px-2 py-0.5 rounded-full ${roleBadgeColors[role] || 'bg-gray-100 text-gray-700'}`}>
-                                      {roleLabels[role] || '일반'}
-                                    </span>
-                                  </div>
-                                  <button
-                                    className="text-red-400 hover:text-red-600 text-xs font-medium"
-                                    onClick={() => handleRemoveGroup(gid)}
-                                  >
-                                    제거
-                                  </button>
-                                </div>
-
-                                {/* 역할 설정 */}
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-gray-500 w-12">역할:</span>
-                                  <div className="flex gap-1">
-                                    <button
-                                      className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
-                                        role === 'member'
-                                          ? 'bg-gray-600 text-white'
-                                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                                      }`}
-                                      onClick={() => handleUpdateGroupRole(gid, 'member')}
-                                    >
-                                      일반
-                                    </button>
-                                    <button
-                                      className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
-                                        role === 'finance_admin'
-                                          ? 'bg-green-600 text-white'
-                                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                                      }`}
-                                      onClick={() => handleUpdateGroupRole(gid, 'finance_admin')}
-                                    >
-                                      재정관리
-                                    </button>
-                                  </div>
-                                </div>
-
-                                {/* 권한 설정 (역할이 일반인 경우에만 표시) */}
-                                {role === 'member' && (
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-500 w-12">권한:</span>
-                                    <div className="flex gap-1">
-                                      <button
-                                        className={`text-xs px-2 py-1 rounded-md transition-colors ${
-                                          permission === 'write'
-                                            ? 'bg-green-600 text-white'
-                                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                                        }`}
-                                        onClick={() => handleUpdateGroupPermission(gid, 'write')}
-                                      >
-                                        쓰기
-                                      </button>
-                                      <button
-                                        className={`text-xs px-2 py-1 rounded-md transition-colors ${
-                                          permission === 'read'
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                                        }`}
-                                        onClick={() => handleUpdateGroupPermission(gid, 'read')}
-                                      >
-                                        읽기
-                                      </button>
-                                      <button
-                                        className={`text-xs px-2 py-1 rounded-md transition-colors ${
-                                          permission === 'waiting'
-                                            ? 'bg-yellow-500 text-white'
-                                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                                        }`}
-                                        onClick={() => handleUpdateGroupPermission(gid, 'waiting')}
-                                      >
-                                        대기
-                                      </button>
-                                    </div>
-                                    {permission === 'waiting' && (
-                                      <span className="text-xs text-yellow-600 ml-1">권한 대기 중</span>
+                                    {(isSuperAdmin || adminGroupIds.includes(gid)) && (
+                                      <button className="text-red-400 hover:text-red-600 text-xs font-medium" onClick={() => handleRemoveGroup(gid)}>제거</button>
                                     )}
                                   </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500 w-10">권한:</span>
+                                    <div className="flex gap-1">
+                                      {(['admin', 'assistant', 'general'] as PermissionLevel[])
+                                        .filter(level => isSuperAdmin || level !== 'admin')
+                                        .map(level => {
+                                        const isCurrent = currentLevel === level;
+                                        return (
+                                          <button
+                                            key={level}
+                                            className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
+                                              isCurrent ? activeColor[level] : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                            }`}
+                                            onClick={() => handleSetPermissionLevel(selectedUser.user_id, gid, level)}
+                                          >
+                                            {levelLabel[level]}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
 
-                      {/* 대기 중인 그룹 요청 (새 테이블) */}
-                      {(joinRequestMap[selectedUser.user_id] || []).map(req => (
-                        <div key={req.id} className="bg-orange-50 border border-orange-200 rounded-md px-3 py-2 flex items-center justify-between">
+                      {/* 추가 참여 요청 목록 필터링 */}
+                      {(filteredJoinRequestMap[selectedUser.user_id] || []).map(req => (
+                        <div key={req.id} className="bg-orange-50 border border-orange-200 rounded-md px-3 py-2 flex items-center justify-between mt-2">
                           <div>
                             <p className="text-xs text-orange-600 font-medium">참여 요청 대기 중</p>
                             <p className="text-sm text-orange-800 font-medium">{req.group_name}</p>
                           </div>
                           <div className="flex gap-1.5">
-                            <Button
-                              size="sm"
-                              className="bg-emerald-600 hover:bg-emerald-700 text-xs h-9 font-medium"
-                              onClick={(e) => handleApproveJoinRequest(e, req, selectedUser.user_id)}
-                            >
-                              승인
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-red-300 text-red-500 hover:bg-red-50 text-xs h-9 font-medium"
-                              onClick={(e) => handleRejectJoinRequest(e, req.id, req.group_name)}
-                            >
-                              거절
-                            </Button>
+                            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-xs h-9 font-medium" onClick={(e) => handleApproveJoinRequest(e, req, selectedUser.user_id)}>승인</Button>
+                            <Button size="sm" variant="outline" className="border-red-300 text-red-500 hover:bg-red-50 text-xs h-9 font-medium" onClick={(e) => handleRejectJoinRequest(e, req.id, req.group_name)}>거절</Button>
                           </div>
                         </div>
                       ))}
 
-                      {addGroupMode ? (
-                        <div className="space-y-2 pt-1">
-                          <GroupSearchInput value={newGroupId} onChange={setNewGroupId} placeholder="추가할 그룹 검색" />
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={() => { setAddGroupMode(false); setNewGroupId(""); }} className="flex-1 h-10 font-medium">취소</Button>
-                            <Button size="sm" onClick={handleAddGroup} disabled={!newGroupId} className="flex-1 h-10 font-medium">추가</Button>
+                      {isSuperAdmin && (
+                        addGroupMode ? (
+                          <div className="space-y-2 pt-1">
+                            <GroupSearchInput value={newGroupId} onChange={setNewGroupId} placeholder="추가할 그룹 검색" />
+                            <div className="flex gap-2">
+                              <Button variant="outline" size="sm" onClick={() => { setAddGroupMode(false); setNewGroupId(""); }} className="flex-1 h-10 font-medium">취소</Button>
+                              <Button size="sm" onClick={handleAddGroup} disabled={!newGroupId} className="flex-1 h-10 font-medium">추가</Button>
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <Button variant="outline" size="sm" className="w-full text-xs h-10 font-medium" onClick={() => setAddGroupMode(true)}>+ 그룹 추가</Button>
-                      )}
-                    </div>
-
-                    {/* 관리 권한 */}
-                    <div className="border rounded-lg p-3 space-y-2">
-                      <p className="text-sm font-medium text-gray-700">관리 권한</p>
-                      {selectedUser.is_finance_admin ? (
-                        <Button variant="outline" size="sm" className="text-orange-600 border-orange-300 hover:bg-orange-50 w-full h-10 font-medium" onClick={handleRevokeFinanceAdmin}>재정관리자 해제</Button>
-                      ) : (
-                        <Button variant="outline" size="sm" className="text-purple-600 border-purple-300 hover:bg-purple-50 w-full h-10 font-medium" onClick={handleGrantFinanceAdmin}>재정관리자로 승격</Button>
+                        ) : (
+                          <Button variant="outline" size="sm" className="w-full text-xs h-10 font-medium" onClick={() => setAddGroupMode(true)}>+ 그룹 추가</Button>
+                        )
                       )}
                     </div>
                   </div>
                 )}
 
-                {/* 위험 구역 */}
-                {!selectedUser.is_super_admin && (
+                {/* 위험 구역 - 최고관리자만 계정 삭제 가능 */}
+                {isSuperAdmin && !selectedUser.is_super_admin && (
                   <div className="border border-red-200 rounded-lg p-3">
                     <p className="text-sm font-medium text-red-600 mb-2">위험 구역</p>
                     <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:bg-red-50 w-full" onClick={() => setDeleteDialogOpen(true)}>계정 삭제</Button>

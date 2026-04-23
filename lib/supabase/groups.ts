@@ -49,7 +49,7 @@ export async function getUserGroups(): Promise<Group[]> {
       .eq("user_id", user.id);
 
     if (memberError) {
-      console.error("[getUserGroups] Member query error:", memberError);
+      console.error("[getUserGroups] Member query error:", memberError.message, "(code:", memberError.code, ")");
       return [];
     }
 
@@ -93,7 +93,7 @@ export async function getGroupWithMembers(groupId: string): Promise<GroupWithMem
       members:finance_group_members(
         id,
         user_id,
-        role,
+        permission_level,
         joined_at
       )
     `)
@@ -139,13 +139,13 @@ export async function createGroup(input: GroupInput): Promise<{ data?: Group; er
 
   if (error) return { error: error.message };
 
-  // 생성자를 owner로 추가
+  // 생성자를 admin 권한으로 추가
   const { error: memberError } = await supabase
     .from("finance_group_members")
     .insert({
       group_id: data.id,
       user_id: user.id,
-      role: "owner"
+      permission_level: "admin"
     });
 
   if (memberError) {
@@ -175,7 +175,10 @@ export async function addGroupMember(input: GroupMemberInput): Promise<{ error?:
   const supabase = createClient();
   const { error } = await supabase
     .from("finance_group_members")
-    .insert(input);
+    .insert({
+      ...input,
+      permission_level: input.permission_level ?? 'general',
+    });
 
   return { error: error?.message };
 }
@@ -270,10 +273,10 @@ export async function transferFinanceAdminRole(
   const supabase = createClient();
 
   try {
-    // 1. 현재 재정관리자의 멤버 정보 찾기
+    // 1. 현재 관리자의 멤버 정보 찾기
     const { data: currentMember } = await supabase
       .from("finance_group_members")
-      .select("id, role")
+      .select("id")
       .eq("group_id", groupId)
       .eq("user_id", currentUserId)
       .single();
@@ -282,10 +285,10 @@ export async function transferFinanceAdminRole(
       return { error: "현재 사용자가 이 그룹의 멤버가 아닙니다." };
     }
 
-    // 2. 새로운 재정관리자의 멤버 정보 찾기
+    // 2. 새로운 관리자의 멤버 정보 찾기
     const { data: newMember } = await supabase
       .from("finance_group_members")
-      .select("id, role")
+      .select("id")
       .eq("group_id", groupId)
       .eq("user_id", newFinanceAdminId)
       .single();
@@ -294,27 +297,27 @@ export async function transferFinanceAdminRole(
       return { error: "선택한 사용자가 이 그룹의 멤버가 아닙니다." };
     }
 
-    // 3. 현재 재정관리자의 역할을 member로 변경
+    // 3. 현재 관리자의 권한을 general로 변경
     const { error: updateError1 } = await supabase
       .from("finance_group_members")
-      .update({ role: "member" })
+      .update({ permission_level: "general" })
       .eq("id", currentMember.id);
 
     if (updateError1) {
       return { error: "현재 관리자 역할 변경 실패: " + updateError1.message };
     }
 
-    // 4. 새로운 재정관리자의 역할을 finance_admin로 변경
+    // 4. 새로운 관리자의 권한을 admin으로 변경
     const { error: updateError2 } = await supabase
       .from("finance_group_members")
-      .update({ role: "finance_admin" })
+      .update({ permission_level: "admin" })
       .eq("id", newMember.id);
 
     if (updateError2) {
-      // 롤백: 현재 관리자 역할 복구
+      // 롤백: 현재 관리자 권한 복구
       await supabase
         .from("finance_group_members")
-        .update({ role: currentMember.role })
+        .update({ permission_level: "admin" })
         .eq("id", currentMember.id);
 
       return { error: "새 관리자 역할 변경 실패: " + updateError2.message };

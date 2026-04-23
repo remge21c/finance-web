@@ -9,9 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import GroupSearchInput from "@/components/GroupSearchInput";
 import { toast } from "sonner";
-import { Wallet, User, Mail, Lock, UserPlus, FolderSearch, Shield, Users } from "lucide-react";
-
-type RequestedRole = "user" | "finance_admin";
+import { User, Mail, Lock, UserPlus, FolderSearch, Wallet } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -19,7 +17,6 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [requestedRole, setRequestedRole] = useState<RequestedRole>("user");
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
@@ -52,6 +49,12 @@ export default function RegisterPage() {
 
       const isFirstUser = userCount === 0;
 
+      if (!isFirstUser && !selectedGroupId) {
+        toast.error("참여할 그룹을 선택해야 합니다.");
+        setLoading(false);
+        return;
+      }
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -70,21 +73,15 @@ export default function RegisterPage() {
         return;
       }
 
-      // 첫 번째 사용자: 슈퍼관리자로 자동 승인
-      // 재정관리자 신청: pending 상태로 전체관리자 승인 대기
-      // 일반사용자: 자동 승인, 그룹 선택 시 join request 생성
-      const isFinanceAdminRequest = !isFirstUser && requestedRole === "finance_admin";
-      const autoApprove = isFirstUser || requestedRole === "user";
-
       const { error: statusError } = await supabase
         .from("finance_user_status")
         .insert({
           user_id: authData.user.id,
           email,
           name,
-          status: autoApprove ? "approved" : "pending",
+          status: isFirstUser ? "approved" : "pending",
           is_super_admin: isFirstUser,
-          requested_role: isFirstUser ? "user" : requestedRole,
+          requested_role: "user",
           requested_group_id: selectedGroupId || null,
         });
 
@@ -94,8 +91,8 @@ export default function RegisterPage() {
         return;
       }
 
-      // 일반사용자이고 그룹을 선택한 경우 그룹 참여 요청 생성
-      if (!isFirstUser && requestedRole === "user" && selectedGroupId) {
+      // 그룹을 선택한 경우 그룹 참여 요청 생성
+      if (!isFirstUser && selectedGroupId) {
         await supabase
           .from("finance_group_join_requests")
           .insert({
@@ -109,12 +106,9 @@ export default function RegisterPage() {
       if (isFirstUser) {
         toast.success("관리자 계정으로 등록되었습니다!");
         router.push("/login");
-      } else if (isFinanceAdminRequest) {
-        toast.success("재정관리자 신청이 완료되었습니다. 전체관리자 승인을 기다려주세요.");
-        router.push("/pending");
       } else {
         const groupMessage = selectedGroupId
-          ? "가입이 완료되었습니다. 그룹 참여 요청이 재정관리자에게 전송되었습니다."
+          ? "가입이 완료되었습니다. 그룹 참여 요청이 관리자에게 전송되었습니다."
           : "가입이 완료되었습니다. 로그인 후 그룹 참여를 요청해주세요.";
         toast.success(groupMessage);
         router.push("/login");
@@ -138,8 +132,8 @@ export default function RegisterPage() {
       <div className="relative w-full max-w-sm mx-4">
         {/* 로고 영역 */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-600 rounded-2xl shadow-lg mb-4">
-            <Wallet className="h-8 w-8 text-white" />
+          <div className="inline-flex items-center justify-center w-20 h-20 mb-4 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 drop-shadow-lg mx-auto">
+            <Wallet className="h-10 w-10 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">회원가입</h1>
           <p className="text-sm text-gray-500 mt-1">새 계정을 만들어 시작하세요</p>
@@ -180,76 +174,21 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* 가입 유형 선택 */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">가입 유형</Label>
-              <div className="grid grid-cols-1 gap-2">
-                <label
-                  className={`flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
-                    requestedRole === "user"
-                      ? "border-emerald-500 bg-emerald-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="requestedRole"
-                    value="user"
-                    checked={requestedRole === "user"}
-                    onChange={() => { setRequestedRole("user"); }}
-                    className="mt-0.5 accent-emerald-600"
-                  />
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <Users className="h-4 w-4 text-emerald-600" />
-                      <span className="text-sm font-medium text-gray-800">일반사용자</span>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-0.5">즉시 가입 후 재정관리자에게 그룹 참여 요청</p>
-                  </div>
-                </label>
-                <label
-                  className={`flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
-                    requestedRole === "finance_admin"
-                      ? "border-purple-500 bg-purple-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="requestedRole"
-                    value="finance_admin"
-                    checked={requestedRole === "finance_admin"}
-                    onChange={() => { setRequestedRole("finance_admin"); setSelectedGroupId(""); }}
-                    className="mt-0.5 accent-purple-600"
-                  />
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <Shield className="h-4 w-4 text-purple-600" />
-                      <span className="text-sm font-medium text-gray-800">재정관리자 신청</span>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-0.5">전체관리자 승인 후 그룹 생성·관리 가능</p>
-                  </div>
-                </label>
-              </div>
+            {/* 그룹 선택 */}
+            <div className="space-y-1.5">
+              <Label htmlFor="group" className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                <FolderSearch className="h-3.5 w-3.5 text-gray-400" />
+                참여할 그룹 <span className="text-red-400">*</span>
+              </Label>
+              <GroupSearchInput
+                value={selectedGroupId}
+                onChange={setSelectedGroupId}
+                placeholder="그룹 이름을 검색하세요"
+              />
+              <p className="text-xs text-gray-400">
+                그룹 선택은 필수입니다. 관리자 승인 후 그룹에 추가됩니다.
+              </p>
             </div>
-
-            {/* 그룹 선택 (일반사용자만) */}
-            {requestedRole === "user" && (
-              <div className="space-y-1.5">
-                <Label htmlFor="group" className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
-                  <FolderSearch className="h-3.5 w-3.5 text-gray-400" />
-                  참여할 그룹 <span className="text-xs text-gray-400 font-normal">(선택사항)</span>
-                </Label>
-                <GroupSearchInput
-                  value={selectedGroupId}
-                  onChange={setSelectedGroupId}
-                  placeholder="그룹 이름을 검색하세요"
-                />
-                <p className="text-xs text-gray-400">
-                  재정관리자 승인 후 그룹에 추가됩니다.
-                </p>
-              </div>
-            )}
 
             <div className="space-y-1.5">
               <Label htmlFor="password" className="text-sm font-medium text-gray-700">비밀번호</Label>

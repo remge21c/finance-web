@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Wallet, Mail, Lock, LogIn } from "lucide-react";
+import { Mail, Lock, LogIn, Wallet } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -55,11 +55,11 @@ export default function LoginPage() {
       <div className="relative w-full max-w-sm mx-4">
         {/* 로고 영역 */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-600 rounded-2xl shadow-lg mb-4">
-            <Wallet className="h-8 w-8 text-white" />
+          <div className="inline-flex items-center justify-center w-24 h-24 mb-4 rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 drop-shadow-xl">
+            <Wallet className="h-12 w-12 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">재정관리 시스템</h1>
-          <p className="text-sm text-gray-500 mt-1">계정에 로그인하세요</p>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">재정관리 시스템</h1>
+          <p className="text-sm text-gray-500 mt-1.5">계정에 로그인하세요</p>
         </div>
 
         {/* 로그인 카드 */}

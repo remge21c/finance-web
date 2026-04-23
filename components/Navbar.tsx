@@ -22,7 +22,9 @@ import {
   FileText,
   Menu,
   X,
+  Building2,
 } from "lucide-react";
+import Image from "next/image";
 
 interface NavbarProps {
   user: User;
@@ -34,11 +36,17 @@ interface NavbarProps {
 export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정관리", pendingRequestCount = 0 }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { groups, currentGroup, setCurrentGroup, hasWritePermission } = useGroupContext();
+  const { groups, currentGroup, setCurrentGroup, hasWritePermission, currentPermissionLevel, loading } = useGroupContext();
+
+  // 그룹 관리 권한: 슈퍼관리자 또는 그룹 관리자만
+  const hasGroupAdminPermission = isSuperAdmin || currentPermissionLevel === 'admin';
   const { settings } = useDataContext();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const displayTitle = settings?.app_title || appTitle;
+
+  // 그룹 승인 대기 체크 (슈퍼관리자 제외)
+  const isPendingGroup = !isSuperAdmin && !loading && groups.length === 0;
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -53,7 +61,7 @@ export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정�
     { href: "/dashboard", label: "재정출납부", icon: <Wallet className="h-4 w-4" /> },
     { href: "/dashboard/reports", label: "보고서", icon: <FileText className="h-4 w-4" /> },
     { href: "/dashboard/all", label: "전체목록", icon: <LayoutList className="h-4 w-4" /> },
-    ...(hasWritePermission ? [{ href: "/dashboard/settings", label: "설정", icon: <Settings className="h-4 w-4" /> }] : []),
+    ...(hasGroupAdminPermission ? [{ href: "/dashboard/settings", label: "설정", icon: <Settings className="h-4 w-4" /> }] : []),
   ];
 
   return (
@@ -64,29 +72,44 @@ export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정�
           {/* 로고 */}
           <div className="flex items-center space-x-2 sm:space-x-4">
             <Link href="/dashboard" className="flex items-center gap-2 sm:gap-3 font-bold tracking-tight hover:opacity-90 transition-opacity">
-              <div className="bg-emerald-600 rounded-lg p-1.5 sm:p-2 border border-emerald-500">
-                <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
-              </div>
+              <Building2 className="h-8 w-8 text-emerald-100" />
               <span className="text-base sm:text-lg truncate max-w-[140px] sm:max-w-none">{displayTitle}</span>
             </Link>
           </div>
 
           {/* 데스크톱 네비게이션 링크 */}
           <div className="hidden md:flex items-center space-x-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                  pathname === link.href
-                    ? "bg-emerald-800 text-white"
-                    : "text-emerald-100 hover:bg-emerald-600 hover:text-white"
-                }`}
-              >
-                {link.icon}
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              
+              if (isPendingGroup) {
+                return (
+                  <button
+                    key={link.href}
+                    onClick={() => toast.warning("소속된 그룹이 없습니다. 관리자의 승인을 기다려주세요.")}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-colors text-emerald-300/50 cursor-not-allowed"
+                  >
+                    {link.icon}
+                    {link.label}
+                  </button>
+                );
+              }
+
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-emerald-800 text-white"
+                      : "text-emerald-100 hover:bg-emerald-600 hover:text-white"
+                  }`}
+                >
+                  {link.icon}
+                  {link.label}
+                </Link>
+              );
+            })}
           </div>
 
           {/* 사용자 메뉴 */}
@@ -106,29 +129,18 @@ export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정�
               )}
             </div>
 
-            {/* 슈퍼관리자 버튼 (데스크톱) */}
+            {/* 관리자 버튼 (데스크톱) */}
             <div className="hidden lg:flex items-center gap-2">
-              {isSuperAdmin && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-white hover:bg-emerald-600 border border-emerald-500/60 text-sm gap-2"
-                    onClick={() => router.push("/admin/users")}
-                  >
-                    <Users className="h-4 w-4" />
-                    사용자 관리
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-white hover:bg-emerald-600 border border-emerald-500/60 text-sm gap-2"
-                    onClick={() => router.push("/dashboard/finance/groups")}
-                  >
-                    <Shield className="h-4 w-4" />
-                    그룹 관리
-                  </Button>
-                </>
+              {(isSuperAdmin || currentPermissionLevel === "admin") && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white hover:bg-emerald-600 border border-emerald-500/60 text-sm gap-2"
+                  onClick={() => router.push("/admin/users")}
+                >
+                  <Shield className="h-4 w-4" />
+                  {isSuperAdmin ? "전체 관리" : "소속그룹 관리"}
+                </Button>
               )}
             </div>
 
@@ -138,7 +150,7 @@ export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정�
                 {user.email}
               </span>
 
-              <Link href={pendingRequestCount > 0 ? "/dashboard/finance/groups" : "/dashboard/profile"} className="relative">
+              <Link href={pendingRequestCount > 0 ? "/admin/users" : "/dashboard/profile"} className="relative">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -197,52 +209,58 @@ export default function Navbar({ user, isSuperAdmin = false, appTitle = "재정�
 
             {/* 네비게이션 링크 */}
             <div className="space-y-1 px-3 mb-3">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium transition-colors min-h-[48px] ${
-                    pathname === link.href
-                      ? "bg-emerald-800 text-white"
-                      : "text-emerald-100 hover:bg-emerald-600 hover:text-white"
-                  }`}
-                >
-                  {link.icon}
-                  {link.label}
-                </Link>
-              ))}
+              {navLinks.map((link) => {
+                const isActive = pathname === link.href;
+
+                if (isPendingGroup) {
+                  return (
+                    <button
+                      key={link.href}
+                      onClick={() => {
+                        toast.warning("소속된 그룹이 없습니다. 관리자의 승인을 기다려주세요.");
+                        setMobileMenuOpen(false);
+                      }}
+                      className="flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium transition-colors min-h-[48px] text-emerald-300/40 w-full text-left cursor-not-allowed"
+                    >
+                      {link.icon}
+                      {link.label}
+                    </button>
+                  );
+                }
+
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium transition-colors min-h-[48px] ${
+                      isActive
+                        ? "bg-emerald-800 text-white"
+                        : "text-emerald-100 hover:bg-emerald-600 hover:text-white"
+                    }`}
+                  >
+                    {link.icon}
+                    {link.label}
+                  </Link>
+                );
+              })}
             </div>
 
             {/* 관리자 버튼 (모바일) */}
             <div className="flex flex-col gap-2 px-3 mb-3">
-              {isSuperAdmin && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-white hover:bg-emerald-600 border border-emerald-500/60 text-sm gap-2 justify-start h-11 px-4"
-                    onClick={() => {
-                      router.push("/admin/users");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    <Users className="h-5 w-5" />
-                    사용자 관리
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-white hover:bg-emerald-600 border border-emerald-500/60 text-sm gap-2 justify-start h-11 px-4"
-                    onClick={() => {
-                      router.push("/dashboard/finance/groups");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    <Shield className="h-5 w-5" />
-                    그룹 관리
-                  </Button>
-                </>
+              {(isSuperAdmin || currentPermissionLevel === "admin") && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white hover:bg-emerald-600 border border-emerald-500/60 text-sm gap-2 justify-start h-11 px-4"
+                  onClick={() => {
+                    router.push("/admin/users");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Shield className="h-5 w-5" />
+                  {isSuperAdmin ? "전체 관리" : "소속그룹 관리"}
+                </Button>
               )}
             </div>
 
