@@ -16,6 +16,8 @@ import type { Transaction, Settings } from "@/types/database";
 import {
   startOfWeek,
   endOfWeek,
+  startOfMonth,
+  endOfMonth,
   isWithinInterval,
   parseISO,
   format,
@@ -30,7 +32,7 @@ interface TransactionTableProps {
   onDeleteSelected: () => Promise<void> | void;
   onCsvExport?: () => void;
   onCsvImport?: () => void;
-  viewMode: "weekly" | "all";
+  viewMode: "weekly" | "monthly" | "all";
   readOnly?: boolean;
 }
 
@@ -60,6 +62,15 @@ export default function TransactionTable({
       filtered = transactions.filter((t) => {
         const date = parseISO(t.date);
         return isWithinInterval(date, { start: weekStart, end: weekEnd });
+      });
+    } else if (viewMode === "monthly") {
+      const today = new Date();
+      const monthStart = startOfMonth(today);
+      const monthEnd = endOfMonth(today);
+
+      filtered = transactions.filter((t) => {
+        const date = parseISO(t.date);
+        return isWithinInterval(date, { start: monthStart, end: monthEnd });
       });
     }
 
@@ -158,7 +169,9 @@ export default function TransactionTable({
                   <TableCell colSpan={7} className="text-center py-10 text-gray-500 border border-gray-300 text-sm">
                     {viewMode === "weekly"
                       ? "이번 주 거래 내역이 없습니다."
-                      : "거래 내역이 없습니다."}
+                      : viewMode === "monthly"
+                        ? "이번 달 거래 내역이 없습니다."
+                        : "거래 내역이 없습니다."}
                   </TableCell>
                 </TableRow>
               ) : (

@@ -400,7 +400,7 @@ export default function TransactionForm({
         </div>
 
         {/* 버튼들 - 추가, 수정, 삭제, 새입력 */}
-        <div className="flex flex-wrap gap-2 items-center w-full sm:w-auto sm:mt-auto">
+        <div className="flex flex-wrap gap-2 items-center w-full sm:w-auto sm:self-end sm:mb-[7px]">
           <Button
             type="submit"
             disabled={loading || !currentItem || !amount || readOnly}

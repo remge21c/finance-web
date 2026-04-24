@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
@@ -14,9 +14,19 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: '#059669',
+  viewportFit: 'cover',
+}
+
 export const metadata: Metadata = {
   title: "재정 관리 프로그램",
   description: "수입/지출 관리 및 주간 보고서 생성",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: '재정관리',
+  },
 };
 
 export default function RootLayout({

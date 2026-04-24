@@ -283,6 +283,45 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+      {/* 회원 탈퇴 (위험지대) */}
+      <Card className="border-red-100 bg-red-50/30">
+        <CardHeader className="py-3 sm:py-4 px-3 sm:px-6">
+          <CardTitle className="text-lg sm:text-xl text-red-600">회원 탈퇴</CardTitle>
+          <CardDescription className="text-xs sm:text-sm text-red-500">계정을 삭제하면 모든 정보가 즉시 삭제되며 복구할 수 없습니다.</CardDescription>
+        </CardHeader>
+        <CardContent className="px-3 sm:px-6 pb-6">
+          <Button 
+            variant="outline" 
+            className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 text-xs sm:text-sm h-9 sm:h-10"
+            onClick={async () => {
+              if (!confirm("정말로 탈퇴하시겠습니까?\n모든 데이터가 삭제되며 이 작업은 되돌릴 수 없습니다.")) return;
+              
+              setSaving(true);
+              try {
+                const res = await fetch("/api/user/withdraw", { method: "POST" });
+                const result = await res.json();
+                
+                if (!res.ok) {
+                  toast.error(result.error || "탈퇴 처리 중 오류가 발생했습니다.");
+                  return;
+                }
+                
+                toast.success("탈퇴가 완료되었습니다. 그동안 이용해 주셔서 감사합니다.");
+                const supabase = createClient();
+                await supabase.auth.signOut();
+                router.push("/");
+              } catch {
+                toast.error("탈퇴 요청에 실패했습니다.");
+              } finally {
+                setSaving(false);
+              }
+            }}
+            disabled={saving}
+          >
+            본인 확인 및 계정 삭제
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -69,6 +69,7 @@ export async function proxy(request: NextRequest) {
     // 로그인된 사용자 - 상태 확인
     let status = 'pending'
     let isSuperAdmin = false
+    let isGroupAdmin = false
 
     try {
       const { data: userStatus, error: statusError } = await supabase
@@ -79,7 +80,21 @@ export async function proxy(request: NextRequest) {
 
       if (!statusError && userStatus) {
         status = userStatus.status || 'pending'
+        // 기존 is_finance_admin 체크용 캐스팅 (하위호환)
+        const isFinanceAdmin = (userStatus as any).is_finance_admin === true
         isSuperAdmin = userStatus.is_super_admin || false
+        if (isFinanceAdmin) isGroupAdmin = true
+      }
+
+      if (!isGroupAdmin) {
+        const { data: adminMembership } = await supabase
+          .from('finance_group_members')
+          .select('id')
+          .eq('user_id', user.id)
+          .or('permission_level.eq.admin,role.eq.admin,role.eq.owner')
+          .limit(1)
+          .maybeSingle()
+        isGroupAdmin = !!adminMembership
       }
     } catch (e) {
       console.error('Middleware status check error:', e)
@@ -120,11 +135,22 @@ export async function proxy(request: NextRequest) {
     }
 
     // 승인된 사용자
-    // 관리자 페이지는 Super Admin만 접근 가능
-    if (isAdminPage && !isSuperAdmin) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/dashboard'
-      return NextResponse.redirect(url)
+    // 관리자 페이지 접근 제어
+    if (isAdminPage) {
+      const isGroupsPage = pathname.startsWith('/admin/groups')
+      
+      // /admin/groups 는 최고관리자만 허용
+      if (isGroupsPage && !isSuperAdmin) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/dashboard'
+        return NextResponse.redirect(url)
+      } 
+      // 그 외 /admin 페이지는 최고관리자 또는 그룹관리자 모두 허용
+      else if (!isSuperAdmin && !isGroupAdmin) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/dashboard'
+        return NextResponse.redirect(url)
+      }
     }
 
     // 승인된 사용자가 /pending 페이지 접근 시 대시보드로 리다이렉트
@@ -134,6 +160,7 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
+    supabaseResponse.headers.set("x-pathname", pathname)
     return supabaseResponse
   } catch (error) {
     console.error('Middleware unexpected error:', error)

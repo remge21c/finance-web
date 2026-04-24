@@ -4,30 +4,25 @@
 // 그룹 관련 타입
 // ================================================
 
+export type PermissionLevel = 'admin' | 'assistant' | 'general';
+
 export interface Group {
   id: string;
   name: string;
   description: string;
-  group_type: 'personal' | 'department';
+  group_type: 'department';
   created_by: string;
-  permissions: GroupPermissions;
   created_at: string;
   updated_at: string;
-}
-
-// 그룹 권한 설정
-export interface GroupPermissions {
-  can_write: string[];  // 쓰기 권한 (추가/수정)
-  can_read: string[];   // 읽기/보기 권한 (조회만)
 }
 
 export interface GroupMember {
   id: string;
   group_id: string;
   user_id: string;
-  role: 'owner' | 'admin' | 'finance_admin' | 'member';
+  permission_level: PermissionLevel;
   joined_at: string;
-  user_email?: string; // JOIN 시 가져온 이메일
+  user_email?: string;
 }
 
 export interface GroupWithMembers extends Group {
@@ -43,7 +38,7 @@ export interface GroupInput {
 export interface GroupMemberInput {
   group_id: string;
   user_id: string;
-  role: 'owner' | 'admin' | 'finance_admin' | 'member';
+  permission_level?: PermissionLevel;
 }
 
 // ================================================
@@ -141,11 +136,7 @@ export interface UserStatus {
   name: string;
   status: UserStatusType;
   is_super_admin: boolean;
-  is_finance_admin: boolean;      // 재정관리자 여부
-  finance_admin_approved_by: string | null;  // 재정관리자 승인자
-  finance_admin_approved_at: string | null;  // 재정관리자 승인일시
-  requested_group_id: string | null;  // 요청한 그룹 ID
-  requested_role: 'finance_admin' | 'user';  // 가입 시 요청 역할
+  requested_group_id: string | null;
   approved_by: string | null;
   rejected_reason: string;
   created_at: string;

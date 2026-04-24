@@ -12,7 +12,7 @@ import NoGroupAvailable from "@/components/NoGroupAvailable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Eye, CalendarDays, List } from "lucide-react";
+import { Eye, CalendarDays, Calendar, List } from "lucide-react";
 import type { Transaction, TransactionInput } from "@/types/database";
 
 export default function DashboardPage() {
@@ -24,7 +24,7 @@ export default function DashboardPage() {
 
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<"weekly" | "all">("weekly");
+  const [viewMode, setViewMode] = useState<"weekly" | "monthly" | "all">("weekly");
 
   const loading = groupsLoading || userStatusLoading || txLoading || settingsLoading;
 
@@ -353,6 +353,15 @@ export default function DashboardPage() {
                     주간보기
                   </Button>
                   <Button
+                    variant={viewMode === "monthly" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setViewMode("monthly")}
+                    className={`gap-2 text-sm h-10 ${viewMode === "monthly" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+                  >
+                    <Calendar className="h-4 w-4" />
+                    월간보기
+                  </Button>
+                  <Button
                     variant={viewMode === "all" ? "default" : "outline"}
                     size="sm"
                     onClick={() => setViewMode("all")}
@@ -366,23 +375,24 @@ export default function DashboardPage() {
             </div>
 
             {/* 입력 폼 */}
-            {!hasWritePermission && (
-              <div className="mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 flex items-center gap-2">
+            {hasWritePermission ? (
+              <TransactionForm
+                settings={settings}
+                selectedTransaction={selectedTransaction}
+                selectedCount={selectedIds.length}
+                transactions={transactions}
+                onSubmit={handleSubmit}
+                onUpdate={handleUpdate}
+                onDelete={handleDeleteSelected}
+                onClear={handleClear}
+                readOnly={false}
+              />
+            ) : (
+              <div className="px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 flex items-center gap-2">
                 <Eye className="h-4 w-4 flex-shrink-0" />
                 <span>읽기 전용 모드 — 이 그룹의 데이터를 조회만 할 수 있습니다.</span>
               </div>
             )}
-            <TransactionForm
-              settings={settings}
-              selectedTransaction={selectedTransaction}
-              selectedCount={selectedIds.length}
-              transactions={transactions}
-              onSubmit={handleSubmit}
-              onUpdate={handleUpdate}
-              onDelete={handleDeleteSelected}
-              onClear={handleClear}
-              readOnly={!hasWritePermission}
-            />
           </CardContent>
         </Card>
       </div>
@@ -407,6 +417,15 @@ export default function DashboardPage() {
                 주간
               </Button>
               <Button
+                variant={viewMode === "monthly" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("monthly")}
+                className={`gap-2 text-sm h-10 px-4 ${viewMode === "monthly" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+              >
+                <Calendar className="h-4 w-4" />
+                월간
+              </Button>
+              <Button
                 variant={viewMode === "all" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setViewMode("all")}
@@ -419,30 +438,29 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 읽기 권한 경고 */}
-        {!hasWritePermission && (
+        {/* 모바일 입력 폼 */}
+        {hasWritePermission ? (
+          <Card className="shadow-sm bg-white mb-4">
+            <CardContent className="p-3">
+              <TransactionForm
+                settings={settings}
+                selectedTransaction={selectedTransaction}
+                selectedCount={selectedIds.length}
+                transactions={transactions}
+                onSubmit={handleSubmit}
+                onUpdate={handleUpdate}
+                onDelete={handleDeleteSelected}
+                onClear={handleClear}
+                readOnly={false}
+              />
+            </CardContent>
+          </Card>
+        ) : (
           <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 flex items-center gap-2">
             <Eye className="h-5 w-5 flex-shrink-0" />
             <span>읽기 전용 모드 — 이 그룹의 데이터를 조회만 할 수 있습니다.</span>
           </div>
         )}
-
-        {/* 모바일 입력 폼 */}
-        <Card className="shadow-sm bg-white mb-4">
-          <CardContent className="p-3">
-            <TransactionForm
-              settings={settings}
-              selectedTransaction={selectedTransaction}
-              selectedCount={selectedIds.length}
-              transactions={transactions}
-              onSubmit={handleSubmit}
-              onUpdate={handleUpdate}
-              onDelete={handleDeleteSelected}
-              onClear={handleClear}
-              readOnly={!hasWritePermission}
-            />
-          </CardContent>
-        </Card>
       </div>
 
       {/* 거래 테이블 */}

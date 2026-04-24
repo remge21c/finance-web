@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Group, GroupInput } from "@/types/database";
+import type { Group, GroupInput, PermissionLevel } from "@/types/database";
 import {
   getUserGroups,
   createGroup as createGroupApi,
@@ -17,9 +17,10 @@ interface GroupContextType {
   loading: boolean;
   currentGroup: Group | null;
   setCurrentGroup: (group: Group | null) => void;
-  canCreateGroup: boolean;
+  isSuperAdmin: boolean;
   financeMode: FinanceMode;
-  hasWritePermission: boolean; // 현재 그룹에 쓰기 권한 여부
+  hasWritePermission: boolean;
+  currentPermissionLevel: PermissionLevel | null;
   createGroup: (input: GroupInput) => Promise<{ success: boolean; error?: string }>;
   updateGroup: (groupId: string, input: Partial<GroupInput>) => Promise<{ success: boolean; error?: string }>;
   deleteGroup: (groupId: string) => Promise<{ success: boolean; error?: string }>;
@@ -38,9 +39,8 @@ export function GroupProvider({ children }: GroupProviderProps) {
   const [currentGroup, setCurrentGroup] = useState<Group | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
-  const [canCreateGroup, setCanCreateGroup] = useState(false);
-  const [isAdminUser, setIsAdminUser] = useState(false); // super admin 또는 finance admin
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [currentPermissionLevel, setCurrentPermissionLevel] = useState<PermissionLevel | null>(null);
 
   // 사용자 ID 및 권한 가져오기
   useEffect(() => {
@@ -53,13 +53,10 @@ export function GroupProvider({ children }: GroupProviderProps) {
 
           const { data: userStatus } = await supabase
             .from("finance_user_status")
-            .select("is_super_admin, is_finance_admin")
+            .select("is_super_admin")
             .eq("user_id", user.id)
             .maybeSingle();
 
-          const canCreate = userStatus?.is_super_admin || userStatus?.is_finance_admin || false;
-          setCanCreateGroup(canCreate);
-          setIsAdminUser(canCreate);
           setIsSuperAdmin(userStatus?.is_super_admin || false);
         }
       } catch (err) {
@@ -99,20 +96,37 @@ export function GroupProvider({ children }: GroupProviderProps) {
     }
   }, [userId, initialized]);
 
-  // 관리자(슈퍼/재정)는 모든 그룹, 일반 사용자는 department 타입만
-  const groups = isAdminUser
+  // 슈퍼관리자는 모든 그룹, 일반 사용자는 department 타입만
+  const groups = isSuperAdmin
     ? allGroups
     : allGroups.filter(g => g.group_type === "department");
 
-  // 현재 그룹에 대한 쓰기 권한 계산
-  // - 관리자(super/finance admin)는 항상 쓰기 가능
-  // - 일반 사용자는 can_write 배열에 포함된 경우만
-  const hasWritePermission: boolean = (() => {
-    if (isAdminUser) return true;
-    if (!currentGroup || !userId) return false;
-    const permissions = currentGroup.permissions || { can_write: [], can_read: [] };
-    return permissions.can_write.includes(userId);
-  })();
+  // 현재 그룹의 permission_level 조회
+  useEffect(() => {
+    if (!currentGroup || !userId) {
+      setCurrentPermissionLevel(null);
+      return;
+    }
+    if (isSuperAdmin) {
+      setCurrentPermissionLevel('admin');
+      return;
+    }
+    const supabase = createClient();
+    supabase
+      .from("finance_group_members")
+      .select("permission_level")
+      .eq("group_id", currentGroup.id)
+      .eq("user_id", userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        setCurrentPermissionLevel((data?.permission_level as PermissionLevel) ?? null);
+      });
+  }, [currentGroup, userId, isSuperAdmin]);
+
+  const hasWritePermission: boolean =
+    isSuperAdmin ||
+    currentPermissionLevel === 'admin' ||
+    currentPermissionLevel === 'assistant';
 
   // currentGroup 자동 설정
   useEffect(() => {
@@ -150,7 +164,7 @@ export function GroupProvider({ children }: GroupProviderProps) {
 
   // 그룹 생성
   const createGroup = async (input: GroupInput) => {
-    if (!canCreateGroup) {
+    if (!isSuperAdmin) {
       return { success: false, error: "그룹 생성 권한이 없습니다." };
     }
 
@@ -201,9 +215,10 @@ export function GroupProvider({ children }: GroupProviderProps) {
         loading,
         currentGroup,
         setCurrentGroup: handleSetCurrentGroup,
-        canCreateGroup,
+        isSuperAdmin,
         financeMode: "group",
         hasWritePermission,
+        currentPermissionLevel,
         createGroup,
         updateGroup,
         deleteGroup,

@@ -145,11 +145,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (!canCreateSettings) {
         const { data: memberRole } = await supabase
           .from("finance_group_members")
-          .select("role")
+          .select("permission_level")
           .eq("user_id", userId)
           .eq("group_id", currentGroup.id)
           .maybeSingle();
-        canCreateSettings = memberRole?.role === "owner" || memberRole?.role === "admin";
+        canCreateSettings = memberRole?.permission_level === "admin";
       }
 
       if (canCreateSettings) {
