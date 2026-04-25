@@ -41,6 +41,7 @@ export function GroupProvider({ children }: GroupProviderProps) {
   const [initialized, setInitialized] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [currentPermissionLevel, setCurrentPermissionLevel] = useState<PermissionLevel | null>(null);
+  const [primaryGroupId, setPrimaryGroupId] = useState<string | null>(null);
 
   // 사용자 ID 및 권한 가져오기
   useEffect(() => {
@@ -53,11 +54,12 @@ export function GroupProvider({ children }: GroupProviderProps) {
 
           const { data: userStatus } = await supabase
             .from("finance_user_status")
-            .select("is_super_admin")
+            .select("is_super_admin, primary_group_id")
             .eq("user_id", user.id)
             .maybeSingle();
 
           setIsSuperAdmin(userStatus?.is_super_admin || false);
+          setPrimaryGroupId(userStatus?.primary_group_id || null);
         }
       } catch (err) {
         console.error("[GroupContext] getUser error:", err);
@@ -135,24 +137,28 @@ export function GroupProvider({ children }: GroupProviderProps) {
     // localStorage에서 선택한 그룹 확인
     if (!currentGroup && groups.length > 0) {
       const storedGroupId = localStorage.getItem("selectedGroupId");
-      console.log("[GroupContext] storedGroupId:", storedGroupId);
+      console.log("[GroupContext] storedGroupId:", storedGroupId, "primaryGroupId:", primaryGroupId);
 
       if (storedGroupId) {
         const selectedGroup = groups.find(g => g.id === storedGroupId);
-        console.log("[GroupContext] selectedGroup from groups:", selectedGroup?.name);
-
         if (selectedGroup) {
           console.log("[GroupContext] 선택한 그룹으로 currentGroup 설정:", selectedGroup.name);
           setCurrentGroup(selectedGroup);
           return;
-        } else {
-          console.log("[GroupContext] 선택한 그룹이 groups 배열에 없음");
         }
       }
-    }
+      
+      // 저장된 그룹이 없고 우선 접속 그룹(primaryGroupId)이 있다면 그것을 사용
+      if (primaryGroupId) {
+        const primaryGroup = groups.find(g => g.id === primaryGroupId);
+        if (primaryGroup) {
+          console.log("[GroupContext] 우선 접속 그룹으로 currentGroup 설정:", primaryGroup.name);
+          setCurrentGroup(primaryGroup);
+          return;
+        }
+      }
 
-    // 기본 동작: 첫 번째 그룹 선택
-    if (groups.length > 0 && !currentGroup) {
+      // 기본 동작: 첫 번째 그룹 선택
       console.log("[GroupContext] 첫 번째 그룹으로 currentGroup 설정:", groups[0].name);
       setCurrentGroup(groups[0]);
     } else if (currentGroup && !groups.find(g => g.id === currentGroup.id)) {
@@ -160,7 +166,7 @@ export function GroupProvider({ children }: GroupProviderProps) {
       console.log("[GroupContext] 현재 그룹이 필터된 목록에 없어서 첫 번째 그룹으로 설정");
       setCurrentGroup(groups[0] || null);
     }
-  }, [groups]);
+  }, [groups, primaryGroupId]);
 
   // 그룹 생성
   const createGroup = async (input: GroupInput) => {

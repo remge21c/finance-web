@@ -1,0 +1,1 @@
+ALTER TABLE finance_user_status ADD COLUMN primary_group_id UUID REFERENCES finance_groups(id) ON DELETE SET NULL;

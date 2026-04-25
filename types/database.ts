@@ -141,6 +141,7 @@ export interface UserStatus {
   rejected_reason: string;
   created_at: string;
   updated_at: string;
+  primary_group_id?: string | null;
 }
 
 export type GroupJoinRequestStatus = 'pending' | 'approved' | 'rejected';

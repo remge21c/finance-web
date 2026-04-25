@@ -25,6 +25,7 @@ export default function ProfilePage() {
   const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [primaryGroupId, setPrimaryGroupId] = useState<string | null>(null);
 
   const [myGroups, setMyGroups] = useState<GroupInfo[]>([]);
   const [joinRequests, setJoinRequests] = useState<(GroupJoinRequest & { group_name: string })[]>([]);
@@ -40,10 +41,13 @@ export default function ProfilePage() {
 
     const { data: statusData } = await supabase
       .from("finance_user_status")
-      .select("name")
+      .select("name, primary_group_id")
       .eq("user_id", user.id)
       .maybeSingle();
-    if (statusData) setName(statusData.name || "");
+    if (statusData) {
+      setName(statusData.name || "");
+      setPrimaryGroupId(statusData.primary_group_id || null);
+    }
 
     // 현재 소속 그룹
     const { data: memberData } = await supabase
@@ -159,6 +163,27 @@ export default function ProfilePage() {
     }
   };
 
+  const handleSetPrimaryGroup = async (groupId: string) => {
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const newPrimaryId = primaryGroupId === groupId ? null : groupId;
+      
+      const { error } = await supabase
+        .from("finance_user_status")
+        .update({ primary_group_id: newPrimaryId })
+        .eq("user_id", user.id);
+        
+      if (error) throw error;
+      setPrimaryGroupId(newPrimaryId);
+      toast.success(newPrimaryId ? "우선 접속 그룹이 설정되었습니다." : "우선 접속 그룹 설정이 해제되었습니다.");
+    } catch {
+      toast.error("우선 그룹 설정에 실패했습니다.");
+    }
+  };
+
   const statusLabel = (status: string) => {
     if (status === "pending") return <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">대기 중</span>;
     if (status === "approved") return <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">승인됨</span>;
@@ -229,9 +254,23 @@ export default function ProfilePage() {
                 <p className="text-xs sm:text-sm text-gray-400">소속된 그룹이 없습니다.</p>
               )
             ) : (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-col gap-2">
                 {myGroups.map(g => (
-                  <span key={g.id} className="inline-flex items-center bg-blue-50 text-blue-700 text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-full border border-blue-200">{g.name}</span>
+                  <div key={g.id} className="flex items-center justify-between bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+                    <span className="text-blue-700 text-xs sm:text-sm font-medium">{g.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleSetPrimaryGroup(g.id)}
+                      className={`text-xs px-2 py-1 rounded-md transition-colors ${
+                        primaryGroupId === g.id
+                          ? "bg-blue-600 text-white font-medium"
+                          : "bg-white text-blue-600 border border-blue-200 hover:bg-blue-100"
+                      }`}
+                      title={primaryGroupId === g.id ? "현재 우선 접속 그룹입니다" : "로그인 시 이 그룹으로 우선 접속합니다"}
+                    >
+                      {primaryGroupId === g.id ? "★ 우선 접속" : "☆ 우선 설정"}
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
