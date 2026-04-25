@@ -1,6 +1,8 @@
-const CACHE_NAME = 'finance-v4'
+const CACHE_NAME = 'finance-v5'
 const OFFLINE_URL = '/offline.html'
 const PRECACHE_URLS = [
+  "/",
+  "/login",
   OFFLINE_URL,
   '/icon-192x192.png',
   '/icon-512x512.png',
