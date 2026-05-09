@@ -82,6 +82,9 @@ export interface Settings {
   expense_items: string[];
   income_budgets: number[];
   expense_budgets: number[];
+  ui_sign_1: string;
+  ui_sign_2: string;
+  ui_sign_3: string;
   author: string;
   manager: string;
   auditor: string;
@@ -102,6 +105,9 @@ export interface SettingsInput {
   expense_items: string[];
   income_budgets: number[];
   expense_budgets: number[];
+  ui_sign_1?: string;
+  ui_sign_2?: string;
+  ui_sign_3?: string;
   author: string;
   manager: string;
   auditor?: string;

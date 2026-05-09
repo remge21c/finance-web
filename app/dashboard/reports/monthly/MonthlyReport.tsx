@@ -160,6 +160,9 @@ export default function MonthlyReport() {
 
     const expenseTableRows = expenseDataRows + emptyExpenseRows;
 
+    const sign1Label = settings?.ui_sign_1 || '작성자';
+    const sign2Label = settings?.ui_sign_2 || '책임자';
+    const sign3Label = settings?.ui_sign_3 || '감사자';
     const author = settings?.author || '';
     const manager = settings?.manager || '';
     const auditor = settings?.auditor || '';
@@ -382,9 +385,9 @@ export default function MonthlyReport() {
         </div>
         <div class="signature-section">
             <div class="signature-row">
-                <div class="signature-box"><div class="signature-label">작성자: ${author}</div><div class="signature-line"></div></div>
-                <div class="signature-box"><div class="signature-label">책임자: ${manager}</div><div class="signature-line"></div></div>
-                <div class="signature-box"><div class="signature-label">감사자: ${auditor}</div><div class="signature-line"></div></div>
+                <div class="signature-box"><div class="signature-label">${sign1Label}: ${author}</div><div class="signature-line"></div></div>
+                <div class="signature-box"><div class="signature-label">${sign2Label}: ${manager}</div><div class="signature-line"></div></div>
+                <div class="signature-box"><div class="signature-label">${sign3Label}: ${auditor}</div><div class="signature-line"></div></div>
             </div>
         </div>
     </div>

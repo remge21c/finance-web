@@ -33,6 +33,9 @@ export default function SettingsPage() {
   
   // 재정출납부 정보
   const [appTitle, setAppTitle] = useState("재정관리");
+  const [sign1Label, setSign1Label] = useState("작성자");
+  const [sign2Label, setSign2Label] = useState("책임자");
+  const [sign3Label, setSign3Label] = useState("감사자");
   const [author, setAuthor] = useState("");
   const [manager, setManager] = useState("");
   const [auditor, setAuditor] = useState("");
@@ -51,6 +54,9 @@ export default function SettingsPage() {
     incomeBudgets: Array(10).fill(""),
     expenseBudgets: Array(10).fill(""),
     appTitle: "재정관리",
+    sign1Label: "작성자",
+    sign2Label: "책임자",
+    sign3Label: "감사자",
     author: "",
     manager: "",
     auditor: "",
@@ -85,6 +91,9 @@ export default function SettingsPage() {
       setIncomeBudgets(incomeBudgetsStr);
       setExpenseBudgets(expenseBudgetsStr);
       setAppTitle(settings.app_title || "재정관리");
+      setSign1Label(settings.ui_sign_1 || "작성자");
+      setSign2Label(settings.ui_sign_2 || "책임자");
+      setSign3Label(settings.ui_sign_3 || "감사자");
       setAuthor(settings.author || "");
       setManager(settings.manager || "");
       setAuditor(settings.auditor || "");
@@ -101,6 +110,9 @@ export default function SettingsPage() {
         incomeBudgets: [...incomeBudgetsStr],
         expenseBudgets: [...expenseBudgetsStr],
         appTitle: settings.app_title || "재정관리",
+        sign1Label: settings.ui_sign_1 || "작성자",
+        sign2Label: settings.ui_sign_2 || "책임자",
+        sign3Label: settings.ui_sign_3 || "감사자",
         author: settings.author || "",
         manager: settings.manager || "",
         auditor: settings.auditor || "",
@@ -136,11 +148,14 @@ export default function SettingsPage() {
   
   const hasAuthorInfoChanged = useMemo(() =>
     appTitle !== originalValues.appTitle ||
+    sign1Label !== originalValues.sign1Label ||
+    sign2Label !== originalValues.sign2Label ||
+    sign3Label !== originalValues.sign3Label ||
     author !== originalValues.author ||
     manager !== originalValues.manager ||
     auditor !== originalValues.auditor ||
     currency !== originalValues.currency,
-    [appTitle, author, manager, auditor, currency, originalValues]
+    [appTitle, sign1Label, sign2Label, sign3Label, author, manager, auditor, currency, originalValues]
   );
   
   const hasMemoChanged = useMemo(() =>
@@ -170,6 +185,9 @@ export default function SettingsPage() {
       expense_items: expenseItems.filter((i) => i.trim() !== ""),
       income_budgets: incomeBudgets.map((b) => parseFloat(b) || 0),
       expense_budgets: expenseBudgets.map((b) => parseFloat(b) || 0),
+      ui_sign_1: sign1Label,
+      ui_sign_2: sign2Label,
+      ui_sign_3: sign3Label,
       author,
       manager,
       auditor,
@@ -260,6 +278,9 @@ export default function SettingsPage() {
   const handleSaveAuthorInfo = async () => {
     const result = await updateSettings({
       app_title: appTitle,
+      ui_sign_1: sign1Label,
+      ui_sign_2: sign2Label,
+      ui_sign_3: sign3Label,
       author,
       manager,
       auditor,
@@ -269,7 +290,7 @@ export default function SettingsPage() {
       toast.error("재정출납부 정보 저장 실패: " + result.error);
     } else {
       toast.success("재정출납부 정보가 저장되었습니다.");
-      setOriginalValues(prev => ({ ...prev, appTitle, author, manager, auditor, currency }));
+      setOriginalValues(prev => ({ ...prev, appTitle, sign1Label, sign2Label, sign3Label, author, manager, auditor, currency }));
       // 상단 Navbar에 앱 타이틀 반영을 위해 페이지 새로고침
       router.refresh();
     }
@@ -529,35 +550,57 @@ export default function SettingsPage() {
                   className="h-10 text-sm"
                 />
               </div>
+              {/* 서명 라벨 + 이름 */}
               <div className="space-y-1.5">
-                <Label htmlFor="author" className="text-sm font-medium">작성자</Label>
-                <Input
-                  id="author"
-                  value={author}
-                  onChange={(e) => setAuthor(e.target.value)}
-                  placeholder="작성자 이름"
-                  className="h-10 text-sm"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="manager" className="text-sm font-medium">책임자</Label>
-                <Input
-                  id="manager"
-                  value={manager}
-                  onChange={(e) => setManager(e.target.value)}
-                  placeholder="책임자 이름"
-                  className="h-10 text-sm"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="auditor" className="text-sm font-medium">감사자</Label>
-                <Input
-                  id="auditor"
-                  value={auditor}
-                  onChange={(e) => setAuditor(e.target.value)}
-                  placeholder="감사자 이름"
-                  className="h-10 text-sm"
-                />
+                <div className="flex gap-2 mb-1">
+                  <span className="text-xs text-gray-400 w-[38%]">라벨명</span>
+                  <span className="text-xs text-gray-400 flex-1">이름</span>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={sign1Label}
+                    onChange={(e) => setSign1Label(e.target.value)}
+                    placeholder="작성자"
+                    className="h-10 text-sm w-[38%]"
+                  />
+                  <Input
+                    id="author"
+                    value={author}
+                    onChange={(e) => setAuthor(e.target.value)}
+                    placeholder="이름 입력"
+                    className="h-10 text-sm flex-1"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={sign2Label}
+                    onChange={(e) => setSign2Label(e.target.value)}
+                    placeholder="책임자"
+                    className="h-10 text-sm w-[38%]"
+                  />
+                  <Input
+                    id="manager"
+                    value={manager}
+                    onChange={(e) => setManager(e.target.value)}
+                    placeholder="이름 입력"
+                    className="h-10 text-sm flex-1"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={sign3Label}
+                    onChange={(e) => setSign3Label(e.target.value)}
+                    placeholder="감사자"
+                    className="h-10 text-sm w-[38%]"
+                  />
+                  <Input
+                    id="auditor"
+                    value={auditor}
+                    onChange={(e) => setAuditor(e.target.value)}
+                    placeholder="이름 입력"
+                    className="h-10 text-sm flex-1"
+                  />
+                </div>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="currency" className="text-sm font-medium">금액 단위</Label>
