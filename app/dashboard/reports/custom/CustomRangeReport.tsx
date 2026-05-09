@@ -566,30 +566,33 @@ export default function CustomRangeReport() {
                 <Label htmlFor="cash-custom" className="text-xs">{settings?.account1_name || "현금"}</Label>
                 <Input
                   id="cash-custom"
-                  type="number"
-                  value={cashAmount}
-                  onChange={(e) => setCashAmount(e.target.value)}
-                  className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  type="text"
+                  inputMode="numeric"
+                  value={cashAmount ? Number(cashAmount).toLocaleString('ko-KR') : ''}
+                  onChange={(e) => setCashAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                  className="h-8 text-right"
                 />
               </div>
               <div>
                 <Label htmlFor="touch-custom" className="text-xs">{settings?.account2_name || "터치앤고"}</Label>
                 <Input
                   id="touch-custom"
-                  type="number"
-                  value={touchAmount}
-                  onChange={(e) => setTouchAmount(e.target.value)}
-                  className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  type="text"
+                  inputMode="numeric"
+                  value={touchAmount ? Number(touchAmount).toLocaleString('ko-KR') : ''}
+                  onChange={(e) => setTouchAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                  className="h-8 text-right"
                 />
               </div>
               <div>
                 <Label htmlFor="other-custom" className="text-xs">{settings?.account3_name || "기타"}</Label>
                 <Input
                   id="other-custom"
-                  type="number"
-                  value={otherAmount}
-                  onChange={(e) => setOtherAmount(e.target.value)}
-                  className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  type="text"
+                  inputMode="numeric"
+                  value={otherAmount ? Number(otherAmount).toLocaleString('ko-KR') : ''}
+                  onChange={(e) => setOtherAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                  className="h-8 text-right"
                 />
               </div>
             </div>
