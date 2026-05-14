@@ -41,6 +41,14 @@ export default function ServiceWorkerManager() {
       }
     }
 
+    // 전역 스크립트에서 이미 포착된 경우 (React 마운트 전 발생한 이벤트)
+    const preCapture = (window as any).__deferredInstallPrompt;
+    if (preCapture) {
+      setDeferredPrompt(preCapture);
+      if (!localStorage.getItem("pwa_prompt_dismissed")) setShowPrompt(true);
+      delete (window as any).__deferredInstallPrompt;
+    }
+
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
