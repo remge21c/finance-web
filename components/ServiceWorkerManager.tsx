@@ -15,6 +15,10 @@ export default function ServiceWorkerManager() {
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(console.error)
+    }
+
     const checkStandalone = () => {
       return (
         window.matchMedia("(display-mode: standalone)").matches ||
