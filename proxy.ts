@@ -91,7 +91,7 @@ export async function proxy(request: NextRequest) {
           .from('finance_group_members')
           .select('id')
           .eq('user_id', user.id)
-          .or('permission_level.eq.admin,role.eq.admin,role.eq.owner')
+          .eq('permission_level', 'admin')
           .limit(1)
           .maybeSingle()
         isGroupAdmin = !!adminMembership
