@@ -245,13 +245,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // 거래 삭제
   const deleteTransaction = async (id: string) => {
     const supabase = createClient();
-    const { error } = await supabase
+    const { error, count } = await supabase
       .from("finance_transactions")
-      .delete()
+      .delete({ count: "exact" })
       .eq("id", id);
 
     if (error) {
       return { error: error.message };
+    }
+    if (count === 0) {
+      return { error: "삭제 권한이 없거나 해당 데이터를 찾을 수 없습니다." };
     }
 
     setTransactions((prev) => prev.filter((t) => t.id !== id));
@@ -261,13 +264,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // 여러 거래 삭제
   const deleteMultipleTransactions = async (ids: string[]) => {
     const supabase = createClient();
-    const { error } = await supabase
+    const { error, count } = await supabase
       .from("finance_transactions")
-      .delete()
+      .delete({ count: "exact" })
       .in("id", ids);
 
     if (error) {
       return { error: error.message };
+    }
+    if (count === 0) {
+      return { error: "삭제 권한이 없거나 해당 데이터를 찾을 수 없습니다." };
     }
 
     setTransactions((prev) => prev.filter((t) => !ids.includes(t.id)));
