@@ -165,3 +165,35 @@ export interface GroupJoinRequest {
   user_name?: string;
   user_email?: string;
 }
+
+// ================================================
+// Google Drive 백업 타입
+// ================================================
+
+export interface BackupConfig {
+  id: 'singleton';
+  refresh_token: string;
+  google_email: string | null;
+  scope: string | null;
+  connected_by: string | null;
+  connected_at: string;
+  last_backup_at: string | null;
+  last_backup_error: string | null;
+}
+
+export type BackupTriggerType = 'manual' | 'cron';
+export type BackupStatus = 'success' | 'failure';
+
+export interface BackupLog {
+  id: string;
+  group_id: string;
+  triggered_by: string | null;
+  trigger_type: BackupTriggerType;
+  status: BackupStatus;
+  file_id: string | null;
+  file_name: string | null;
+  web_view_link: string | null;
+  rotated_deleted: number;
+  error_message: string | null;
+  created_at: string;
+}

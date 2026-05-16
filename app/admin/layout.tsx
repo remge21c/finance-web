@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { GroupProvider } from "@/lib/contexts/GroupContext";
-import { Users, FolderOpen, ArrowLeft, Shield } from "lucide-react";
+import { Users, FolderOpen, ArrowLeft, Shield, Cloud } from "lucide-react";
 
 export default async function AdminLayout({
   children,
@@ -102,6 +102,12 @@ export default async function AdminLayout({
                   <>
                     <FolderOpen className="h-3.5 w-3.5 shrink-0" />
                     그룹 생성/관리
+                  </>
+                ))}
+                {navLink("/admin/backup", pathname.startsWith("/admin/backup"), (
+                  <>
+                    <Cloud className="h-3.5 w-3.5 shrink-0" />
+                    백업 설정
                   </>
                 ))}
               </div>

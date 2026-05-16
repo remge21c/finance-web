@@ -10,10 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import GroupBackupStatus from "@/components/GroupBackupStatus";
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { hasWritePermission } = useGroupContext();
+  const { hasWritePermission, currentGroup } = useGroupContext();
   const { settings, loading, updateSettings } = useSettings();
 
   // 읽기 권한자는 대시보드로 리다이렉트
@@ -687,6 +688,10 @@ export default function SettingsPage() {
               />
             </CardContent>
           </Card>
+
+          {currentGroup && (
+            <GroupBackupStatus groupId={currentGroup.id} groupName={currentGroup.name} />
+          )}
         </div>
       </div>
     </div>
