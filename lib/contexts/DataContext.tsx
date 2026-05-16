@@ -219,23 +219,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // 거래 수정
   const updateTransaction = async (id: string, input: TransactionInput) => {
     const supabase = createClient();
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("finance_transactions")
       .update(input)
-      .eq("id", id)
-      .select()
-      .single();
+      .eq("id", id);
 
     if (error) {
       return { error: error.message };
     }
 
-    setTransactions((prev) =>
-      prev.map((t) => (t.id === id ? data : t)).sort((a, b) =>
+    let updated: Transaction | undefined;
+    setTransactions((prev) => {
+      const next = prev.map((t) => {
+        if (t.id !== id) return t;
+        updated = { ...t, ...input };
+        return updated;
+      });
+      return next.sort((a, b) =>
         new Date(a.date).getTime() - new Date(b.date).getTime()
-      )
-    );
-    return { data };
+      );
+    });
+    return { data: updated };
   };
 
   // 거래 삭제

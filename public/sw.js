@@ -37,7 +37,10 @@ self.addEventListener('fetch', (event) => {
   // 네비게이션: 네트워크 우선, 실패 시 offline.html
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match(OFFLINE_URL))
+      fetch(event.request).catch(async () => {
+        const cached = await caches.match(OFFLINE_URL)
+        return cached || new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } })
+      })
     )
     return
   }
@@ -52,6 +55,9 @@ self.addEventListener('fetch', (event) => {
         }
         return response
       })
-      .catch(() => caches.match(event.request))
+      .catch(async () => {
+        const cached = await caches.match(event.request)
+        return cached || new Response('', { status: 503 })
+      })
   )
 })
