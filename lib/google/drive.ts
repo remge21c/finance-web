@@ -2,6 +2,7 @@ import { google, drive_v3 } from "googleapis";
 import { Readable } from "stream";
 import { createAdminClient } from "@/lib/supabase/admin-client";
 
+const PARENT_FOLDER_NAME = "DataBackup";
 const ROOT_FOLDER_NAME = "finance-web";
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const FOLDER_MIME = "application/vnd.google-apps.folder";
@@ -94,13 +95,14 @@ export async function ensureFolder(
   return created.data.id;
 }
 
-/** finance-web / {그룹명}_{group_id} 경로를 보장하고 그 폴더 ID 반환 */
+/** DataBackup / finance-web / {그룹명}_{group_id} 경로를 보장하고 그 폴더 ID 반환 */
 export async function ensureGroupBackupFolder(
   drive: drive_v3.Drive,
   groupName: string,
   groupId: string,
 ): Promise<string> {
-  const rootId = await ensureFolder(drive, ROOT_FOLDER_NAME, null);
+  const parentId = await ensureFolder(drive, PARENT_FOLDER_NAME, null);
+  const rootId = await ensureFolder(drive, ROOT_FOLDER_NAME, parentId);
   const folderName = sanitizeFolderName(`${groupName}_${groupId}`);
   return ensureFolder(drive, folderName, rootId);
 }
