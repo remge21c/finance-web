@@ -133,7 +133,7 @@ export async function createGroup(input: GroupInput): Promise<{ data?: Group; er
 
   const { data, error } = await supabase
     .from("finance_groups")
-    .insert({ ...input, created_by: user.id })
+    .insert({ ...input, created_by: user.id, group_type: "department" })
     .select()
     .single();
 
