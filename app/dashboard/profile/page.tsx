@@ -66,11 +66,12 @@ export default function ProfilePage() {
       setMyGroups([]);
     }
 
-    // 그룹 참여 요청 목록
+    // 그룹 참여 요청 목록 (approved 는 이미 소속 그룹에 표시되므로 제외)
     const { data: requestData } = await supabase
       .from("finance_group_join_requests")
       .select("*, finance_groups(name)")
       .eq("user_id", user.id)
+      .in("status", ["pending", "rejected"])
       .order("requested_at", { ascending: false });
 
     if (requestData) {
@@ -287,7 +288,7 @@ export default function ProfilePage() {
                       <span className="text-xs sm:text-sm font-medium text-gray-800 truncate">{req.group_name}</span>
                       {statusLabel(req.status)}
                     </div>
-                    {req.status === "pending" && (
+                    {req.status === "pending" ? (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -295,6 +296,15 @@ export default function ProfilePage() {
                         onClick={() => handleCancelRequest(req.id)}
                       >
                         취소
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 text-xs h-6 px-2"
+                        onClick={() => handleCancelRequest(req.id)}
+                      >
+                        확인
                       </Button>
                     )}
                   </div>
