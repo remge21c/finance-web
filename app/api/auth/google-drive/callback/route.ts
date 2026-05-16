@@ -66,7 +66,9 @@ export async function GET(request: NextRequest) {
   try {
     const res = await oauth2Client.getToken(code);
     tokens = res.tokens;
-  } catch {
+  } catch (err: any) {
+    const detail = err?.response?.data ?? err?.message ?? String(err);
+    console.error("[google-drive callback] token_exchange_failed:", JSON.stringify(detail));
     return redirectWithError(origin, "token_exchange_failed");
   }
 
