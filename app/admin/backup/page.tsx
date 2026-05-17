@@ -31,11 +31,15 @@ export default async function AdminBackupPage({
 
   const admin = createAdminClient();
 
-  const { data: config } = await admin
+  const { data: config, error: configError } = await admin
     .from("finance_backup_config")
     .select("google_email, connected_at, last_backup_at, last_backup_error, target_folder_id, target_folder_name, target_picked_at")
     .eq("id", "singleton")
     .maybeSingle();
+
+  if (configError) {
+    console.error("[admin/backup] finance_backup_config 조회 실패:", configError.message, "(code:", configError.code, ")");
+  }
 
   const { data: groups } = await admin
     .from("finance_groups")
@@ -86,10 +90,24 @@ export default async function AdminBackupPage({
         </Card>
       )}
 
-      {params.google === "connected" && (
+      {params.google === "connected" && !configError && (
         <Card className="border-emerald-200 bg-emerald-50">
           <CardContent className="py-3 px-4 text-sm text-emerald-700">
             Google Drive 가 성공적으로 연결되었습니다.
+          </CardContent>
+        </Card>
+      )}
+
+      {configError && (
+        <Card className="border-amber-300 bg-amber-50">
+          <CardContent className="py-3 px-4 text-sm text-amber-800 space-y-1">
+            <div className="font-medium">
+              백업 설정 테이블 조회에 실패했습니다 — SQL 마이그레이션이 필요할 수 있습니다.
+            </div>
+            <div className="text-xs font-mono">{configError.message}</div>
+            <div className="text-xs mt-1">
+              Supabase Dashboard → SQL Editor 에서 <code className="bg-amber-100 px-1 rounded">supabase/add_backup_target_folder.sql</code> 을 실행하세요.
+            </div>
           </CardContent>
         </Card>
       )}
