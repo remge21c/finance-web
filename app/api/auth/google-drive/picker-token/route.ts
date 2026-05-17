@@ -46,13 +46,20 @@ export async function GET(_request: NextRequest) {
   try {
     const { token } = await oauth2Client.getAccessToken();
     if (!token) {
-      return NextResponse.json({ error: "토큰 발급 실패" }, { status: 500 });
+      return NextResponse.json({ error: "토큰 발급 실패 (token 빈 값)", code: "EMPTY_TOKEN" }, { status: 500 });
     }
     // Google access_token 의 기본 수명은 약 3600초 (1시간)
     return NextResponse.json({ accessToken: token, expiresIn: 3600 });
   } catch (err: any) {
     const detail = err?.response?.data ?? err?.message ?? String(err);
-    console.error("[picker-token] access token 발급 실패:", JSON.stringify(detail));
-    return NextResponse.json({ error: "토큰 발급 실패", code: "TOKEN_FETCH_FAILED" }, { status: 500 });
+    const detailStr = typeof detail === "string" ? detail : JSON.stringify(detail);
+    console.error("[picker-token] access token 발급 실패:", detailStr);
+    return NextResponse.json(
+      {
+        error: `토큰 발급 실패: ${detailStr.slice(0, 200)}`,
+        code: "TOKEN_FETCH_FAILED",
+      },
+      { status: 500 },
+    );
   }
 }
