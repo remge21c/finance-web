@@ -34,16 +34,18 @@ export async function POST(request: NextRequest) {
   }
 
   // 검증: 실제 Drive 에 해당 폴더가 존재하며 폴더 타입인지 확인 (Picker 응답 위·변조 방어)
+  // drive.file scope 한계로 검증 실패할 수 있음 — 실패 시 경고만 남기고 저장은 진행
   try {
     const drive = await getDriveClient();
     const file = await drive.files.get({ fileId: folderId, fields: "id,name,mimeType" });
     if (file.data.mimeType !== "application/vnd.google-apps.folder") {
-      return NextResponse.json({ error: "폴더가 아닙니다." }, { status: 400 });
+      return NextResponse.json({ error: "선택한 항목이 폴더가 아닙니다." }, { status: 400 });
     }
   } catch (err: any) {
     const detail = err?.response?.data ?? err?.message ?? String(err);
-    console.error("[target-folder POST] 폴더 검증 실패:", JSON.stringify(detail));
-    return NextResponse.json({ error: "폴더 검증 실패", code: "FOLDER_VERIFY_FAILED" }, { status: 400 });
+    const detailStr = typeof detail === "string" ? detail : JSON.stringify(detail);
+    // 검증 실패는 차단하지 않음 — 첫 백업 시 실제 접근성 검증됨
+    console.warn("[target-folder POST] 폴더 검증 건너뜀:", detailStr);
   }
 
   const admin = createAdminClient();
