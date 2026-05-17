@@ -90,7 +90,7 @@ export default async function AdminBackupPage({
         </Card>
       )}
 
-      {params.google === "connected" && !configError && (
+      {params.google === "connected" && !configError && !!config && (
         <Card className="border-emerald-200 bg-emerald-50">
           <CardContent className="py-3 px-4 text-sm text-emerald-700">
             Google Drive 가 성공적으로 연결되었습니다.
