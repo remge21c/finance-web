@@ -142,9 +142,112 @@ export default function TransactionTable({
   return (
     <Card className="shadow-sm">
       <CardContent className="p-3 sm:p-5">
-        {/* 테이블 - 엑셀 스타일 */}
-        <div className="-mx-3 sm:mx-0 overflow-x-auto rounded-lg border border-gray-300">
-          <Table className="w-full border-collapse text-sm min-w-[600px]">
+        {/* 모바일 — 카드 리스트 */}
+        <div className="sm:hidden space-y-2">
+          {/* 헤더: 전체선택 + 항목 수 */}
+          <div className="flex items-center justify-between px-1 pb-2 border-b border-gray-200">
+            <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+              <Checkbox
+                checked={headerCheckboxState}
+                onCheckedChange={(checked) =>
+                  onToggleSelectAll(visibleIds, checked === true)
+                }
+              />
+              전체 선택
+            </label>
+            <span className="text-xs text-gray-500">
+              {filteredTransactions.length}건
+            </span>
+          </div>
+
+          {filteredTransactions.length === 0 ? (
+            <div className="text-center py-10 text-gray-500 text-sm">
+              {viewMode === "weekly"
+                ? "이번 주 거래 내역이 없습니다."
+                : viewMode === "monthly"
+                  ? "이번 달 거래 내역이 없습니다."
+                  : "거래 내역이 없습니다."}
+            </div>
+          ) : (
+            filteredTransactions.map((transaction) => {
+              const isSelected = selectedIds.includes(transaction.id);
+              const { monthDay } = formatDate(transaction.date);
+              const amountColor =
+                transaction.type === "수입" ? "text-blue-700" : "text-red-700";
+              return (
+                <div
+                  key={transaction.id}
+                  className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                    isSelected
+                      ? "bg-emerald-100 border-emerald-300"
+                      : "bg-white border-gray-200 hover:bg-blue-50"
+                  }`}
+                  onClick={() =>
+                    onToggleSelect(transaction, !isSelected)
+                  }
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="pt-0.5"
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={(checked) =>
+                          onToggleSelect(transaction, checked === true)
+                        }
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {/* 상단: 날짜 · 구분 · 금액 */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-xs text-gray-500 shrink-0">
+                            {monthDay}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-xs font-medium shrink-0 ${
+                              transaction.type === "수입"
+                                ? "bg-blue-100 text-blue-700"
+                                : "bg-red-100 text-red-700"
+                            }`}
+                          >
+                            {transaction.type}
+                          </span>
+                          <span className="text-sm font-medium text-gray-800 truncate">
+                            {transaction.item}
+                          </span>
+                        </div>
+                        <span
+                          className={`text-sm font-semibold shrink-0 ${amountColor}`}
+                        >
+                          {transaction.type === "지출" ? "-" : ""}
+                          {formatAmount(Number(transaction.amount))} {currency}
+                        </span>
+                      </div>
+                      {/* 중단: 내용 */}
+                      {transaction.description && (
+                        <div className="mt-1 text-xs text-gray-600 truncate">
+                          {transaction.description}
+                        </div>
+                      )}
+                      {/* 하단: 메모 */}
+                      {transaction.memo && (
+                        <div className="mt-0.5 text-xs text-gray-400 truncate">
+                          메모: {transaction.memo}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* 데스크톱 — 엑셀 스타일 테이블 */}
+        <div className="hidden sm:block overflow-x-auto rounded-lg border border-gray-300">
+          <Table className="w-full border-collapse text-sm">
             <TableHeader>
               <TableRow className="bg-gray-100 border-b-2 border-gray-300">
                 <TableHead className="w-10 sm:w-12 border border-gray-300 px-2 sm:px-3 py-3 text-center">
