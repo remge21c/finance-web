@@ -67,9 +67,11 @@ export async function GET(request: NextRequest) {
     const res = await oauth2Client.getToken(code);
     tokens = res.tokens;
   } catch (err: any) {
-    const detail = err?.response?.data ?? err?.message ?? String(err);
+    const detail = err?.response?.data ?? {};
+    const googleError = detail?.error ?? err?.message ?? "unknown";
     console.error("[google-drive callback] token_exchange_failed:", JSON.stringify(detail));
-    return redirectWithError(origin, "token_exchange_failed");
+    // 에러 코드를 URL에 포함해 UI 에서 바로 확인 가능하게
+    return NextResponse.redirect(`${origin}/admin/backup?error=token_exchange_failed&reason=${encodeURIComponent(googleError)}`);
   }
 
   if (!tokens.refresh_token) {

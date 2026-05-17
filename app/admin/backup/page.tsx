@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminBackupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; google?: string }>;
+  searchParams: Promise<{ error?: string; reason?: string; google?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -51,6 +51,7 @@ export default async function AdminBackupPage({
 
   const params = await searchParams;
   const errorCode = params.error;
+  const errorReason = params.reason;
 
   return (
     <div className="max-w-4xl mx-auto space-y-4">
@@ -63,6 +64,9 @@ export default async function AdminBackupPage({
         <Card className="border-red-200 bg-red-50">
           <CardContent className="py-3 px-4 text-sm text-red-700">
             연결 실패: <span className="font-mono">{errorCode}</span>
+            {errorReason && (
+              <span className="ml-2 text-xs bg-red-100 px-1 rounded font-mono">{errorReason}</span>
+            )}
             {errorCode === "no_refresh_token" && (
               <div className="mt-1 text-xs">
                 Google 에서 이전 동의가 남아있어 refresh_token 이 발급되지 않았습니다.
