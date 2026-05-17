@@ -29,8 +29,13 @@ export default function BackupRunCard({
   const [running, setRunning] = useState(false);
 
   const handleRun = async () => {
-    if (!confirm(`모든 그룹(${groups.length}개)을 지금 백업하시겠습니까?`)) return;
     setRunning(true);
+    // 즉시 paint 되도록 다음 tick 에서 확인창 — INP 개선
+    await new Promise((r) => setTimeout(r, 0));
+    if (!confirm(`모든 그룹(${groups.length}개)을 지금 백업하시겠습니까?`)) {
+      setRunning(false);
+      return;
+    }
     try {
       const res = await fetch("/api/backup/google-drive", {
         method: "POST",

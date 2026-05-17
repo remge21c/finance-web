@@ -16,6 +16,15 @@ interface Props {
 export default function BackupConnectionCard({ connected, googleEmail, connectedAt }: Props) {
   const router = useRouter();
   const [disconnecting, setDisconnecting] = useState(false);
+  const [navigating, setNavigating] = useState(false);
+
+  const handleNavigateToStart = () => {
+    setNavigating(true);
+    // 로딩 상태가 먼저 paint 된 뒤 다음 tick 에서 네비게이션 → INP 개선
+    setTimeout(() => {
+      window.location.href = "/api/auth/google-drive/start";
+    }, 0);
+  };
 
   const handleDisconnect = async () => {
     if (!confirm("Google Drive 연결을 해제하시겠습니까?\n자동 백업이 중단됩니다.")) return;
@@ -59,7 +68,8 @@ export default function BackupConnectionCard({ connected, googleEmail, connected
               <Button
                 variant="outline"
                 className="text-xs h-8"
-                onClick={() => { window.location.href = "/api/auth/google-drive/start"; }}
+                onClick={handleNavigateToStart}
+                disabled={navigating}
               >
                 <LinkIcon className="h-3.5 w-3.5 mr-1" />
                 다른 계정으로 재연결
@@ -82,10 +92,11 @@ export default function BackupConnectionCard({ connected, googleEmail, connected
             </p>
             <Button
               className="bg-emerald-600 hover:bg-emerald-700 text-sm h-9"
-              onClick={() => { window.location.href = "/api/auth/google-drive/start"; }}
+              onClick={handleNavigateToStart}
+              disabled={navigating}
             >
               <LinkIcon className="h-4 w-4 mr-1.5" />
-              Google 계정 연결하기
+              {navigating ? "이동 중..." : "Google 계정 연결하기"}
             </Button>
             <p className="text-xs text-gray-400">
               연결 시 Drive 의 finance-web 폴더에 파일을 만들 수 있는 권한만 요청합니다.
