@@ -7,6 +7,7 @@ import {
   getDriveClient,
   isInvalidGrant,
   isStorageQuotaExceeded,
+  loadBackupConfig,
   uploadXlsxAndRotate,
 } from "@/lib/google/drive";
 import { buildBackupFilename, buildBackupWorkbook } from "@/lib/google/excel";
@@ -52,6 +53,7 @@ async function backupSingleGroup(
   group: Pick<Group, "id" | "name">,
   trigger: BackupTriggerType,
   triggeredBy: string | null,
+  targetFolderId: string,
 ): Promise<BackupGroupResult> {
   const admin = createAdminClient();
   const backupAt = new Date();
@@ -72,7 +74,7 @@ async function backupSingleGroup(
     ]);
 
     // 폴더 보장 + Excel 빌드 + 업로드
-    const folderId = await ensureGroupBackupFolder(drive, group.name, group.id);
+    const folderId = await ensureGroupBackupFolder(drive, group.name, group.id, targetFolderId);
     const buffer = await buildBackupWorkbook({
       transactions: (transactions ?? []) as Transaction[],
       settings: (settings ?? null) as Settings | null,
@@ -166,6 +168,22 @@ export async function runBackup(opts: RunBackupOptions): Promise<RunBackupSummar
     };
   }
 
+  // 대상 폴더 ID 로드 (Picker 로 선택되어 있어야 함)
+  const config = await loadBackupConfig();
+  const targetFolderId = config?.target_folder_id;
+  if (!targetFolderId) {
+    return {
+      results: [],
+      total: 0,
+      succeeded: 0,
+      failed: 0,
+      fatalError: {
+        code: "NO_TARGET_FOLDER",
+        message: "백업 폴더가 선택되지 않았습니다. 백업 설정에서 폴더를 선택하세요.",
+      },
+    };
+  }
+
   // 대상 그룹 목록
   let groups: Pick<Group, "id" | "name">[] = [];
   if (opts.groupId) {
@@ -189,7 +207,7 @@ export async function runBackup(opts: RunBackupOptions): Promise<RunBackupSummar
   let failed = 0;
 
   for (const g of groups) {
-    const result = await backupSingleGroup(drive, g, opts.trigger, opts.triggeredBy);
+    const result = await backupSingleGroup(drive, g, opts.trigger, opts.triggeredBy, targetFolderId);
     results.push(result);
     if (result.ok) succeeded += 1;
     else failed += 1;

@@ -2,8 +2,6 @@ import { google, drive_v3 } from "googleapis";
 import { Readable } from "stream";
 import { createAdminClient } from "@/lib/supabase/admin-client";
 
-const PARENT_FOLDER_NAME = "DataBackup";
-const ROOT_FOLDER_NAME = "finance-web";
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 
@@ -36,7 +34,7 @@ export async function loadBackupConfig() {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("finance_backup_config")
-    .select("refresh_token, google_email, connected_at")
+    .select("refresh_token, google_email, connected_at, target_folder_id, target_folder_name")
     .eq("id", "singleton")
     .maybeSingle();
   if (error) throw new DriveBackupError("CONFIG_READ_FAILED", error.message);
@@ -95,16 +93,21 @@ export async function ensureFolder(
   return created.data.id;
 }
 
-/** DataBackup / finance-web / {그룹명}_{group_id} 경로를 보장하고 그 폴더 ID 반환 */
+/** 사용자가 Picker 로 선택한 폴더(targetParentId) 안에 {그룹명}_{group_id} 폴더 보장 */
 export async function ensureGroupBackupFolder(
   drive: drive_v3.Drive,
   groupName: string,
   groupId: string,
+  targetParentId: string | null | undefined,
 ): Promise<string> {
-  const parentId = await ensureFolder(drive, PARENT_FOLDER_NAME, null);
-  const rootId = await ensureFolder(drive, ROOT_FOLDER_NAME, parentId);
+  if (!targetParentId) {
+    throw new DriveBackupError(
+      "NO_TARGET_FOLDER",
+      "백업 폴더가 선택되지 않았습니다. 백업 설정에서 폴더를 선택하세요.",
+    );
+  }
   const folderName = sanitizeFolderName(`${groupName}_${groupId}`);
-  return ensureFolder(drive, folderName, rootId);
+  return ensureFolder(drive, folderName, targetParentId);
 }
 
 export interface UploadResult {

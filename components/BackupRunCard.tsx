@@ -14,6 +14,7 @@ interface Group {
 
 interface Props {
   connected: boolean;
+  hasTargetFolder: boolean;
   lastBackupAt: string | null;
   lastBackupError: string | null;
   groups: Group[];
@@ -21,6 +22,7 @@ interface Props {
 
 export default function BackupRunCard({
   connected,
+  hasTargetFolder,
   lastBackupAt,
   lastBackupError,
   groups,
@@ -46,6 +48,8 @@ export default function BackupRunCard({
       if (!res.ok) {
         if (data.code === "NO_TOKEN") {
           toast.error("Google Drive 가 연결되어 있지 않습니다.");
+        } else if (data.code === "NO_TARGET_FOLDER") {
+          toast.error("백업 폴더가 선택되지 않았습니다. 위에서 폴더를 선택하세요.");
         } else if (data.code === "INVALID_GRANT") {
           toast.error("Google 인증이 만료되었습니다. 재연결해주세요.");
         } else {
@@ -88,13 +92,16 @@ export default function BackupRunCard({
         <Button
           className="bg-emerald-600 hover:bg-emerald-700 text-sm h-9"
           onClick={handleRun}
-          disabled={!connected || running || groups.length === 0}
+          disabled={!connected || !hasTargetFolder || running || groups.length === 0}
         >
           <Play className="h-4 w-4 mr-1.5" />
           {running ? "백업 중..." : `지금 전체 백업 (${groups.length}개 그룹)`}
         </Button>
         {!connected && (
           <p className="text-xs text-gray-400">먼저 Google 계정을 연결해주세요.</p>
+        )}
+        {connected && !hasTargetFolder && (
+          <p className="text-xs text-gray-400">먼저 백업 폴더를 선택해주세요.</p>
         )}
       </CardContent>
     </Card>

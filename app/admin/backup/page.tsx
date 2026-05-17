@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import BackupConnectionCard from "@/components/BackupConnectionCard";
 import BackupRunCard from "@/components/BackupRunCard";
 import BackupHistoryTable from "@/components/BackupHistoryTable";
+import BackupTargetFolderCard from "@/components/BackupTargetFolderCard";
 import { Cloud } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +33,7 @@ export default async function AdminBackupPage({
 
   const { data: config } = await admin
     .from("finance_backup_config")
-    .select("google_email, connected_at, last_backup_at, last_backup_error")
+    .select("google_email, connected_at, last_backup_at, last_backup_error, target_folder_id, target_folder_name, target_picked_at")
     .eq("id", "singleton")
     .maybeSingle();
 
@@ -99,8 +100,16 @@ export default async function AdminBackupPage({
         connectedAt={config?.connected_at ?? null}
       />
 
+      <BackupTargetFolderCard
+        connected={!!config}
+        folderId={config?.target_folder_id ?? null}
+        folderName={config?.target_folder_name ?? null}
+        pickedAt={config?.target_picked_at ?? null}
+      />
+
       <BackupRunCard
         connected={!!config}
+        hasTargetFolder={!!config?.target_folder_id}
         lastBackupAt={config?.last_backup_at ?? null}
         lastBackupError={config?.last_backup_error ?? null}
         groups={groups ?? []}

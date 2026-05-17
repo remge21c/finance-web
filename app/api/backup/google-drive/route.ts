@@ -36,7 +36,8 @@ export async function POST(request: NextRequest) {
   });
 
   if (summary.fatalError) {
-    const httpStatus = summary.fatalError.code === "NO_TOKEN" ? 412 : 500;
+    const noPrereq = summary.fatalError.code === "NO_TOKEN" || summary.fatalError.code === "NO_TARGET_FOLDER";
+    const httpStatus = noPrereq ? 412 : 500;
     return NextResponse.json(
       { ok: false, code: summary.fatalError.code, message: summary.fatalError.message },
       { status: httpStatus },

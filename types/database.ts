@@ -179,6 +179,9 @@ export interface BackupConfig {
   connected_at: string;
   last_backup_at: string | null;
   last_backup_error: string | null;
+  target_folder_id: string | null;
+  target_folder_name: string | null;
+  target_picked_at: string | null;
 }
 
 export type BackupTriggerType = 'manual' | 'cron';
