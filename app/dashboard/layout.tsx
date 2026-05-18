@@ -59,14 +59,27 @@ export default async function DashboardLayout({
     }
   }
 
-  // 설정 가져오기 (앱 타이틀)
-  const { data: settings } = await supabase
-    .from("finance_settings")
-    .select("app_title")
-    .limit(1)
-    .single();
+  // 초기 그룹 결정: 우선 그룹 → 첫 번째 그룹 순 (localStorage는 서버에서 접근 불가)
+  const visibleInitialGroups = isSuperAdmin
+    ? initialGroups
+    : initialGroups.filter((g) => g.group_type === "department");
+  let initialGroupId: string | null = null;
+  if (primaryGroupId && visibleInitialGroups.some((g) => g.id === primaryGroupId)) {
+    initialGroupId = primaryGroupId;
+  } else if (visibleInitialGroups.length > 0) {
+    initialGroupId = visibleInitialGroups[0].id;
+  }
 
-  const appTitle = settings?.app_title || "재정관리";
+  // 초기 그룹의 설정 (앱 타이틀)을 가져와 첫 paint부터 올바른 타이틀 표시
+  let appTitle = "재정관리";
+  if (initialGroupId) {
+    const { data: settings } = await supabase
+      .from("finance_settings")
+      .select("app_title")
+      .eq("group_id", initialGroupId)
+      .maybeSingle();
+    if (settings?.app_title) appTitle = settings.app_title;
+  }
 
   // 최고관리자: 모든 그룹의 대기 중 참여 요청 수
   let pendingRequestCount = 0;
