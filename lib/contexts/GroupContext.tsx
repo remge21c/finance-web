@@ -58,7 +58,15 @@ export function GroupProvider({
     if (visibleGroups.length === 0) return null;
     if (initialPrimaryGroupId) {
       const primary = visibleGroups.find(g => g.id === initialPrimaryGroupId);
-      if (primary) return primary;
+      if (primary) {
+        if (typeof window !== "undefined") {
+          console.info("[GroupContext] SSR 초기 그룹 = 우선 그룹:", primary.name, "(id:", primary.id, ")");
+        }
+        return primary;
+      }
+    }
+    if (typeof window !== "undefined") {
+      console.info("[GroupContext] SSR 초기 그룹 = 첫 그룹(우선 그룹 부재/필터됨):", visibleGroups[0].name);
     }
     return visibleGroups[0];
   });

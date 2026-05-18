@@ -56,6 +56,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // 그룹 변경 시 데이터 재로드
   useEffect(() => {
     if (currentGroup && userId) {
+      console.info("[DataContext] fetchData 시작:", { groupId: currentGroup.id, groupName: currentGroup.name });
       fetchData();
     } else {
       setLoading(false);
@@ -82,6 +83,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         fetchTransactions().catch((e) => console.error("fetchTransactions failed:", e)),
         fetchSettings().catch((e) => console.error("fetchSettings failed:", e)),
       ]);
+      console.info("[DataContext] fetchData 완료:", { groupId: currentGroup.id });
     } finally {
       clearTimeout(safetyTimer);
       setLoading(false);
