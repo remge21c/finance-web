@@ -31,23 +31,45 @@ const GroupContext = createContext<GroupContextType | undefined>(undefined);
 
 interface GroupProviderProps {
   children: ReactNode;
+  // 서버에서 미리 가져온 초기값 (SSR) — 첫 paint부터 올바른 그룹 표시
+  initialGroups?: Group[];
+  initialPrimaryGroupId?: string | null;
+  initialIsSuperAdmin?: boolean;
+  initialUserId?: string | null;
 }
 
-export function GroupProvider({ children }: GroupProviderProps) {
-  const [allGroups, setAllGroups] = useState<Group[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentGroup, setCurrentGroup] = useState<Group | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [initialized, setInitialized] = useState(false);
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+export function GroupProvider({
+  children,
+  initialGroups = [],
+  initialPrimaryGroupId = null,
+  initialIsSuperAdmin = false,
+  initialUserId = null,
+}: GroupProviderProps) {
+  const [allGroups, setAllGroups] = useState<Group[]>(initialGroups);
+  // SSR 데이터가 있으면 첫 렌더부터 loading 아님
+  const [loading, setLoading] = useState(initialGroups.length === 0 && !initialUserId);
+  const [currentGroup, setCurrentGroup] = useState<Group | null>(() => {
+    // SSR에서 우선 그룹을 즉시 결정 → 첫 paint부터 올바른 그룹 표시
+    if (initialGroups.length === 0) return null;
+    const visibleGroups = initialIsSuperAdmin
+      ? initialGroups
+      : initialGroups.filter(g => g.group_type === "department");
+    if (visibleGroups.length === 0) return null;
+    if (initialPrimaryGroupId) {
+      const primary = visibleGroups.find(g => g.id === initialPrimaryGroupId);
+      if (primary) return primary;
+    }
+    return visibleGroups[0];
+  });
+  const [userId, setUserId] = useState<string | null>(initialUserId);
+  const [initialized, setInitialized] = useState(initialGroups.length > 0);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(initialIsSuperAdmin);
   const [currentPermissionLevel, setCurrentPermissionLevel] = useState<PermissionLevel | null>(null);
-  const [primaryGroupId, setPrimaryGroupId] = useState<string | null>(null);
+  const [primaryGroupId, setPrimaryGroupId] = useState<string | null>(initialPrimaryGroupId);
 
-  // 사용자 ID 및 권한 가져오기
-  // userId를 userStatus 조회 완료 후 한꺼번에 설정: React 18 auto-batching 덕분에
-  // setUserId/setIsSuperAdmin/setPrimaryGroupId가 같은 틱에 처리되어
-  // fetchGroups 시작 시점에 primaryGroupId가 이미 준비된 상태
+  // 사용자 ID 및 권한 가져오기 — SSR에서 받지 못한 경우만 client에서 조회
   useEffect(() => {
+    if (initialUserId) return;
     async function getUser() {
       try {
         const supabase = createClient();
@@ -68,7 +90,7 @@ export function GroupProvider({ children }: GroupProviderProps) {
       }
     }
     getUser();
-  }, []);
+  }, [initialUserId]);
 
   // 그룹 목록 가져오기
   const fetchGroups = async () => {
@@ -133,31 +155,36 @@ export function GroupProvider({ children }: GroupProviderProps) {
     currentPermissionLevel === 'assistant';
 
   // currentGroup 자동 설정
+  // SSR로 이미 currentGroup이 결정된 경우, localStorage가 있으면 그 쪽으로 한 번만 보정
   useEffect(() => {
     if (groups.length === 0) return;
 
-    const storedGroupId = localStorage.getItem("selectedGroupId");
-
-    // 사용자가 직접 선택해 저장한 그룹이 있으면 최우선
-    if (storedGroupId) {
-      const stored = groups.find(g => g.id === storedGroupId);
-      if (stored) {
-        if (currentGroup?.id !== stored.id) setCurrentGroup(stored);
-        return;
-      }
+    // 현재 그룹이 그룹 목록에 없으면(삭제됨 등) 우선 그룹/첫 그룹으로 재설정
+    if (currentGroup && !groups.find(g => g.id === currentGroup.id)) {
+      const primary = primaryGroupId ? groups.find(g => g.id === primaryGroupId) : null;
+      setCurrentGroup(primary || groups[0]);
+      return;
     }
 
-    // 우선 접속 그룹(primary_group_id)이 있으면 사용
-    if (primaryGroupId) {
-      const primary = groups.find(g => g.id === primaryGroupId);
-      if (primary) {
-        if (currentGroup?.id !== primary.id) setCurrentGroup(primary);
-        return;
+    // currentGroup이 아직 없으면 우선 그룹 → 첫 그룹
+    if (!currentGroup) {
+      const storedGroupId = typeof window !== "undefined"
+        ? localStorage.getItem("selectedGroupId")
+        : null;
+      if (storedGroupId) {
+        const stored = groups.find(g => g.id === storedGroupId);
+        if (stored) {
+          setCurrentGroup(stored);
+          return;
+        }
       }
-    }
-
-    // 위 두 경우가 없으면 첫 번째 그룹
-    if (!currentGroup || !groups.find(g => g.id === currentGroup.id)) {
+      if (primaryGroupId) {
+        const primary = groups.find(g => g.id === primaryGroupId);
+        if (primary) {
+          setCurrentGroup(primary);
+          return;
+        }
+      }
       setCurrentGroup(groups[0]);
     }
   }, [groups, primaryGroupId]);

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { GroupProvider } from "@/lib/contexts/GroupContext";
 import { Users, FolderOpen, ArrowLeft, Shield, Cloud } from "lucide-react";
+import type { Group } from "@/types/database";
 
 export default async function AdminLayout({
   children,
@@ -19,11 +20,12 @@ export default async function AdminLayout({
 
   const { data: userStatus } = await supabase
     .from("finance_user_status")
-    .select("is_super_admin")
+    .select("is_super_admin, primary_group_id")
     .eq("user_id", user.id)
     .maybeSingle();
 
   const isSuperAdmin = userStatus?.is_super_admin || false;
+  const primaryGroupId = userStatus?.primary_group_id || null;
 
   // 그룹 관리자 확인 + 관리 그룹명 수집
   let isGroupAdmin = false;
@@ -42,9 +44,32 @@ export default async function AdminLayout({
     }
   }
 
-  // proxy.ts에서 이미 권한 체크를 하므로, 여기까지 온 사용자는 접근 권한이 있음
+  // middleware에서 이미 권한 체크를 하므로, 여기까지 온 사용자는 접근 권한이 있음
   if (!isSuperAdmin && !isGroupAdmin) {
     redirect("/dashboard");
+  }
+
+  // 그룹 목록을 서버에서 미리 가져오기
+  let initialGroups: Group[] = [];
+  if (isSuperAdmin) {
+    const { data } = await supabase
+      .from("finance_groups")
+      .select("*")
+      .order("created_at", { ascending: false });
+    initialGroups = (data || []) as Group[];
+  } else {
+    const { data: memberData } = await supabase
+      .from("finance_group_members")
+      .select("group_id")
+      .eq("user_id", user.id);
+    if (memberData && memberData.length > 0) {
+      const groupIds = memberData.map((m: { group_id: string }) => m.group_id);
+      const { data: groupsData } = await supabase
+        .from("finance_groups")
+        .select("*")
+        .in("id", groupIds);
+      initialGroups = (groupsData || []) as Group[];
+    }
   }
 
   const headersList = await headers();
@@ -64,7 +89,12 @@ export default async function AdminLayout({
   );
 
   return (
-    <GroupProvider>
+    <GroupProvider
+      initialGroups={initialGroups}
+      initialPrimaryGroupId={primaryGroupId}
+      initialIsSuperAdmin={isSuperAdmin}
+      initialUserId={user.id}
+    >
       <div className="min-h-screen bg-slate-50">
         {/* 관리자 네비게이션 */}
         <nav className="sticky top-0 z-50 bg-slate-800 text-white shadow-lg border-b border-slate-700">

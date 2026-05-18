@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import JoinRequestNotifier from "@/components/JoinRequestNotifier";
 import { GroupProvider } from "@/lib/contexts/GroupContext";
 import { DataProvider } from "@/lib/contexts/DataContext";
+import type { Group } from "@/types/database";
 
 // 매 요청마다 새로 렌더링 (설정 변경 반영)
 export const dynamic = "force-dynamic";
@@ -20,10 +21,10 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  // 사용자 상태 가져오기 (Super Admin 여부)
+  // 사용자 상태 가져오기 (Super Admin 여부 + 우선 그룹)
   const { data: userStatus } = await supabase
     .from("finance_user_status")
-    .select("is_super_admin, status")
+    .select("is_super_admin, status, primary_group_id")
     .eq("user_id", user.id)
     .single();
 
@@ -33,6 +34,30 @@ export default async function DashboardLayout({
   }
 
   const isSuperAdmin = userStatus?.is_super_admin || false;
+  const primaryGroupId = userStatus?.primary_group_id || null;
+
+  // 그룹 목록을 서버에서 미리 가져오기 — 첫 paint부터 우선 그룹 표시 가능
+  let initialGroups: Group[] = [];
+  if (isSuperAdmin) {
+    const { data } = await supabase
+      .from("finance_groups")
+      .select("*")
+      .order("created_at", { ascending: false });
+    initialGroups = (data || []) as Group[];
+  } else {
+    const { data: memberData } = await supabase
+      .from("finance_group_members")
+      .select("group_id")
+      .eq("user_id", user.id);
+    if (memberData && memberData.length > 0) {
+      const groupIds = memberData.map((m: { group_id: string }) => m.group_id);
+      const { data: groupsData } = await supabase
+        .from("finance_groups")
+        .select("*")
+        .in("id", groupIds);
+      initialGroups = (groupsData || []) as Group[];
+    }
+  }
 
   // 설정 가져오기 (앱 타이틀)
   const { data: settings } = await supabase
@@ -58,7 +83,12 @@ export default async function DashboardLayout({
   }
 
   return (
-    <GroupProvider>
+    <GroupProvider
+      initialGroups={initialGroups}
+      initialPrimaryGroupId={primaryGroupId}
+      initialIsSuperAdmin={isSuperAdmin}
+      initialUserId={user.id}
+    >
       <div className="min-h-screen bg-slate-50">
         <DataProvider>
           <JoinRequestNotifier />
