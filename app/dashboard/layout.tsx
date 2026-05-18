@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Navbar from "@/components/Navbar";
 import JoinRequestNotifier from "@/components/JoinRequestNotifier";
+import DebugPanel from "@/components/DebugPanel";
 import { GroupProvider } from "@/lib/contexts/GroupContext";
 import { DataProvider } from "@/lib/contexts/DataContext";
 import type { Group } from "@/types/database";
@@ -106,6 +107,7 @@ export default async function DashboardLayout({
         <DataProvider>
           <JoinRequestNotifier />
           <Navbar user={user} isSuperAdmin={isSuperAdmin} appTitle={appTitle} pendingRequestCount={pendingRequestCount} />
+          <DebugPanel />
           <main className="container mx-auto px-4">
             <div className="pt-6">
               {children}

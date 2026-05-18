@@ -236,6 +236,7 @@ export function GroupProvider({
   };
 
   const handleSetCurrentGroup = (group: Group | null) => {
+    console.info("[GroupContext] setCurrentGroup:", { id: group?.id, name: group?.name });
     setCurrentGroup(group);
     if (group) {
       localStorage.setItem("selectedGroupId", group.id);
