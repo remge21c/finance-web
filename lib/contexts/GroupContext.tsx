@@ -44,20 +44,22 @@ export function GroupProvider({ children }: GroupProviderProps) {
   const [primaryGroupId, setPrimaryGroupId] = useState<string | null>(null);
 
   // 사용자 ID 및 권한 가져오기
+  // userId를 userStatus 조회 완료 후 한꺼번에 설정: React 18 auto-batching 덕분에
+  // setUserId/setIsSuperAdmin/setPrimaryGroupId가 같은 틱에 처리되어
+  // fetchGroups 시작 시점에 primaryGroupId가 이미 준비된 상태
   useEffect(() => {
     async function getUser() {
       try {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          setUserId(user.id);
-
           const { data: userStatus } = await supabase
             .from("finance_user_status")
             .select("is_super_admin, primary_group_id")
             .eq("user_id", user.id)
             .maybeSingle();
 
+          setUserId(user.id);
           setIsSuperAdmin(userStatus?.is_super_admin || false);
           setPrimaryGroupId(userStatus?.primary_group_id || null);
         }
@@ -132,39 +134,31 @@ export function GroupProvider({ children }: GroupProviderProps) {
 
   // currentGroup 자동 설정
   useEffect(() => {
-    console.log("[GroupContext] currentGroup 설정 - groups.length:", groups.length, "currentGroup:", currentGroup?.name);
+    if (groups.length === 0) return;
 
-    // localStorage에서 선택한 그룹 확인
-    if (!currentGroup && groups.length > 0) {
-      const storedGroupId = localStorage.getItem("selectedGroupId");
-      console.log("[GroupContext] storedGroupId:", storedGroupId, "primaryGroupId:", primaryGroupId);
+    const storedGroupId = localStorage.getItem("selectedGroupId");
 
-      if (storedGroupId) {
-        const selectedGroup = groups.find(g => g.id === storedGroupId);
-        if (selectedGroup) {
-          console.log("[GroupContext] 선택한 그룹으로 currentGroup 설정:", selectedGroup.name);
-          setCurrentGroup(selectedGroup);
-          return;
-        }
+    // 사용자가 직접 선택해 저장한 그룹이 있으면 최우선
+    if (storedGroupId) {
+      const stored = groups.find(g => g.id === storedGroupId);
+      if (stored) {
+        if (currentGroup?.id !== stored.id) setCurrentGroup(stored);
+        return;
       }
-      
-      // 저장된 그룹이 없고 우선 접속 그룹(primaryGroupId)이 있다면 그것을 사용
-      if (primaryGroupId) {
-        const primaryGroup = groups.find(g => g.id === primaryGroupId);
-        if (primaryGroup) {
-          console.log("[GroupContext] 우선 접속 그룹으로 currentGroup 설정:", primaryGroup.name);
-          setCurrentGroup(primaryGroup);
-          return;
-        }
-      }
+    }
 
-      // 기본 동작: 첫 번째 그룹 선택
-      console.log("[GroupContext] 첫 번째 그룹으로 currentGroup 설정:", groups[0].name);
+    // 우선 접속 그룹(primary_group_id)이 있으면 사용
+    if (primaryGroupId) {
+      const primary = groups.find(g => g.id === primaryGroupId);
+      if (primary) {
+        if (currentGroup?.id !== primary.id) setCurrentGroup(primary);
+        return;
+      }
+    }
+
+    // 위 두 경우가 없으면 첫 번째 그룹
+    if (!currentGroup || !groups.find(g => g.id === currentGroup.id)) {
       setCurrentGroup(groups[0]);
-    } else if (currentGroup && !groups.find(g => g.id === currentGroup.id)) {
-      // 현재 그룹이 필터된 목록에 없으면 초기화
-      console.log("[GroupContext] 현재 그룹이 필터된 목록에 없어서 첫 번째 그룹으로 설정");
-      setCurrentGroup(groups[0] || null);
     }
   }, [groups, primaryGroupId]);
 
