@@ -62,17 +62,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [currentGroup, userId, isSuperAdmin]);
 
   // 전체 데이터 가져오기
+  // 모바일/저속 네트워크에서 Supabase 쿼리가 응답하지 않아도 화면이 무한 로딩에
+  // 빠지지 않도록 8초 안전 타임아웃을 둠. transactions/settings 는 서로 독립이라
+  // 한쪽이 실패해도 다른 쪽은 진행되도록 catch 를 각각 적용.
   const fetchData = async () => {
     if (!userId || !currentGroup) {
       setLoading(false);
       return;
     }
     setLoading(true);
+    const safetyTimer = setTimeout(() => {
+      console.warn("[DataContext] fetchData 8s 안전 타임아웃 — loading 강제 해제");
+      setLoading(false);
+    }, 8000);
     try {
-      await Promise.all([fetchTransactions(), fetchSettings()]);
-    } catch (error) {
-      console.error("fetchData failed:", error);
+      await Promise.all([
+        fetchTransactions().catch((e) => console.error("fetchTransactions failed:", e)),
+        fetchSettings().catch((e) => console.error("fetchSettings failed:", e)),
+      ]);
     } finally {
+      clearTimeout(safetyTimer);
       setLoading(false);
     }
   };
