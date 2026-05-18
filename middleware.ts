@@ -27,37 +27,36 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // 세션 새로고침
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
     const pathname = request.nextUrl.pathname
 
     // 공개 페이지 (인증 불필요)
     const publicPages = ['/login', '/register', '/forgot-password', '/reset-password', '/auth/callback']
     const isPublicPage = publicPages.includes(pathname) || pathname.startsWith('/auth/')
-
-    // 승인 대기/거절 페이지
     const isPendingPage = pathname === '/pending'
-
-    // 관리자 페이지
     const isAdminPage = pathname.startsWith('/admin')
+    const isApiRoute = pathname.startsWith('/api')
+
+    // API 라우트는 각 route handler 에서 자체 인증 검사 — 미들웨어는 통과만 시킴
+    // (불필요한 DB 쿼리를 줄여 모바일/저속 네트워크에서 페이지 응답 지연 방지)
+    if (isApiRoute) {
+      return supabaseResponse
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
     // 로그인되지 않은 사용자
     if (!user) {
-      // 루트 페이지 → 로그인으로
       if (pathname === '/') {
         const url = request.nextUrl.clone()
         url.pathname = '/login'
         return NextResponse.redirect(url)
       }
-      // 공개 페이지는 접근 허용
       if (isPublicPage) {
         return supabaseResponse
       }
-      // 그 외 페이지는 로그인 페이지로 리다이렉트
       const url = request.nextUrl.clone()
       url.pathname = '/login'
       return NextResponse.redirect(url)
@@ -66,31 +65,17 @@ export async function middleware(request: NextRequest) {
     // 로그인된 사용자 - 상태 확인
     let status = 'pending'
     let isSuperAdmin = false
-    let isGroupAdmin = false
 
     try {
-      const { data: userStatus, error: statusError } = await supabase
+      const { data: userStatus } = await supabase
         .from('finance_user_status')
         .select('status, is_super_admin')
         .eq('user_id', user.id)
         .maybeSingle()
 
-      if (!statusError && userStatus) {
+      if (userStatus) {
         status = userStatus.status || 'pending'
-        const isFinanceAdmin = (userStatus as any).is_finance_admin === true
         isSuperAdmin = userStatus.is_super_admin || false
-        if (isFinanceAdmin) isGroupAdmin = true
-      }
-
-      if (!isGroupAdmin) {
-        const { data: adminMembership } = await supabase
-          .from('finance_group_members')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('permission_level', 'admin')
-          .limit(1)
-          .maybeSingle()
-        isGroupAdmin = !!adminMembership
       }
     } catch (e) {
       console.error('Middleware status check error:', e)
@@ -110,7 +95,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    // 승인되지 않은 사용자 (pending 또는 rejected)
+    // 승인되지 않은 사용자
     if (status !== 'approved') {
       if (isPendingPage || isPublicPage) {
         return supabaseResponse
@@ -120,17 +105,27 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    // 관리자 페이지 접근 제어
+    // 관리자 페이지: 그룹 admin 여부는 여기서만 쿼리 (다른 페이지에서는 불필요)
     if (isAdminPage) {
       const isGroupsPage = pathname.startsWith('/admin/groups')
       if (isGroupsPage && !isSuperAdmin) {
         const url = request.nextUrl.clone()
         url.pathname = '/dashboard'
         return NextResponse.redirect(url)
-      } else if (!isSuperAdmin && !isGroupAdmin) {
-        const url = request.nextUrl.clone()
-        url.pathname = '/dashboard'
-        return NextResponse.redirect(url)
+      }
+      if (!isSuperAdmin) {
+        const { data: adminMembership } = await supabase
+          .from('finance_group_members')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('permission_level', 'admin')
+          .limit(1)
+          .maybeSingle()
+        if (!adminMembership) {
+          const url = request.nextUrl.clone()
+          url.pathname = '/dashboard'
+          return NextResponse.redirect(url)
+        }
       }
     }
 

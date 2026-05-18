@@ -46,32 +46,11 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export function DataProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-  const { currentGroup } = useGroupContext();
-
-  // 사용자 ID 및 권한 가져오기
-  useEffect(() => {
-    async function getUser() {
-      try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          setUserId(user.id);
-          const { data: userStatus } = await supabase
-            .from("finance_user_status")
-            .select("is_super_admin")
-            .eq("user_id", user.id)
-            .maybeSingle();
-          setIsSuperAdmin(userStatus?.is_super_admin || false);
-        }
-      } catch (err) {
-        console.error("[DataContext] getUser error:", err);
-      }
-    }
-    getUser();
-  }, []);
+  // userId/isSuperAdmin 가 GroupContext 에서 SSR 로 이미 결정됨 → 그것을 사용
+  // (이전엔 자체 getUser 를 호출해 모바일에서 추가 지연/멈춤 원인이 됨)
+  const { currentGroup, userId, isSuperAdmin } = useGroupContext();
+  // currentGroup 이 SSR 로 결정된 경우 초기 loading 은 곧바로 fetchData 가 처리하므로 true 로 시작
+  const [loading, setLoading] = useState<boolean>(!!currentGroup);
 
   // 그룹 변경 시 데이터 재로드
   useEffect(() => {

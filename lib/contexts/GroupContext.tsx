@@ -18,6 +18,7 @@ interface GroupContextType {
   currentGroup: Group | null;
   setCurrentGroup: (group: Group | null) => void;
   isSuperAdmin: boolean;
+  userId: string | null;
   financeMode: FinanceMode;
   hasWritePermission: boolean;
   currentPermissionLevel: PermissionLevel | null;
@@ -243,6 +244,7 @@ export function GroupProvider({
         currentGroup,
         setCurrentGroup: handleSetCurrentGroup,
         isSuperAdmin,
+        userId,
         financeMode: "group",
         hasWritePermission,
         currentPermissionLevel,

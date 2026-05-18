@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useTransactions } from "@/lib/hooks/useTransactions";
 import { useSettings } from "@/lib/hooks/useSettings";
 import { useGroupContext } from "@/lib/contexts/GroupContext";
-import { useUserStatus } from "@/lib/hooks/useUserStatus";
 import TransactionForm from "@/components/TransactionForm";
 import TransactionTable from "@/components/TransactionTable";
 import NoGroupAvailable from "@/components/NoGroupAvailable";
@@ -18,7 +17,6 @@ import type { Transaction, TransactionInput } from "@/types/database";
 export default function DashboardPage() {
   const router = useRouter();
   const { groups, currentGroup, loading: groupsLoading, hasWritePermission } = useGroupContext();
-  const { loading: userStatusLoading } = useUserStatus();
   const { transactions, loading: txLoading, addTransaction, updateTransaction, deleteMultipleTransactions } = useTransactions();
   const { settings, loading: settingsLoading } = useSettings();
 
@@ -26,7 +24,8 @@ export default function DashboardPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"weekly" | "monthly" | "all">("weekly");
 
-  const loading = groupsLoading || userStatusLoading || txLoading || settingsLoading;
+  // 그룹과 거래/설정 로딩만 페이지 차단 대상 — userStatus 는 layout 에서 이미 검증됨
+  const loading = groupsLoading || txLoading || settingsLoading;
 
   const handleSubmit = async (data: TransactionInput) => {
     const result = await addTransaction(data);
