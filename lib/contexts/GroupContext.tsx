@@ -164,39 +164,44 @@ export function GroupProvider({
     currentPermissionLevel === 'assistant';
 
   // currentGroup 자동 설정
-  // SSR로 이미 currentGroup이 결정된 경우, localStorage가 있으면 그 쪽으로 한 번만 보정
+  // SSR로 currentGroup 이 이미 결정되면 그 값을 우선 — localStorage 는 사용자가
+  // 현재 세션에서 명시적으로 그룹을 바꿀 때만 의미가 있다.
   useEffect(() => {
     if (groups.length === 0) return;
 
-    // 현재 그룹이 그룹 목록에 없으면(삭제됨 등) 우선 그룹/첫 그룹으로 재설정
+    // 현재 그룹이 그룹 목록에 없으면(삭제됨 등) 우선 그룹 → 첫 그룹으로 재설정
     if (currentGroup && !groups.find(g => g.id === currentGroup.id)) {
       const primary = primaryGroupId ? groups.find(g => g.id === primaryGroupId) : null;
+      console.warn("[GroupContext] currentGroup 이 그룹 목록에 없음 — 재설정:", primary?.name || groups[0]?.name);
       setCurrentGroup(primary || groups[0]);
       return;
     }
 
-    // currentGroup이 아직 없으면 우선 그룹 → 첫 그룹
+    // currentGroup이 아직 없을 때만 우선 그룹 → 첫 그룹으로 폴백
+    // (SSR 이 이미 currentGroup 을 설정한 경우 여기로 오지 않음 — localStorage 무시)
     if (!currentGroup) {
-      const storedGroupId = typeof window !== "undefined"
-        ? localStorage.getItem("selectedGroupId")
-        : null;
-      if (storedGroupId) {
-        const stored = groups.find(g => g.id === storedGroupId);
-        if (stored) {
-          setCurrentGroup(stored);
-          return;
-        }
-      }
       if (primaryGroupId) {
         const primary = groups.find(g => g.id === primaryGroupId);
         if (primary) {
+          console.info("[GroupContext] currentGroup null → 우선 그룹:", primary.name);
           setCurrentGroup(primary);
           return;
         }
       }
+      console.info("[GroupContext] currentGroup null + 우선 그룹 없음 → 첫 그룹:", groups[0]?.name);
       setCurrentGroup(groups[0]);
     }
   }, [groups, primaryGroupId]);
+
+  // localStorage 의 selectedGroupId 가 현재 그룹과 불일치하면 동기화
+  // (사용자가 다른 디바이스에서 그룹을 바꿨거나 우선 그룹이 변경된 경우)
+  useEffect(() => {
+    if (!currentGroup || typeof window === "undefined") return;
+    const stored = localStorage.getItem("selectedGroupId");
+    if (stored !== currentGroup.id) {
+      localStorage.setItem("selectedGroupId", currentGroup.id);
+    }
+  }, [currentGroup]);
 
   // 그룹 생성
   const createGroup = async (input: GroupInput) => {
