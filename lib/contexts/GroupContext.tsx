@@ -137,6 +137,8 @@ export function GroupProvider({
     : allGroups.filter(g => g.group_type === "department");
 
   // 현재 그룹의 permission_level 조회
+  // 그룹 전환이 빠르게 일어날 때 이전 쿼리 응답이 늦게 도착해 현재 그룹의
+  // 권한을 stale 값으로 덮어쓰지 않도록, currentGroup.id 가 바뀌면 응답 무시.
   useEffect(() => {
     if (!currentGroup || !userId) {
       setCurrentPermissionLevel(null);
@@ -146,16 +148,22 @@ export function GroupProvider({
       setCurrentPermissionLevel('admin');
       return;
     }
+    const groupIdAtRequestTime = currentGroup.id;
+    let cancelled = false;
     const supabase = createClient();
     supabase
       .from("finance_group_members")
       .select("permission_level")
-      .eq("group_id", currentGroup.id)
+      .eq("group_id", groupIdAtRequestTime)
       .eq("user_id", userId)
       .maybeSingle()
       .then(({ data }) => {
+        if (cancelled) return;
         setCurrentPermissionLevel((data?.permission_level as PermissionLevel) ?? null);
       });
+    return () => {
+      cancelled = true;
+    };
   }, [currentGroup, userId, isSuperAdmin]);
 
   const hasWritePermission: boolean =
