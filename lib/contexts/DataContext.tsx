@@ -74,10 +74,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
     setLoading(true);
     const safetyTimer = setTimeout(() => {
-      console.warn("[DataContext] fetchData 8s 안전 타임아웃 — loading 강제 해제");
+      console.warn("[DataContext] fetchData 60s 안전 타임아웃 — loading 강제 해제");
       setLoading(false);
       toast.error("데이터 응답이 지연됩니다. 네트워크 확인 후 새로고침 해주세요.");
-    }, 8000);
+    }, 60000);
     try {
       await Promise.all([
         fetchTransactions().catch((e) => console.error("fetchTransactions failed:", e)),

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(git -C \"d:/DATA/AI_PROGRAMING/finance-web\" add app/admin/backup/page.tsx)",
+      "Bash(git -C d:/DATA/AI_PROGRAMING/finance-web commit -m ' *)",
+      "Bash(git -C \"d:/DATA/AI_PROGRAMING/finance-web\" push origin master)",
+      "Bash(git -C \"d:/DATA/AI_PROGRAMING/finance-web\" add app/api/auth/google-drive/picker-token/route.ts)"
+    ]
+  }
+}
