@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -35,7 +35,7 @@ export async function proxy(request: NextRequest) {
 
     const pathname = request.nextUrl.pathname
 
-    // 공개 페이지 (인증 불필요) - 루트 페이지 제외
+    // 공개 페이지 (인증 불필요)
     const publicPages = ['/login', '/register', '/forgot-password', '/reset-password', '/auth/callback']
     const isPublicPage = publicPages.includes(pathname) || pathname.startsWith('/auth/')
 
@@ -45,12 +45,9 @@ export async function proxy(request: NextRequest) {
     // 관리자 페이지
     const isAdminPage = pathname.startsWith('/admin')
 
-    // 대시보드 페이지
-    const isDashboardPage = pathname.startsWith('/dashboard')
-
     // 로그인되지 않은 사용자
     if (!user) {
-      // 루트 페이지 - 로그인 페이지로 리다이렉트
+      // 루트 페이지 → 로그인으로
       if (pathname === '/') {
         const url = request.nextUrl.clone()
         url.pathname = '/login'
@@ -80,7 +77,6 @@ export async function proxy(request: NextRequest) {
 
       if (!statusError && userStatus) {
         status = userStatus.status || 'pending'
-        // 기존 is_finance_admin 체크용 캐스팅 (하위호환)
         const isFinanceAdmin = (userStatus as any).is_finance_admin === true
         isSuperAdmin = userStatus.is_super_admin || false
         if (isFinanceAdmin) isGroupAdmin = true
@@ -103,50 +99,35 @@ export async function proxy(request: NextRequest) {
     // 루트 페이지 - 상태에 따라 리다이렉트
     if (pathname === '/') {
       const url = request.nextUrl.clone()
-      if (status === 'approved') {
-        url.pathname = '/dashboard'
-      } else {
-        url.pathname = '/pending'
-      }
+      url.pathname = status === 'approved' ? '/dashboard' : '/pending'
       return NextResponse.redirect(url)
     }
 
     // 로그인된 사용자가 로그인/회원가입 페이지 접근 시
     if (pathname === '/login' || pathname === '/register') {
       const url = request.nextUrl.clone()
-      if (status === 'approved') {
-        url.pathname = '/dashboard'
-      } else {
-        url.pathname = '/pending'
-      }
+      url.pathname = status === 'approved' ? '/dashboard' : '/pending'
       return NextResponse.redirect(url)
     }
 
     // 승인되지 않은 사용자 (pending 또는 rejected)
     if (status !== 'approved') {
-      // /pending, 비밀번호 재설정 관련 페이지는 허용
       if (isPendingPage || isPublicPage) {
         return supabaseResponse
       }
-      // 대시보드나 관리자 페이지 접근 시 /pending으로 리다이렉트
       const url = request.nextUrl.clone()
       url.pathname = '/pending'
       return NextResponse.redirect(url)
     }
 
-    // 승인된 사용자
     // 관리자 페이지 접근 제어
     if (isAdminPage) {
       const isGroupsPage = pathname.startsWith('/admin/groups')
-      
-      // /admin/groups 는 최고관리자만 허용
       if (isGroupsPage && !isSuperAdmin) {
         const url = request.nextUrl.clone()
         url.pathname = '/dashboard'
         return NextResponse.redirect(url)
-      } 
-      // 그 외 /admin 페이지는 최고관리자 또는 그룹관리자 모두 허용
-      else if (!isSuperAdmin && !isGroupAdmin) {
+      } else if (!isSuperAdmin && !isGroupAdmin) {
         const url = request.nextUrl.clone()
         url.pathname = '/dashboard'
         return NextResponse.redirect(url)
@@ -170,16 +151,10 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    /*
+     * _next/static, _next/image, favicon.ico, 이미지 파일,
+     * PWA 파일(sw.js, offline.html, manifest.json, manifest.webmanifest, 아이콘)은 제외
+     */
+    '/((?!_next/static|_next/image|favicon\\.ico|sw\\.js|offline\\.html|manifest\\.(?:json|webmanifest)|icon-.*\\.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
-
-
-
-
-
-
-
-
-
-
