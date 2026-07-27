@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Group, GroupInput, PermissionLevel } from "@/types/database";
 import {
@@ -39,6 +39,18 @@ interface GroupProviderProps {
   initialUserId?: string | null;
 }
 
+function pickInitialGroup(
+  groups: Group[],
+  primaryGroupId: string | null,
+): Group | null {
+  if (groups.length === 0) return null;
+  if (primaryGroupId) {
+    const primary = groups.find((g) => g.id === primaryGroupId);
+    if (primary) return primary;
+  }
+  return groups[0];
+}
+
 export function GroupProvider({
   children,
   initialGroups = [],
@@ -50,31 +62,21 @@ export function GroupProvider({
   // SSR 데이터가 있으면 첫 렌더부터 loading 아님
   const [loading, setLoading] = useState(initialGroups.length === 0 && !initialUserId);
   const [currentGroup, setCurrentGroup] = useState<Group | null>(() => {
-    // SSR에서 우선 그룹을 즉시 결정 → 첫 paint부터 올바른 그룹 표시
+    // SSR에서는 localStorage 접근 불가 → 우선 그룹/첫 그룹으로 임시 결정
+    // (마운트 후 localStorage 선택값으로 복원)
     if (initialGroups.length === 0) return null;
     const visibleGroups = initialIsSuperAdmin
       ? initialGroups
-      : initialGroups.filter(g => g.group_type === "department");
-    if (visibleGroups.length === 0) return null;
-    if (initialPrimaryGroupId) {
-      const primary = visibleGroups.find(g => g.id === initialPrimaryGroupId);
-      if (primary) {
-        if (typeof window !== "undefined") {
-          console.info("[GroupContext] SSR 초기 그룹 = 우선 그룹:", primary.name, "(id:", primary.id, ")");
-        }
-        return primary;
-      }
-    }
-    if (typeof window !== "undefined") {
-      console.info("[GroupContext] SSR 초기 그룹 = 첫 그룹(우선 그룹 부재/필터됨):", visibleGroups[0].name);
-    }
-    return visibleGroups[0];
+      : initialGroups.filter((g) => g.group_type === "department");
+    return pickInitialGroup(visibleGroups, initialPrimaryGroupId);
   });
   const [userId, setUserId] = useState<string | null>(initialUserId);
   const [initialized, setInitialized] = useState(initialGroups.length > 0);
   const [isSuperAdmin, setIsSuperAdmin] = useState(initialIsSuperAdmin);
   const [currentPermissionLevel, setCurrentPermissionLevel] = useState<PermissionLevel | null>(null);
   const [primaryGroupId, setPrimaryGroupId] = useState<string | null>(initialPrimaryGroupId);
+  // localStorage 복원 완료 전엔 우선그룹으로 storage를 덮어쓰지 않음
+  const [selectionReady, setSelectionReady] = useState(false);
 
   // 사용자 ID 및 권한 가져오기 — SSR에서 받지 못한 경우만 client에서 조회
   useEffect(() => {
@@ -132,9 +134,14 @@ export function GroupProvider({
   }, [userId, initialized]);
 
   // 슈퍼관리자는 모든 그룹, 일반 사용자는 department 타입만
-  const groups = isSuperAdmin
-    ? allGroups
-    : allGroups.filter(g => g.group_type === "department");
+  // filter 결과는 매 렌더 새 배열이므로 useMemo로 참조 안정화
+  const groups = useMemo(
+    () =>
+      isSuperAdmin
+        ? allGroups
+        : allGroups.filter((g) => g.group_type === "department"),
+    [isSuperAdmin, allGroups],
+  );
 
   // 현재 그룹의 permission_level 조회
   // 그룹 전환이 빠르게 일어날 때 이전 쿼리 응답이 늦게 도착해 현재 그룹의
@@ -145,7 +152,7 @@ export function GroupProvider({
       return;
     }
     if (isSuperAdmin) {
-      setCurrentPermissionLevel('admin');
+      setCurrentPermissionLevel("admin");
       return;
     }
     const groupIdAtRequestTime = currentGroup.id;
@@ -168,48 +175,61 @@ export function GroupProvider({
 
   const hasWritePermission: boolean =
     isSuperAdmin ||
-    currentPermissionLevel === 'admin' ||
-    currentPermissionLevel === 'assistant';
+    currentPermissionLevel === "admin" ||
+    currentPermissionLevel === "assistant";
 
-  // currentGroup 자동 설정
-  // SSR로 currentGroup 이 이미 결정되면 그 값을 우선 — localStorage 는 사용자가
-  // 현재 세션에서 명시적으로 그룹을 바꿀 때만 의미가 있다.
+  // 1) 마운트 후 localStorage의 사용자 선택 그룹을 우선 복원
+  //    (SSR은 우선그룹으로 시작하므로, 복원 전에 storage를 덮어쓰면 안 됨)
   useEffect(() => {
+    if (selectionReady) return;
+    if (groups.length === 0) {
+      // 그룹 로드가 끝났는데도 비어 있으면 복원 종료
+      if (!loading && initialized) setSelectionReady(true);
+      return;
+    }
+
+    const stored = localStorage.getItem("selectedGroupId");
+    if (stored) {
+      const match = groups.find((g) => g.id === stored);
+      if (match) {
+        console.info("[GroupContext] localStorage에서 그룹 복원:", match.name);
+        setCurrentGroup(match);
+        setSelectionReady(true);
+        return;
+      }
+    }
+    setSelectionReady(true);
+  }, [groups, selectionReady, loading, initialized]);
+
+  // 2) currentGroup 자동 설정 (복원 완료 후, 없을 때만)
+  useEffect(() => {
+    if (!selectionReady) return;
     if (groups.length === 0) return;
 
     // 현재 그룹이 그룹 목록에 없으면(삭제됨 등) 우선 그룹 → 첫 그룹으로 재설정
-    if (currentGroup && !groups.find(g => g.id === currentGroup.id)) {
-      const primary = primaryGroupId ? groups.find(g => g.id === primaryGroupId) : null;
-      console.warn("[GroupContext] currentGroup 이 그룹 목록에 없음 — 재설정:", primary?.name || groups[0]?.name);
-      setCurrentGroup(primary || groups[0]);
+    if (currentGroup && !groups.find((g) => g.id === currentGroup.id)) {
+      const fallback = pickInitialGroup(groups, primaryGroupId);
+      console.warn(
+        "[GroupContext] currentGroup 이 그룹 목록에 없음 — 재설정:",
+        fallback?.name,
+      );
+      setCurrentGroup(fallback);
       return;
     }
 
     // currentGroup이 아직 없을 때만 우선 그룹 → 첫 그룹으로 폴백
-    // (SSR 이 이미 currentGroup 을 설정한 경우 여기로 오지 않음 — localStorage 무시)
     if (!currentGroup) {
-      if (primaryGroupId) {
-        const primary = groups.find(g => g.id === primaryGroupId);
-        if (primary) {
-          console.info("[GroupContext] currentGroup null → 우선 그룹:", primary.name);
-          setCurrentGroup(primary);
-          return;
-        }
-      }
-      console.info("[GroupContext] currentGroup null + 우선 그룹 없음 → 첫 그룹:", groups[0]?.name);
-      setCurrentGroup(groups[0]);
+      const fallback = pickInitialGroup(groups, primaryGroupId);
+      console.info("[GroupContext] currentGroup null →", fallback?.name);
+      setCurrentGroup(fallback);
     }
-  }, [groups, primaryGroupId]);
+  }, [groups, primaryGroupId, selectionReady, currentGroup]);
 
-  // localStorage 의 selectedGroupId 가 현재 그룹과 불일치하면 동기화
-  // (사용자가 다른 디바이스에서 그룹을 바꿨거나 우선 그룹이 변경된 경우)
+  // 3) 사용자 선택(또는 복원된 선택)을 localStorage에 동기화
   useEffect(() => {
-    if (!currentGroup || typeof window === "undefined") return;
-    const stored = localStorage.getItem("selectedGroupId");
-    if (stored !== currentGroup.id) {
-      localStorage.setItem("selectedGroupId", currentGroup.id);
-    }
-  }, [currentGroup]);
+    if (!selectionReady || !currentGroup) return;
+    localStorage.setItem("selectedGroupId", currentGroup.id);
+  }, [currentGroup, selectionReady]);
 
   // 그룹 생성
   const createGroup = async (input: GroupInput) => {

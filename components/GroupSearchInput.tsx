@@ -11,6 +11,7 @@ interface Group {
   id: string;
   name: string;
   description: string;
+  adminEmail?: string; // optional admin email for display
 }
 
 interface GroupSearchInputProps {
@@ -39,7 +40,19 @@ export default function GroupSearchInput({ value, onChange, placeholder = "그�
           .maybeSingle();
 
         if (data) {
-          setSelectedGroup(data);
+          // Fetch admin email for the group
+          const { data: adminMember } = await supabase
+            .from("finance_group_members")
+            .select("user_id")
+            .eq("group_id", data.id)
+            .eq("permission_level", "admin")
+            .maybeSingle();
+          let adminEmail = "";
+          if (adminMember?.user_id) {
+            const { data: userData } = await supabase.auth.admin.getUserById(adminMember.user_id);
+            adminEmail = userData.user?.email || "";
+          }
+          setSelectedGroup({ ...data, adminEmail });
         }
       };
       fetchSelectedGroup();
@@ -64,10 +77,36 @@ export default function GroupSearchInput({ value, onChange, placeholder = "그�
         .order("name")
         .limit(10);
 
-      console.log("그룹 검색:", searchQuery, "결과:", data, "에러:", error);
+      if (error) {
+        console.error("Group search error:", error);
+        setSearchResults([]);
+        return;
+      }
 
-      if (data) {
-        setSearchResults(data);
+      if (data && data.length > 0) {
+        // For each group, fetch admin email
+        const groupsWithAdmin = await Promise.all(
+          data.map(async (group) => {
+            try {
+              const { data: adminMember } = await supabase
+                .from("finance_group_members")
+                .select("user_id")
+                .eq("group_id", group.id)
+                .eq("permission_level", "admin")
+                .maybeSingle();
+              let adminEmail = "";
+              if (adminMember?.user_id) {
+                const { data: userData } = await supabase.auth.admin.getUserById(adminMember.user_id);
+                adminEmail = userData.user?.email || "";
+              }
+              return { ...group, adminEmail };
+            } catch (e) {
+              console.error("Failed to fetch admin for group", group.id, e);
+              return { ...group };
+            }
+          })
+        );
+        setSearchResults(groupsWithAdmin);
       } else {
         setSearchResults([]);
       }
@@ -157,6 +196,9 @@ export default function GroupSearchInput({ value, onChange, placeholder = "그�
                     <p className="font-medium text-sm text-gray-900">{group.name}</p>
                     {group.description && (
                       <p className="text-xs text-gray-500 truncate">{group.description}</p>
+                    )}
+                    {group.adminEmail && (
+                      <p className="text-xs text-emerald-600 truncate">관리자: {group.adminEmail}</p>
                     )}
                   </div>
                   {selectedGroup?.id === group.id && (

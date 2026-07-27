@@ -7,14 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import ReportViewToggle from "@/components/ReportViewToggle";
+import ReportBodyTables from "@/components/ReportBodyTables";
 import { toast } from "sonner";
 import {
   startOfWeek,
@@ -26,12 +20,18 @@ import {
   isBefore,
 } from "date-fns";
 import { ko } from "date-fns/locale";
+import { formatReportAmount, type ReportViewMode } from "@/lib/reports/reportView";
+import {
+  buildReportPrintHtml,
+  openReportPrintWindow,
+} from "@/lib/reports/buildReportPrintHtml";
 
 export default function WeeklyReport() {
   const { transactions, loading: txLoading } = useTransactions();
   const { settings, loading: settingsLoading, updateSettings } = useSettings();
 
   const [weekOffset, setWeekOffset] = useState(0);
+  const [viewMode, setViewMode] = useState<ReportViewMode>("detail");
   const [cashAmount, setCashAmount] = useState("");
   const [touchAmount, setTouchAmount] = useState("");
   const [otherAmount, setOtherAmount] = useState("");
@@ -39,7 +39,6 @@ export default function WeeklyReport() {
   const loading = txLoading || settingsLoading;
   const currency = settings?.currency || "원";
 
-  // 초기 금액 설정
   useEffect(() => {
     if (settings) {
       setCashAmount(settings.cash_amount?.toString() || "0");
@@ -48,7 +47,6 @@ export default function WeeklyReport() {
     }
   }, [settings]);
 
-  // 주간 범위 계산
   const weekRange = useMemo(() => {
     const today = new Date();
     const targetDate = addWeeks(today, weekOffset);
@@ -57,7 +55,6 @@ export default function WeeklyReport() {
     return { start, end };
   }, [weekOffset]);
 
-  // 주간 거래 필터링
   const weeklyTransactions = useMemo(() => {
     return transactions.filter((t) => {
       const date = parseISO(t.date);
@@ -65,15 +62,12 @@ export default function WeeklyReport() {
     });
   }, [transactions, weekRange]);
 
-  // 수입/지출 분리
   const incomeTransactions = weeklyTransactions.filter((t) => t.type === "수입");
   const expenseTransactions = weeklyTransactions.filter((t) => t.type === "지출");
 
-  // 합계 계산
   const incomeTotal = incomeTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
   const expenseTotal = expenseTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
 
-  // 지난주 이월금 계산
   const lastWeekBalance = useMemo(() => {
     return transactions
       .filter((t) => isBefore(parseISO(t.date), weekRange.start))
@@ -83,21 +77,11 @@ export default function WeeklyReport() {
       }, 0);
   }, [transactions, weekRange.start]);
 
-  // 이번주 잔액
   const currentBalance = lastWeekBalance + incomeTotal - expenseTotal;
-
-  // 계좌 총액
   const totalAccount =
     parseFloat(cashAmount || "0") +
     parseFloat(touchAmount || "0") +
     parseFloat(otherAmount || "0");
-
-  const formatAmount = (amount: number) => {
-    return amount.toLocaleString("ko-KR", {
-      minimumFractionDigits: amount % 1 === 0 ? 0 : 1,
-      maximumFractionDigits: 1,
-    });
-  };
 
   const handleSaveAmounts = async () => {
     const result = await updateSettings({
@@ -113,289 +97,43 @@ export default function WeeklyReport() {
     }
   };
 
-  // 새 창으로 HTML 보고서 생성
   const handlePrint = () => {
-    const printWindow = window.open("", "_blank", "width=800,height=600");
-    if (!printWindow) {
-      toast.error("팝업이 차단되었습니다. 팝업 차단을 해제해주세요.");
-      return;
-    }
-
-    // 보고 기간 및 생성일 포맷팅
     const reportPeriod = `${format(weekRange.start, "yyyy년 MM월 dd일", { locale: ko })} ~ ${format(weekRange.end, "yyyy년 MM월 dd일", { locale: ko })}`;
-    const createdDate = format(new Date(), "yyyy년 MM월 dd일 HH:mm", { locale: ko });
+    const html = buildReportPrintHtml({
+      viewMode,
+      reportKindLabel: "주간보고서",
+      appTitle: settings?.app_title || "재정출납부",
+      reportPeriod,
+      currency,
+      incomeTransactions,
+      expenseTransactions,
+      incomeItemOrder: settings?.income_items || [],
+      expenseItemOrder: settings?.expense_items || [],
+      summaryTitle: "주간 요약",
+      prevBalanceLabel: "지난주 잔액",
+      prevBalance: lastWeekBalance,
+      incomeTotal,
+      expenseTotal,
+      currentBalanceLabel: "주간 잔액",
+      currentBalance,
+      account1Name: settings?.account1_name || "현금",
+      account2Name: settings?.account2_name || "터치앤고",
+      account3Name: settings?.account3_name || "기타",
+      cashAmount: parseFloat(cashAmount || "0"),
+      touchAmount: parseFloat(touchAmount || "0"),
+      otherAmount: parseFloat(otherAmount || "0"),
+      sign1Label: settings?.ui_sign_1 || "작성자",
+      sign2Label: settings?.ui_sign_2 || "책임자",
+      sign3Label: settings?.ui_sign_3 || "감사자",
+      author: settings?.author || "",
+      manager: settings?.manager || "",
+      auditor: settings?.auditor || "",
+      maxRows: 24,
+    });
 
-    // 수입 내역 테이블 행 생성
-    const maxRows = 24;
-    const incomeDataRows = incomeTransactions.map((t) => {
-      const date = format(parseISO(t.date), "MM/dd");
-      return `<tr>
-        <td>${date}</td>
-        <td>${t.item}</td>
-        <td>${t.description || ''}</td>
-        <td class="amount income">${formatAmount(Number(t.amount))}</td>
-      </tr>`;
-    }).join('');
-
-    const emptyIncomeRows = Array.from({ length: Math.max(0, maxRows - incomeTransactions.length) })
-      .map(() => `<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>`)
-      .join('');
-
-    const incomeTableRows = incomeDataRows + emptyIncomeRows;
-
-    // 지출 내역 테이블 행 생성
-    const expenseDataRows = expenseTransactions.map((t) => {
-      const date = format(parseISO(t.date), "MM/dd");
-      return `<tr>
-        <td>${date}</td>
-        <td>${t.item}</td>
-        <td>${t.description || ''}</td>
-        <td class="amount expense">${formatAmount(Number(t.amount))}</td>
-      </tr>`;
-    }).join('');
-
-    const emptyExpenseRows = Array.from({ length: Math.max(0, maxRows - expenseTransactions.length) })
-      .map(() => `<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>`)
-      .join('');
-
-    const expenseTableRows = expenseDataRows + emptyExpenseRows;
-
-    const sign1Label = settings?.ui_sign_1 || '작성자';
-    const sign2Label = settings?.ui_sign_2 || '책임자';
-    const sign3Label = settings?.ui_sign_3 || '감사자';
-    const author = settings?.author || '';
-    const manager = settings?.manager || '';
-    const auditor = settings?.auditor || '';
-
-    const account1Name = settings?.account1_name || '현금';
-    const account2Name = settings?.account2_name || '터치앤고';
-    const account3Name = settings?.account3_name || '기타';
-
-    const appTitle = settings?.app_title || '재정출납부';
-    const reportTitle = `${appTitle} 주간보고서`;
-
-    const htmlContent = `<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${reportTitle}</title>
-    <style>
-        * { box-sizing: border-box; }
-        @page { size: A4; margin: 10mm; }
-        body {
-            font-family: 'Malgun Gothic', '맑은 고딕', Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: white;
-            font-size: 12px;
-            line-height: 1.4;
-        }
-        .report-container {
-            width: 100%;
-            max-width: 190mm;
-            margin: 0 auto;
-            padding: 5mm;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 8mm;
-            border-bottom: 2px solid #2E7D32;
-            padding-bottom: 5mm;
-        }
-        .header h1 {
-            color: #2E7D32;
-            margin: 0 0 5px 0;
-            font-size: 20px;
-        }
-        .header p {
-            color: #666;
-            margin: 2px 0 0 0;
-            font-size: 11px;
-        }
-        .content {
-            display: flex;
-            gap: 5mm;
-            margin-bottom: 5mm;
-        }
-        .section {
-            flex: 1;
-            min-width: 0;
-        }
-        .section h3 {
-            background-color: #2E7D32;
-            color: white;
-            padding: 6px 10px;
-            margin: 0 0 5px 0;
-            border-radius: 3px;
-            text-align: center;
-            font-size: 13px;
-        }
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 3mm;
-            font-size: 10px;
-        }
-        .data-table th, .data-table td {
-            border: 1px solid #ddd;
-            padding: 4px 6px;
-            text-align: left;
-            font-size: 10px;
-            line-height: 1.3;
-        }
-        .data-table th:last-child, .data-table td:last-child {
-            text-align: right;
-        }
-        .data-table th {
-            background-color: #f2f2f2;
-            font-weight: bold;
-        }
-        .data-table tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        .summary-section {
-            display: flex;
-            gap: 5mm;
-            margin-bottom: 3mm;
-        }
-        .summary, .account-info {
-            flex: 1;
-            background-color: #f8f9fa;
-            padding: 8px;
-            border-radius: 3px;
-            border: 1px solid #ddd;
-        }
-        .summary h4, .account-info h4 {
-            color: #2E7D32;
-            margin: 0 0 8px 0;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        .summary-row, .account-row {
-            display: flex;
-            justify-content: space-between;
-            margin: 3px 0;
-            padding: 2px 0;
-            border-bottom: 1px solid #eee;
-            font-size: 10px;
-        }
-        .summary-row:last-child, .account-row:last-child {
-            border-bottom: none;
-            font-weight: bold;
-            font-size: 11px;
-            color: #2E7D32;
-            margin-top: 5px;
-        }
-        .amount {
-            text-align: right;
-            font-weight: bold;
-        }
-        .income { color: #1976D2; }
-        .expense { color: #D32F2F; }
-        .signature-section {
-            margin-top: auto;
-            padding-top: 5mm;
-        }
-        .signature-label {
-            font-weight: bold;
-            color: #2E7D32;
-            font-size: 11px;
-            text-align: center;
-            margin-bottom: 5px;
-        }
-        .signature-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 20px;
-        }
-        .signature-box {
-            flex: 1;
-            text-align: center;
-            border: 1px solid #2E7D32;
-            border-radius: 5px;
-            padding: 8px;
-            background-color: #f9f9f9;
-            min-height: 50px;
-        }
-        .signature-line {
-            border: 1px solid #ccc;
-            width: 100%;
-            height: 35px;
-            background-color: white;
-            border-radius: 3px;
-            margin-top: 5px;
-        }
-
-        @media print {
-            @page { margin: 10mm; }
-            body { font-size: 11px; }
-            .header h1 { font-size: 18px; }
-            .header p { font-size: 10px; }
-            .section h3 { font-size: 12px; padding: 5px 8px; }
-            .data-table { font-size: 9px; }
-            .data-table th, .data-table td { padding: 3px 4px; font-size: 9px; }
-            .summary h4, .account-info h4 { font-size: 11px; }
-            .summary-row, .account-row { font-size: 9px; }
-            .summary-row:last-child, .account-row:last-child { font-size: 10px; }
-            .signature-label { font-size: 10px; }
-            .signature-box { min-height: 45px; padding: 6px; }
-            .signature-line { height: 30px; }
-        }
-    </style>
-</head>
-<body>
-    <div class="report-container">
-        <div class="header">
-            <h1>${reportTitle}</h1>
-            <p>보고 기간: ${reportPeriod}</p>
-            <p>생성일: ${createdDate}</p>
-        </div>
-        <div class="content">
-            <div class="section">
-                <h3>수입 내역</h3>
-                <table class="data-table">
-                    <thead><tr><th style="width: 15%;">날짜</th><th style="width: 20%;">항목</th><th style="width: 50%;">내용</th><th style="width: 15%;">금액</th></tr></thead>
-                    <tbody>${incomeTableRows}</tbody>
-                </table>
-            </div>
-            <div class="section">
-                <h3>지출 내역</h3>
-                <table class="data-table">
-                    <thead><tr><th style="width: 15%;">날짜</th><th style="width: 20%;">항목</th><th style="width: 50%;">내용</th><th style="width: 15%;">금액</th></tr></thead>
-                    <tbody>${expenseTableRows}</tbody>
-                </table>
-            </div>
-        </div>
-        <div class="summary-section">
-            <div class="summary">
-                <h4>주간 요약</h4>
-                <div class="summary-row"><span>지난주 잔액:</span><span class="amount">${formatAmount(lastWeekBalance)} ${currency}</span></div>
-                <div class="summary-row"><span>총 수입:</span><span class="amount income">${formatAmount(incomeTotal)} ${currency}</span></div>
-                <div class="summary-row"><span>총 지출:</span><span class="amount expense">${formatAmount(expenseTotal)} ${currency}</span></div>
-                <div class="summary-row"><span>주간 잔액:</span><span class="amount">${formatAmount(currentBalance)} ${currency}</span></div>
-            </div>
-            <div class="account-info">
-                <h4>계좌 현황</h4>
-                <div class="account-row"><span>${account1Name}:</span><span class="amount">${formatAmount(parseFloat(cashAmount || "0"))} ${currency}</span></div>
-                <div class="account-row"><span>${account2Name}:</span><span class="amount">${formatAmount(parseFloat(touchAmount || "0"))} ${currency}</span></div>
-                <div class="account-row"><span>${account3Name}:</span><span class="amount">${formatAmount(parseFloat(otherAmount || "0"))} ${currency}</span></div>
-                <div class="account-row"><span>총 계좌:</span><span class="amount">${formatAmount(totalAccount)} ${currency}</span></div>
-            </div>
-        </div>
-        <div class="signature-section">
-            <div class="signature-row">
-                <div class="signature-box"><div class="signature-label">${sign1Label}: ${author}</div><div class="signature-line"></div></div>
-                <div class="signature-box"><div class="signature-label">${sign2Label}: ${manager}</div><div class="signature-line"></div></div>
-                <div class="signature-box"><div class="signature-label">${sign3Label}: ${auditor}</div><div class="signature-line"></div></div>
-            </div>
-        </div>
-    </div>
-</body>
-</html>`;
-
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+    if (!openReportPrintWindow(html)) {
+      toast.error("팝업이 차단되었습니다. 팝업 차단을 해제해주세요.");
+    }
   };
 
   if (loading) {
@@ -408,7 +146,6 @@ export default function WeeklyReport() {
 
   return (
     <div className="space-y-4">
-      {/* 헤더 */}
       <div className="space-y-3">
         <div className="text-center">
           <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">주간 보고서</h2>
@@ -431,94 +168,25 @@ export default function WeeklyReport() {
             출력
           </Button>
         </div>
+        <div className="flex justify-center">
+          <ReportViewToggle value={viewMode} onChange={setViewMode} />
+        </div>
       </div>
 
-      {/* 주간 범위 표시 */}
       <div className="text-center text-gray-600 text-sm">
         {format(weekRange.start, "yyyy년 M월 d일", { locale: ko })} ~ {format(weekRange.end, "M월 d일", { locale: ko })}
       </div>
 
-      {/* 화면 표시 영역 */}
       <div className="print:hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* 수입 테이블 */}
-          <Card>
-            <CardHeader className="bg-blue-50 py-3 px-4">
-              <CardTitle className="text-base sm:text-lg text-blue-700">수입</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-20 sm:w-24 text-sm">날짜</TableHead>
-                    <TableHead className="w-24 sm:w-28 text-sm">항목</TableHead>
-                    <TableHead className="text-sm">내용</TableHead>
-                    <TableHead className="text-right w-24 sm:w-28 text-sm">금액</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {incomeTransactions.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-4 text-gray-400 text-sm">
-                        수입 내역 없음
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    incomeTransactions.map((t, i) => (
-                      <TableRow key={t.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                        <TableCell className="text-sm">{format(parseISO(t.date), "MM-dd")}</TableCell>
-                        <TableCell className="text-sm">{t.item}</TableCell>
-                        <TableCell className="text-sm">{t.description}</TableCell>
-                        <TableCell className="text-right text-sm">{formatAmount(Number(t.amount))}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+        <ReportBodyTables
+          viewMode={viewMode}
+          incomeTransactions={incomeTransactions}
+          expenseTransactions={expenseTransactions}
+          incomeItemOrder={settings?.income_items || []}
+          expenseItemOrder={settings?.expense_items || []}
+        />
 
-          {/* 지출 테이블 */}
-          <Card>
-            <CardHeader className="bg-red-50 py-3 px-4">
-              <CardTitle className="text-base sm:text-lg text-red-700">지출</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-20 sm:w-24 text-sm">날짜</TableHead>
-                    <TableHead className="w-24 sm:w-28 text-sm">항목</TableHead>
-                    <TableHead className="text-sm">내용</TableHead>
-                    <TableHead className="text-right w-24 sm:w-28 text-sm">금액</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {expenseTransactions.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-4 text-gray-400 text-sm">
-                        지출 내역 없음
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    expenseTransactions.map((t, i) => (
-                      <TableRow key={t.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                        <TableCell className="text-sm">{format(parseISO(t.date), "MM-dd")}</TableCell>
-                        <TableCell className="text-sm">{t.item}</TableCell>
-                        <TableCell className="text-sm">{t.description}</TableCell>
-                        <TableCell className="text-right text-sm">{formatAmount(Number(t.amount))}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* 요약 정보 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-          {/* 주간 요약 */}
           <Card>
             <CardHeader className="py-3 px-4">
               <CardTitle className="text-base sm:text-lg">주간 요약</CardTitle>
@@ -526,26 +194,25 @@ export default function WeeklyReport() {
             <CardContent className="space-y-2 px-4">
               <div className="flex justify-between text-sm">
                 <span>지난주 이월금:</span>
-                <span className="font-medium">{formatAmount(lastWeekBalance)} {currency}</span>
+                <span className="font-medium">{formatReportAmount(lastWeekBalance)} {currency}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>이번주 총 수입:</span>
-                <span className="font-medium text-blue-600">{formatAmount(incomeTotal)} {currency}</span>
+                <span className="font-medium text-blue-600">{formatReportAmount(incomeTotal)} {currency}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>이번주 총 지출:</span>
-                <span className="font-medium text-red-600">{formatAmount(expenseTotal)} {currency}</span>
+                <span className="font-medium text-red-600">{formatReportAmount(expenseTotal)} {currency}</span>
               </div>
               <div className="flex justify-between border-t pt-2 text-sm">
                 <span className="font-bold">이번주 잔액:</span>
                 <span className={`font-bold text-base sm:text-lg ${currentBalance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                  {formatAmount(currentBalance)} {currency}
+                  {formatReportAmount(currentBalance)} {currency}
                 </span>
               </div>
             </CardContent>
           </Card>
 
-          {/* 계좌 현황 */}
           <Card>
             <CardHeader className="py-3 px-4">
               <CardTitle className="text-base sm:text-lg">계좌 현황</CardTitle>
@@ -558,8 +225,8 @@ export default function WeeklyReport() {
                     id="cash"
                     type="text"
                     inputMode="numeric"
-                    value={cashAmount ? Number(cashAmount).toLocaleString('ko-KR') : ''}
-                    onChange={(e) => setCashAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                    value={cashAmount ? Number(cashAmount).toLocaleString("ko-KR") : ""}
+                    onChange={(e) => setCashAmount(e.target.value.replace(/[^0-9]/g, ""))}
                     className="h-10 text-right"
                   />
                 </div>
@@ -569,8 +236,8 @@ export default function WeeklyReport() {
                     id="touch"
                     type="text"
                     inputMode="numeric"
-                    value={touchAmount ? Number(touchAmount).toLocaleString('ko-KR') : ''}
-                    onChange={(e) => setTouchAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                    value={touchAmount ? Number(touchAmount).toLocaleString("ko-KR") : ""}
+                    onChange={(e) => setTouchAmount(e.target.value.replace(/[^0-9]/g, ""))}
                     className="h-10 text-right"
                   />
                 </div>
@@ -580,8 +247,8 @@ export default function WeeklyReport() {
                     id="other"
                     type="text"
                     inputMode="numeric"
-                    value={otherAmount ? Number(otherAmount).toLocaleString('ko-KR') : ''}
-                    onChange={(e) => setOtherAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                    value={otherAmount ? Number(otherAmount).toLocaleString("ko-KR") : ""}
+                    onChange={(e) => setOtherAmount(e.target.value.replace(/[^0-9]/g, ""))}
                     className="h-10 text-right"
                   />
                 </div>
@@ -589,7 +256,7 @@ export default function WeeklyReport() {
               <div className="flex justify-between items-center border-t pt-2 text-sm">
                 <span className="font-bold">총액:</span>
                 <span className="font-bold text-base sm:text-lg text-emerald-600">
-                  {formatAmount(totalAccount)} {currency}
+                  {formatReportAmount(totalAccount)} {currency}
                 </span>
               </div>
               <Button size="sm" onClick={handleSaveAmounts} className="w-full h-10 text-sm">
